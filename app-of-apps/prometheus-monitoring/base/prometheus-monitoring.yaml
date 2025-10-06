@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-monitoring
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: "prometheus-monitoring/base"
+spec:
+  project: default
+  source:
+    # Update repoURL to point to your deployment repository
+    repoURL: 'https://github.com/your-repo/homelab.git'
+    targetRevision: HEAD
+    path: prometheus-monitoring/base
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

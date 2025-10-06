@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simplefin-exporter
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: "simplefin-exporter/base"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/your-repo/homelab.git'  # Update with your actual repo URL
+    targetRevision: HEAD
+    path: simplefin-exporter/base
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

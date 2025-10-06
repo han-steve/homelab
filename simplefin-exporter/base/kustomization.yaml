@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- simplefin-secret.yaml
+- simplefin-cronjob.yaml
+- simplefin-servicemonitor.yaml
+- simplefin-dashboard.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: homelab-monitoring

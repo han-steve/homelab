@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: simplefin-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: simplefin-exporter
+    app.kubernetes.io/component: financial-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: simplefin-exporter
+      app.kubernetes.io/component: financial-exporter
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http
