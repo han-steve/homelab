@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: simplefin-recording-rules
+  namespace: monitoring
+  labels:
+    app: simplefin-exporter
+    release: prometheus
+spec:
+  groups:
+  - name: simplefin.daily
+    interval: 15s
+    rules:
+    - record: simplefin_account_balance_daily
+      expr: simplefin_account_balance
+    - record: simplefin_net_worth_daily
+      expr: simplefin_net_worth
+    - record: simplefin_account_available_balance_daily  
+      expr: simplefin_account_available_balance
+    - record: simplefin_account_count_daily
+      expr: simplefin_account_count

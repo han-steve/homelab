@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+# Create monitoring namespace
+resources:
+- namespace.yaml
+- local-path-storageclass.yaml
+- prometheus-pv.yaml
+
+# Use Helm chart with our custom values
+helmCharts:
+- name: kube-prometheus-stack
+  repo: https://prometheus-community.github.io/helm-charts
+  version: "65.1.1"  # Latest stable version
+  releaseName: prometheus
+  namespace: monitoring
+  valuesFile: helm-values.yaml
+  includeCRDs: true

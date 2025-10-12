@@ -1,0 +1,18 @@
+# Minimal Helm values for kube-prometheus-stack
+# Only includes changes from default configuration
+
+prometheus:
+  prometheusSpec:
+    # Extended retention (default is 24h) 
+    retention: 90d
+    retentionSize: 90GB
+    
+    # Add persistent storage (not in default)
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 100Gi
