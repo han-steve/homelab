@@ -6,6 +6,7 @@ resources:
 - simplefin-cronjob.yaml
 - simplefin-servicemonitor.yaml
 - simplefin-dashboard.yaml
+- simplefin-rbac.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: homelab-monitoring

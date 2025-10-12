@@ -17,24 +17,29 @@ spec:
             app.kubernetes.io/component: financial-exporter
         spec:
           restartPolicy: OnFailure
+          serviceAccountName: simplefin-exporter
           containers:
           - name: simplefin-exporter
-            image: simplefin-bridge-exporter:latest
+            image: simplefin-bridge-exporter:modified
             imagePullPolicy: IfNotPresent  # Use local image since we built it locally
             command: ["/bin/sh"]
             args:
             - "-c"
             - |
-              # Start the exporter in the background
-              /simplefin-bridge-exporter -setupToken "$SIMPLEFIN_SETUP_TOKEN" &
+              # Start the modified exporter in the background with Kubernetes secret integration
+              ./simplefin-bridge-exporter-modified \
+                -setupToken "$SIMPLEFIN_SETUP_TOKEN" \
+                -secretName "simplefin-config" \
+                -secretNamespace "monitoring" \
+                -updateInterval "5m" &
               
               # Wait for the exporter to be ready
               sleep 10
               
-              # Keep the pod alive for 5 minutes to allow Prometheus to scrape
-              # (ServiceMonitor scrapes every 30s, so 5 minutes ensures multiple scrapes)
-              echo "SimpleFIN exporter started, sleeping for 5 minutes to allow scraping..."
-              sleep 300  # 5 minutes
+              # Keep the pod alive for 60 seconds to allow Prometheus to scrape and secret updates to complete
+              # (ServiceMonitor scrapes every 30s, so 60 seconds ensures multiple scrapes and secret persistence)
+              echo "SimpleFIN exporter started, sleeping for 60 seconds to allow scraping and secret updates..."
+              sleep 60  # 60 seconds
               
               echo "Shutting down after scrape window"
             env:

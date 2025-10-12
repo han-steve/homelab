@@ -2,9 +2,70 @@
 
 This directory contains the Kubernetes manifests to deploy the SimpleFIN Bridge Exporter as a CronJob that exposes financial account balance metrics to Prometheus.
 
+## Problem Solved
+
+The original SimpleFIN bridge exporter had an issue where the setup token could only be used once. After the first run, subsequent runs would fail because the setup token was already claimed. This modified version solves this by:
+
+1. Using the setup token to get an access URL on first run
+2. Saving the access URL to a Kubernetes secret
+3. Reading the saved access URL from the secret on subsequent runs
+
 ## Overview
 
 The SimpleFIN Bridge Exporter polls your financial accounts via SimpleFIN Bridge and exposes account balances as Prometheus metrics. This allows you to create dashboards tracking your net worth over time.
+
+## Source Code Location
+
+The modified source code is located at:
+```
+/home/stevehan/repos/simplefin-bridge-exporter-modified/
+```
+
+This is a fork of the original repository: `https://github.com/eduser25/simplefin-bridge-exporter`
+
+## Key Modifications Made
+
+1. **Added Kubernetes client functionality** - Can read/write secrets in the cluster
+2. **Added persistent access URL storage** - Saves access URL to secret after first successful auth
+3. **Added new command line flags**:
+   - `-secretName` - Name of the Kubernetes secret to store/read access URL
+   - `-secretNamespace` - Namespace of the secret
+
+## Building and Loading the Image
+
+### Prerequisites
+- Go 1.24+ installed
+- Docker installed
+- Access to Kubernetes cluster with containerd
+
+### Build Steps
+
+1. **Navigate to the modified source**:
+   ```bash
+   cd /home/stevehan/repos/simplefin-bridge-exporter-modified
+   ```
+
+2. **Build the binary for Linux**:
+   ```bash
+   export PATH=$PATH:/usr/local/go/bin
+   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o simplefin-bridge-exporter-modified ./cmd/main-modified.go
+   ```
+
+3. **Build the Docker image**:
+   ```bash
+   docker build -f Dockerfile.modified -t simplefin-bridge-exporter:modified .
+   ```
+
+4. **Save and load into containerd** (for Kubernetes):
+   ```bash
+   docker save simplefin-bridge-exporter:modified -o /tmp/simplefin-modified.tar
+   sudo ctr -n k8s.io images import /tmp/simplefin-modified.tar
+   ```
+
+5. **Verify the image is loaded**:
+   ```bash
+   sudo ctr -n k8s.io images ls | grep simplefin
+   ```
 
 ## Architecture
 
