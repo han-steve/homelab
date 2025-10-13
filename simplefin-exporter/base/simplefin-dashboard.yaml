@@ -112,7 +112,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_balance_preserved",
+                "expr": "max_over_time(simplefin_balance_preserved[1d])",
                 "format": "table",
                 "instant": true,
                 "legendFormat": "__auto",
@@ -211,7 +211,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_balance_preserved > 0",
+                "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
                 "legendFormat": "{{account_name}}",
                 "range": true,
                 "refId": "A"
@@ -255,6 +255,7 @@
               "y": 9
             },
             "id": 4,
+            "maxDataPoints": 1000000,
             "options": {
               "colorMode": "value",
               "graphMode": "area",
@@ -280,7 +281,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_net_worth_preserved",
+                "expr": "max_over_time(simplefin_net_worth_preserved[1d])",
                 "legendFormat": "Total Net Worth",
                 "range": true,
                 "refId": "A"
@@ -320,6 +321,7 @@
               "y": 9
             },
             "id": 5,
+            "maxDataPoints": 1000000,
             "options": {
               "colorMode": "value",
               "graphMode": "area",
@@ -345,7 +347,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_account_count_preserved",
+                "expr": "max_over_time(simplefin_account_count_preserved[1d])",
                 "legendFormat": "Total Accounts",
                 "range": true,
                 "refId": "A"
@@ -385,6 +387,7 @@
               "y": 9
             },
             "id": 6,
+            "maxDataPoints": 1000000,
             "options": {
               "colorMode": "value",
               "graphMode": "area",
@@ -521,7 +524,7 @@
               "y": 14
             },
             "id": 8,
-            "maxDataPoints": 11000,
+            "maxDataPoints": 1000000,
             "options": {
               "legend": {
                 "calcs": [
@@ -547,7 +550,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_net_worth_preserved",
+                "expr": "max_over_time(simplefin_net_worth_preserved[1d])",
                 "legendFormat": "Total Net Worth",
                 "range": true,
                 "refId": "A"
@@ -638,6 +641,7 @@
               "y": 27
             },
             "id": 10,
+            "maxDataPoints": 11000,
             "options": {
               "legend": {
                 "calcs": [],
@@ -659,7 +663,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_balance_preserved",
+                "expr": "max_over_time(simplefin_balance_preserved[1d])",
                 "legendFormat": "{{account_name}}",
                 "range": true,
                 "refId": "A"
@@ -737,6 +741,7 @@
               "y": 35
             },
             "id": 11,
+            "maxDataPoints": 1000000,
             "options": {
               "legend": {
                 "calcs": [],
@@ -758,7 +763,7 @@
                   "uid": "prometheus"
                 },
                 "editorMode": "code",
-                "expr": "simplefin_balance_preserved > 0",
+                "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
                 "legendFormat": "{{account_name}}",
                 "range": true,
                 "refId": "A"

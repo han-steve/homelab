@@ -72,7 +72,7 @@ This is a fork of the original repository: `https://github.com/eduser25/simplefi
 ### 🔄 Daily Workflow:
 1. CronJob runs at 6 AM daily
 2. Fetches latest financial data from SimpleFIN
-3. Exposes metrics for 5 minutes 
+3. Exposes metrics for 1 minute
 4. Prometheus scrapes every 30 seconds during that window (10+ scrapes)
 5. Pod terminates to save resources
 - **ServiceMonitor**: Configures Prometheus to scrape the metrics endpoint
