@@ -13,9 +13,9 @@
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 29,
   "links": [],
   "panels": [
     {
@@ -87,11 +87,11 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Value"
+            "displayName": "Balance"
           }
         ]
       },
-      "pluginVersion": "10.1.0",
+      "pluginVersion": "11.2.1",
       "targets": [
         {
           "datasource": {
@@ -99,7 +99,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "simplefin_balance",
+          "expr": "max_over_time(simplefin_balance_preserved[1d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -125,12 +125,14 @@
               "service": true
             },
             "indexByName": {
+              "Value": 2,
+              "account_id": 1,
               "account_name": 0,
-              "Value": 1,
-              "currency": 2
+              "currency": 3
             },
             "renameByName": {
               "Value": "Balance",
+              "account_id": "Account ID",
               "account_name": "Account Name",
               "currency": "Currency"
             }
@@ -153,7 +155,8 @@
             "hideFrom": {
               "legend": false,
               "tooltip": false,
-              "vis": false
+              "vis": false,
+              "viz": false
             }
           },
           "mappings": [],
@@ -184,10 +187,12 @@
           "values": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -195,8 +200,8 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "simplefin_balance > 0",
-          "legendFormat": "{{account_name}}",
+          "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
+          "legendFormat": "{{account_name}} ({{account_id}})",
           "range": true,
           "refId": "A"
         }
@@ -239,11 +244,13 @@
         "y": 9
       },
       "id": 4,
+      "maxDataPoints": 1000000,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -251,10 +258,11 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.1.0",
+      "pluginVersion": "11.2.1",
       "targets": [
         {
           "datasource": {
@@ -262,7 +270,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(simplefin_balance)",
+          "expr": "max_over_time(simplefin_net_worth_preserved[1d])",
           "legendFormat": "Total Net Worth",
           "range": true,
           "refId": "A"
@@ -302,11 +310,13 @@
         "y": 9
       },
       "id": 5,
+      "maxDataPoints": 1000000,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -314,10 +324,11 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.1.0",
+      "pluginVersion": "11.2.1",
       "targets": [
         {
           "datasource": {
@@ -325,7 +336,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(simplefin_balance)",
+          "expr": "max_over_time(simplefin_account_count_preserved[1d])",
           "legendFormat": "Total Accounts",
           "range": true,
           "refId": "A"
@@ -365,11 +376,13 @@
         "y": 9
       },
       "id": 6,
+      "maxDataPoints": 1000000,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -377,10 +390,11 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.1.0",
+      "pluginVersion": "11.2.1",
       "targets": [
         {
           "datasource": {
@@ -421,18 +435,21 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
-              "vis": false
+              "vis": false,
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -442,7 +459,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": false,
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -496,6 +513,7 @@
         "y": 14
       },
       "id": 8,
+      "maxDataPoints": 1000000,
       "options": {
         "legend": {
           "calcs": [
@@ -508,10 +526,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -519,7 +539,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(simplefin_balance)",
+          "expr": "max_over_time(simplefin_net_worth_preserved[1d])",
           "legendFormat": "Total Net Worth",
           "range": true,
           "refId": "A"
@@ -552,18 +572,21 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
-              "vis": false
+              "vis": false,
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -588,7 +611,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -607,6 +630,7 @@
         "y": 27
       },
       "id": 10,
+      "maxDataPoints": 11000,
       "options": {
         "legend": {
           "calcs": [],
@@ -615,10 +639,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -626,8 +652,8 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "simplefin_balance",
-          "legendFormat": "{{account_name}}",
+          "expr": "max_over_time(simplefin_balance_preserved[1d])",
+          "legendFormat": "{{account_name}} ({{account_id}})",
           "range": true,
           "refId": "A"
         }
@@ -646,18 +672,21 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
-              "vis": false
+              "vis": false,
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -682,7 +711,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -701,6 +730,7 @@
         "y": 35
       },
       "id": 11,
+      "maxDataPoints": 1000000,
       "options": {
         "legend": {
           "calcs": [],
@@ -709,10 +739,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -720,8 +752,8 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "simplefin_balance > 0",
-          "legendFormat": "{{account_name}}",
+          "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
+          "legendFormat": "{{account_name}} ({{account_id}})",
           "range": true,
           "refId": "A"
         }
@@ -730,8 +762,7 @@
       "type": "timeseries"
     }
   ],
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [
     "simplefin",
     "financial",
@@ -742,7 +773,7 @@
       {
         "current": {
           "selected": false,
-          "text": "prometheus",
+          "text": "Prometheus",
           "value": "prometheus"
         },
         "hide": 0,
@@ -765,7 +796,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "SimpleFIN Financial Dashboard - Improved",
-  "uid": "simplefin-financial-improved",
-  "version": 1
+  "title": "SimpleFIN Financial Dashboard - With Recording Rules",
+  "uid": "simplefin-financial-preserved",
+  "version": 5,
+  "weekStart": ""
 }

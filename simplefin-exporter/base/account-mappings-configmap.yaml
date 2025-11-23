@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simplefin-account-mappings
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: simplefin-exporter
+    app.kubernetes.io/component: financial-exporter
+data:
+  account-mappings.json: |
+    {
+      "mappings": [
+        {
+          "account_id": "ACT-cf68f8ac-4556-4601-8760-2b13ae992d66",
+          "custom_name": "Fidelity Individual"
+        },
+        {
+          "account_id": "ACT-7b913be2-7c6e-48ed-997f-f7fafe841cdf",
+          "custom_name": "Schwab Individual"
+        },
+        {
+          "account_id": "ACT-ab1c9621-c363-455a-b4bc-9d0aa0276d26",
+          "custom_name": "Fidelity Roblox 401k"
+        },
+        {
+          "account_id": "ACT-79706b2e-d841-4a41-8f8f-caa06f08876d",
+          "custom_name": "Marcus CD 6/6/2026"
+        },
+        {
+          "account_id": "ACT-c178ba4c-e69e-4244-a18f-7b818948833f",
+          "custom_name": "Merrill Edge 5210"
+        },
+        {
+          "account_id": "ACT-3b59bf66-8310-4673-89cb-1a0a45e65c72",
+          "custom_name": "Schwab Equity Awards"
+        },
+        {
+          "account_id": "ACT-f6a97227-1dd8-46b6-8361-bdae1598e622",
+          "custom_name": "Fidelity Roth IRA"
+        },
+        {
+          "account_id": "ACT-4796f209-0b6b-43ae-80de-8a768f8cf279",
+          "custom_name": "Marcus CD 6/10/2026"
+        }
+      ],
+      "ignore_list": []
+    }

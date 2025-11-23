@@ -138,13 +138,15 @@
                     "service": true
                   },
                   "indexByName": {
-                    "Value": 1,
+                    "Value": 2,
                     "account_name": 0,
-                    "currency": 2
+                    "account_id": 1,
+                    "currency": 3
                   },
                   "renameByName": {
                     "Value": "Balance",
                     "account_name": "Account Name",
+                    "account_id": "Account ID",
                     "currency": "Currency"
                   }
                 }
@@ -212,7 +214,7 @@
                 },
                 "editorMode": "code",
                 "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
-                "legendFormat": "{{account_name}}",
+                "legendFormat": "{{account_name}} ({{account_id}})",
                 "range": true,
                 "refId": "A"
               }
@@ -664,7 +666,7 @@
                 },
                 "editorMode": "code",
                 "expr": "max_over_time(simplefin_balance_preserved[1d])",
-                "legendFormat": "{{account_name}}",
+                "legendFormat": "{{account_name}} ({{account_id}})",
                 "range": true,
                 "refId": "A"
               }
@@ -764,7 +766,7 @@
                 },
                 "editorMode": "code",
                 "expr": "max_over_time(simplefin_balance_preserved[1d]) > 0",
-                "legendFormat": "{{account_name}}",
+                "legendFormat": "{{account_name}} ({{account_id}})",
                 "range": true,
                 "refId": "A"
               }

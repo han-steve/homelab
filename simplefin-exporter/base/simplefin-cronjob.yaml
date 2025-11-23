@@ -20,26 +20,27 @@ spec:
           serviceAccountName: simplefin-exporter
           containers:
           - name: simplefin-exporter
-            image: simplefin-bridge-exporter:modified
+            image: simplefin-bridge-exporter:fixed
             imagePullPolicy: IfNotPresent  # Use local image since we built it locally
             command: ["/bin/sh"]
             args:
             - "-c"
             - |
-              # Start the modified exporter in the background with Kubernetes secret integration
+              # Start the modified exporter in the background with Kubernetes secret integration and account mappings
               ./simplefin-bridge-exporter-modified \
                 -setupToken "$SIMPLEFIN_SETUP_TOKEN" \
                 -secretName "simplefin-config" \
                 -secretNamespace "monitoring" \
+                -accountMappingsFile "/etc/account-mappings/account-mappings.json" \
                 -updateInterval "5m" &
               
               # Wait for the exporter to be ready
               sleep 10
               
-              # Keep the pod alive for 60 seconds to allow Prometheus to scrape and secret updates to complete
-              # (ServiceMonitor scrapes every 30s, so 60 seconds ensures multiple scrapes and secret persistence)
-              echo "SimpleFIN exporter started, sleeping for 60 seconds to allow scraping and secret updates..."
-              sleep 60  # 60 seconds
+              # Keep the pod alive for 5 minutes to allow Prometheus to scrape and secret updates to complete
+              # (ServiceMonitor scrapes every 30s, so 5 minutes ensures multiple scrapes and secret persistence)
+              echo "SimpleFIN exporter started, sleeping for 5 minutes to allow scraping and secret updates..."
+              sleep 300  # 5 minutes
               
               echo "Shutting down after scrape window"
             env:
@@ -51,6 +52,10 @@ spec:
             ports:
             - containerPort: 8000
               name: metrics
+            volumeMounts:
+            - name: account-mappings
+              mountPath: /etc/account-mappings
+              readOnly: true
             resources:
               requests:
                 memory: "64Mi"
@@ -58,6 +63,11 @@ spec:
               limits:
                 memory: "128Mi"
                 cpu: "100m"
+          volumes:
+          - name: account-mappings
+            configMap:
+              name: simplefin-account-mappings
+              optional: true  # Make it optional so deployment works even without mappings
 ---
 apiVersion: v1
 kind: Service

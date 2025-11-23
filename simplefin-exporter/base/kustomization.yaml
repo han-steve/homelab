@@ -8,6 +8,7 @@ resources:
 - simplefin-dashboard.yaml
 - simplefin-rbac.yaml
 - simplefin-recording-rules.yaml
+- account-mappings-configmap.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: homelab-monitoring

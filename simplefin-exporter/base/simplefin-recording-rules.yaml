@@ -8,14 +8,28 @@ metadata:
     release: prometheus
 spec:
   groups:
-  - name: simplefin.daily
-    interval: 15s
+  - name: simplefin.rules
+    interval: 30s
     rules:
-    - record: simplefin_account_balance_daily
-      expr: simplefin_account_balance
-    - record: simplefin_net_worth_daily
-      expr: simplefin_net_worth
-    - record: simplefin_account_available_balance_daily  
-      expr: simplefin_account_available_balance
-    - record: simplefin_account_count_daily
-      expr: simplefin_account_count
+    # Preserve current balance values for each account
+    - record: simplefin_balance_preserved
+      # Collapse duplicate samples emitted by overlapping exporter pods
+      expr: max without (pod,instance) (simplefin_balance)
+    
+    # Calculate total net worth
+    - record: simplefin_net_worth_preserved
+      # Net worth without double counting overlapping pods
+      expr: sum(simplefin_balance_preserved)
+      # Total net worth, deduping per-pod samples by using the preserved per-account metric
+      # First collapse pod/instance -> simplefin_balance_preserved, then sum across all accounts
+    
+    # Preserve available balance values
+    - record: simplefin_available_balance_preserved
+      # Collapse duplicates for available balance
+      expr: max without (pod,instance) (simplefin_available_balance)
+    
+    # Count total accounts  
+    - record: simplefin_account_count_preserved
+      # Unique account count without per-pod duplication
+      expr: count(simplefin_balance_preserved)
+      # Unique account count derived from preserved per-account metric

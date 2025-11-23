@@ -27,9 +27,12 @@ This is a fork of the original repository: `https://github.com/eduser25/simplefi
 
 1. **Added Kubernetes client functionality** - Can read/write secrets in the cluster
 2. **Added persistent access URL storage** - Saves access URL to secret after first successful auth
-3. **Added new command line flags**:
+3. **Fixed account name collision bug** - Added account ID to metrics labels to prevent overwrites
+4. **Added account name mapping** - Support for custom account names via configuration file
+5. **Added new command line flags**:
    - `-secretName` - Name of the Kubernetes secret to store/read access URL
    - `-secretNamespace` - Namespace of the secret
+   - `-accountMappingsFile` - Path to JSON file containing account ID to custom name mappings
 
 ## Building and Loading the Image
 
@@ -126,17 +129,69 @@ Or using ArgoCD with the application manifest in `app-of-apps/simplefin-exporter
 
 ## Metrics
 
-The exporter provides these metrics:
+The exporter provides these raw metrics with enhanced labels including account IDs. In addition, Prometheus recording rules (see `simplefin-recording-rules.yaml`) create *preserved* and *deduplicated* forms that collapse multiple simultaneous CronJob pods (using `without (pod,instance)` aggregation) to avoid double counting:
 ```
-# Account balance
-simplefin_balance{account_name="SimpleFIN Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5
+# Account balance (with account ID to prevent collisions)
+simplefin_balance{account_name="SimpleFIN Checking",account_id="Demo Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5  # raw
+simplefin_balance_preserved{account_name="SimpleFIN Checking",account_id="Demo Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5  # deduped per account
 
 # Available balance (may differ from balance for credit accounts)
-simplefin_available_balance{account_name="SimpleFIN Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5
+simplefin_available_balance{account_name="SimpleFIN Checking",account_id="Demo Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5  # raw
+simplefin_available_balance_preserved{account_name="SimpleFIN Checking",account_id="Demo Checking",currency="USD",domain="beta-bridge.simplefin.org"} 25035.5  # deduped
 
 # Last updated timestamp
-simplefin_last_updated{account_name="SimpleFIN Checking",domain="beta-bridge.simplefin.org"} 1.759815339e+09
+simplefin_last_updated{account_name="SimpleFIN Checking",account_id="Demo Checking",domain="beta-bridge.simplefin.org"} 1.759815339e+09
+
+### Recording Rules Summary
+
+| Recording Rule | Purpose | Expression |
+| -------------- | ------- | ---------- |
+| `simplefin_balance_preserved` | Per-account latest balance without pod duplication | `max without (pod,instance) (simplefin_balance)` |
+| `simplefin_available_balance_preserved` | Per-account available balance deduped | `max without (pod,instance) (simplefin_available_balance)` |
+| `simplefin_net_worth_preserved` | Total net worth (deduped and aggregated across all accounts) | `sum(simplefin_balance_preserved)` |
+| `simplefin_account_count_preserved` | Count of unique accounts | `count(simplefin_balance_preserved)` |
+
+### Common Queries (Using Preserved Metrics)
+```promql
+# Total net worth (deduped)
+simplefin_net_worth_preserved
+
+# Current balances table (latest daily max sample)
+max_over_time(simplefin_balance_preserved[1d])
+
+# Positive balances only pie chart
+max_over_time(simplefin_balance_preserved[1d]) > 0
+
+# Account count (deduped)
+simplefin_account_count_preserved
+
+# Last update time (epoch ms)
+max(simplefin_last_updated) * 1000
 ```
+
+Use the raw `simplefin_balance` family only for debugging individual pods; prefer the `*_preserved` and `simplefin_net_worth_preserved` rules for dashboards and alerting.
+```
+
+## Account Name Mapping
+
+To customize account display names, create a JSON configuration file:
+
+```json
+{
+  "mappings": [
+    {
+      "account_id": "Demo Checking",
+      "custom_name": "My Primary Checking Account"
+    },
+    {
+      "account_id": "Demo Savings",
+      "custom_name": "Emergency Fund"
+    }
+  ]
+}
+```
+
+Mount this file as a ConfigMap and reference it with the `-accountMappingsFile` flag.
 
 ## Grafana Dashboard
 
@@ -151,22 +206,14 @@ A comprehensive financial dashboard is automatically deployed via ConfigMap (`si
 - **Net Worth Over Time**: Historical trend line for each account + total
 - **Stacked Account Composition**: Shows how account balances change over time
 
-### Key Queries Used:
+### Dashboard Query Highlights (Improved Dashboard)
+Queries now leverage preserved metrics:
 ```promql
-# Total net worth
-sum(simplefin_balance)
-
-# Individual account balances
-simplefin_balance
-
-# Positive balances only (for pie chart)
-simplefin_balance > 0
-
-# Account count
-count(simplefin_balance)
-
-# Last update time
-max(simplefin_last_updated) * 1000
+max_over_time(simplefin_balance_preserved[1d])                 # Account balances table
+max_over_time(simplefin_balance_preserved[1d]) > 0             # Distribution / composition
+simplefin_net_worth_preserved                                  # Total net worth stat & timeseries
+simplefin_account_count_preserved                              # Account count stat
+max(simplefin_last_updated) * 1000                             # Last data update
 ```
 
 The dashboard will be automatically discovered by Grafana via the sidecar and available at:

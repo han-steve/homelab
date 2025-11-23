@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: simplefin-exporter
     app.kubernetes.io/component: financial-exporter
+    release: prometheus
 spec:
   selector:
     matchLabels:
