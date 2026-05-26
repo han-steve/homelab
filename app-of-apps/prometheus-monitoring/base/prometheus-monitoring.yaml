@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     # Update repoURL to point to your deployment repository
-    repoURL: 'https://github.com/your-repo/homelab.git'
+    repoURL: 'https://github.com/han-steve/homelab.git'
     targetRevision: HEAD
     path: prometheus-monitoring/base
   destination:

@@ -7,7 +7,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/your-repo/homelab.git'  # Update with your actual repo URL
+    repoURL: 'https://github.com/han-steve/homelab.git'
     targetRevision: HEAD
     path: simplefin-exporter/base
   destination:
