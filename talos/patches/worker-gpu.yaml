@@ -1,0 +1,51 @@
+# Patch applied to the GPU worker node (ASUS Z390-A, i9-9900K, RTX 3080 Ti).
+# Applied when generating worker config for this node.
+# NOTE: GPU node is still running Debian + Docker. Apply this when ready to migrate.
+machine:
+  network:
+    hostname: gpu
+    interfaces:
+      - interface: enp3s0    # Verify actual interface name after Talos live boot on GPU node
+        dhcp: true           # Keep DHCP initially; set static later if needed
+
+  install:
+    disk: /dev/sda           # Samsung 870 EVO 1TB SATA — current Debian boot drive, will be wiped
+    wipe: true
+
+  # Dedicate the ADATA SU650 (/dev/sdb) to Longhorn — creates /var/lib/longhorn partition
+  disks:
+    - device: /dev/sdb
+      partitions:
+        - mountpoint: /var/lib/longhorn
+
+  # NVIDIA kernel modules to load at boot
+  kernel:
+    modules:
+      - name: nvidia
+      - name: nvidia_uvm
+      - name: nvidia_drm
+      - name: nvidia_modeset
+
+  # udev rules: expose DRM render nodes to container group 44 (video)
+  udev:
+    rules:
+      - SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="44", MODE="0660"
+      - SUBSYSTEM=="nvidia", KERNEL=="nvidia*", GROUP="44", MODE="0660"
+
+  # GPU-specific node labels (kubernetes.io/hostname is set automatically from machine.network.hostname)
+  nodeLabels:
+    node-role.kubernetes.io/worker: ""
+    # Longhorn: use configured disk (reads from node disk config) rather than default
+    node.longhorn.io/create-default-disk: "config"
+
+  # Longhorn disk configuration annotation (Longhorn reads this JSON)
+  nodeAnnotations:
+    node.longhorn.io/default-disks-config: |
+      [
+        {
+          "path": "/var/lib/longhorn",
+          "allowScheduling": true,
+          "storageReserved": 10737418240,
+          "tags": ["storage"]
+        }
+      ]

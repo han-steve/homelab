@@ -1,0 +1,38 @@
+# External Secrets Operator Helm values
+# ESO reconciles ExternalSecret CRDs → Kubernetes Secrets using 1Password Connect as source
+#
+# Install:
+#   helm repo add external-secrets https://charts.external-secrets.io && helm repo update
+#   helm install external-secrets external-secrets/external-secrets \
+#     --namespace external-secrets --create-namespace \
+#     --values infrastructure/external-secrets/values.yaml
+
+replicaCount: 1
+
+# Prometheus metrics
+metrics:
+  service:
+    enabled: true
+
+serviceMonitor:
+  enabled: false  # Enable after kube-prometheus-stack installed
+
+# Resources
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+webhook:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+certController:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi

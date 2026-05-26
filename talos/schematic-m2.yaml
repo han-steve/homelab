@@ -1,0 +1,9 @@
+# Image Factory schematic for Minisforum EliteMini M2 (control plane + worker)
+# Extensions: Intel microcode, iSCSI + util-linux for Longhorn
+# Submit to factory:  curl -sX POST --data-binary @talos/schematic-m2.yaml https://factory.talos.dev/schematics
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/intel-ucode        # Core Ultra 7 356H microcode updates
+      - siderolabs/iscsi-tools        # Required by Longhorn
+      - siderolabs/util-linux-tools   # Required by Longhorn (lsblk, nsenter, etc.)

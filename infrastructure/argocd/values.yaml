@@ -1,0 +1,109 @@
+# ArgoCD Helm values
+# GitOps controller — manages all infrastructure and application manifests from this repo
+#
+# Install:
+#   helm repo add argo https://argoproj.github.io/argo-helm && helm repo update
+#   helm install argocd argo/argo-cd \
+#     --namespace argocd --create-namespace \
+#     --values infrastructure/argocd/values.yaml
+#
+# Access: kubectl port-forward svc/argocd-server -n argocd 8080:443
+# Initial password: argoctl argocd initial-password -n argocd
+# Or via Tailscale Ingress: annotate argocd-server service with tailscale.com/expose=true
+
+global:
+  logging:
+    level: info
+
+# Single replica for homelab
+server:
+  replicas: 1
+  # Expose ArgoCD UI via Tailscale (annotated on service below)
+  service:
+    type: ClusterIP
+  # Disable internal TLS — Tailscale/Ingress handles it
+  extraArgs:
+    - --insecure
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+applicationSet:
+  replicas: 1
+
+controller:
+  replicas: 1
+
+# Redis — single instance
+redis:
+  enabled: true
+
+# Disable DEX (no SSO needed for homelab — use admin password from 1Password)
+dex:
+  enabled: false
+
+# ArgoCD config: repo URL, sync policy defaults
+configs:
+  params:
+    # Server-side apply for manifests
+    application.sync.apply.force: "true"
+    # Propagation policy for deletions
+    application.resourceTrackingMethod: "annotation"
+
+  # Repository credentials — pulled from 1Password via ESO ExternalSecret
+  # Create ExternalSecret "argocd-repo-creds" with GitHub PAT before adding private repos
+  credentialTemplates: {}
+
+  cm:
+    # Allow insecure connections to cluster (avoids TLS cert issues in homelab)
+    admin.enabled: "true"
+    # Resource tracking method
+    application.resourceTrackingMethod: annotation
+    # Status badge
+    statusbadge.enabled: "true"
+    # Resource health checks for Longhorn, cert-manager, etc.
+    resource.customizations: |
+      cert-manager.io/Certificate:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.conditions ~= nil then
+              for i, condition in ipairs(obj.status.conditions) do
+                if condition.type == "Ready" and condition.status == "False" then
+                  hs.status = "Degraded"
+                  hs.message = condition.message
+                  return hs
+                end
+                if condition.type == "Ready" and condition.status == "True" then
+                  hs.status = "Healthy"
+                  hs.message = condition.message
+                  return hs
+                end
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = "Waiting for certificate"
+          return hs
+      longhorn.io/Volume:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.state == "attached" or obj.status.state == "detached" then
+              hs.status = "Healthy"
+              hs.message = obj.status.state
+              return hs
+            end
+            if obj.status.state == "degraded" then
+              hs.status = "Degraded"
+              hs.message = obj.status.state
+              return hs
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = "Waiting for volume"
+          return hs

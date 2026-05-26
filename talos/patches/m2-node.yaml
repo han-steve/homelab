@@ -1,0 +1,26 @@
+# Patch applied to the M2 control plane node specifically.
+# Sets static IP, hostname, install target disk.
+machine:
+  network:
+    interfaces:
+      - interface: enp44s0   # Confirmed UP from talosctl get links
+        dhcp: false
+        addresses:
+          - 192.168.1.10/24
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.1.254   # Actual LAN gateway (confirmed from Mac: route -n get default)
+        mtu: 1500
+    nameservers:
+      - 192.168.1.254  # Actual router DNS (confirmed from DHCP on LAN)
+      - 1.1.1.1
+      - 8.8.8.8
+
+  install:
+    disk: /dev/nvme0n1        # Crucial CT1000P3PSSD8 1TB — confirmed from talosctl get disks
+    wipe: false
+    image: factory.talos.dev/installer/36cd6536eaec8ba802be2d38974108359069cedba8857302f69792b26b87c010:v1.13.2
+
+  # M2-specific node labels (kubernetes.io/hostname is set automatically from machine.network.hostname)
+  nodeLabels:
+    node-role.kubernetes.io/worker: ""   # Explicit worker role since it's also CP

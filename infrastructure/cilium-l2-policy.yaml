@@ -1,0 +1,12 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: homelab-l2
+spec:
+  # Announce on the physical LAN interface
+  interfaces:
+    - enp44s0
+  # Announce both externalIPs and LoadBalancer IPs
+  externalIPs: true
+  loadBalancerIPs: true
+  # No node selector = all nodes announce (leader election prevents duplicates)

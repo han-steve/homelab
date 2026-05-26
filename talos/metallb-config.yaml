@@ -1,0 +1,25 @@
+# MetalLB IP address pool and L2 advertisement for the homelab
+# IPs 192.168.1.11-20 reserved for LoadBalancer services (never assign these via DHCP)
+# Apply after MetalLB is installed:
+#   kubectl apply -f talos/metallb-config.yaml
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: homelab-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.11-192.168.1.20
+  autoAssign: true
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: homelab-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - homelab-pool
+  # Advertise from all nodes (both M2 and GPU node when it joins)
+  nodeSelectors: []

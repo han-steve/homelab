@@ -1,0 +1,93 @@
+# Patch applied only to controlplane nodes.
+cluster:
+  # Allow workloads to schedule on the control plane — M2 is both CP and worker until GPU node joins
+  allowSchedulingOnControlPlanes: true
+
+  # Disable kube-proxy — Cilium replaces it entirely (kube-proxy replacement mode)
+  proxy:
+    disabled: true
+
+  # Use no built-in CNI — Cilium installed via Helm after bootstrap
+  network:
+    cni:
+      name: none
+
+  # Disable deprecated Kubernetes discovery registry (incompatible with K8s 1.32+)
+  # Use Talos service discovery only
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: true
+      service: {}    # Use default https://discovery.talos.dev/
+
+  # API server: certSANs, PodSecurity admission, Prometheus metrics exposure
+  apiServer:
+    certSANs:
+      - 192.168.1.10
+      - 127.0.0.1
+    # PodSecurity admission: baseline enforcement with restricted audit/warn
+    # Namespaces exempted: those that legitimately need privileged access
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          apiVersion: pod-security.admission.config.k8s.io/v1alpha1
+          kind: PodSecurityConfiguration
+          defaults:
+            enforce: baseline
+            enforce-version: latest
+            audit: restricted
+            audit-version: latest
+            warn: restricted
+            warn-version: latest
+          exemptions:
+            namespaces:
+              - longhorn-system
+              - monitoring
+              - tailscale
+              - metallb-system
+              - argocd
+              - cert-manager
+              - external-secrets
+              - jellyfin
+              - vc-dev
+              - vc-staging
+              - vc-prod
+              - actual-budget
+              - apitable
+              - simplefin
+            runtimeClasses: []
+            usernames: []
+    # Basic audit policy — captures security-relevant events
+    auditPolicy:
+      apiVersion: audit.k8s.io/v1
+      kind: Policy
+      rules:
+        - level: Metadata
+          resources:
+            - group: ""
+              resources: ["secrets", "configmaps"]
+        - level: Request
+          resources:
+            - group: ""
+              resources: ["pods", "services"]
+        - level: None
+          resources:
+            - group: ""
+              resources: ["events"]
+
+  # Expose controller-manager and scheduler metrics on all interfaces (for Prometheus)
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0
+
+  # Expose etcd metrics for Prometheus scraping
+  etcd:
+    advertisedSubnets:
+      - 192.168.1.0/24
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381

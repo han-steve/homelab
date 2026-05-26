@@ -1,0 +1,623 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apitable
+---
+# ─── MySQL ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: apitable-db-secret
+  namespace: apitable
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "apitable_root_2026"
+  MYSQL_PASSWORD: "apitable@com"
+  MYSQL_DATABASE: "apitable"
+  MYSQL_USER: "apitable"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: apitable-mysql-data
+  namespace: apitable
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-mysql
+  namespace: apitable
+  labels:
+    app: apitable-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: apitable-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0.32
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - secretRef:
+                name: apitable-db-secret
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-db-secret
+                  key: MYSQL_ROOT_PASSWORD
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+            - --sql-mode=IGNORE_SPACE,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: apitable-mysql-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-mysql
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# ─── Redis ───────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-redis
+  namespace: apitable
+  labels:
+    app: apitable-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-redis
+  template:
+    metadata:
+      labels:
+        app: apitable-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.0.8
+          command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-minio-secret
+                  key: REDIS_PASSWORD
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-redis
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+# ─── MinIO ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: apitable-minio-secret
+  namespace: apitable
+type: Opaque
+stringData:
+  MINIO_ROOT_USER: "apitable"
+  MINIO_ROOT_PASSWORD: "apitable@minio2026"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: apitable-minio-data
+  namespace: apitable
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-minio
+  namespace: apitable
+  labels:
+    app: apitable-minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: apitable-minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:RELEASE.2023-01-25T00-19-54Z
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          ports:
+            - containerPort: 9000
+              name: api
+            - containerPort: 9001
+              name: console
+          envFrom:
+            - secretRef:
+                name: apitable-minio-secret
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: apitable-minio-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-minio
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+    - name: console
+      port: 9001
+      targetPort: console
+---
+# ─── ConfigMap — shared env ───────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apitable-config
+  namespace: apitable
+data:
+  MYSQL_HOST: "apitable-mysql"
+  MYSQL_PORT: "3306"
+  MYSQL_USERNAME: "apitable"
+  MYSQL_DATABASE: "apitable"
+  REDIS_HOST: "apitable-redis"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: "apitable_redis_2026"
+  OSS_HOST: "http://apitable-minio:9000"
+  OSS_BUCKET_NAME: "apitable"
+  OSS_ACCESS_KEY: "apitable"
+  BACKEND_BASE_URL: "http://apitable-backend-bundled:8081"
+  SOCKET_DOMAIN: "http://apitable-socket:3001"
+  ROOM_GRPC_URL: "apitable-room:3334"
+  CORS_ORIGINS: "*"
+  ENV: "apitable"
+  INITIAL_CREATE_ADMIN: "true"
+  TIMEZONE: "America/Los_Angeles"
+---
+# ─── Init DB (run migrations before backend starts) ─────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: apitable-init-db
+  namespace: apitable
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-mysql
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z apitable-mysql 3306; do sleep 2; done']
+      containers:
+        - name: init-db
+          image: apitable/init-db:latest
+          envFrom:
+            - configMapRef:
+                name: apitable-config
+            - secretRef:
+                name: apitable-db-secret
+          env:
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-db-secret
+                  key: MYSQL_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+---
+# ─── Backend Server (REST API) ────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-backend-bundled
+  namespace: apitable
+  labels:
+    app: apitable-backend-bundled
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-backend-bundled
+  template:
+    metadata:
+      labels:
+        app: apitable-backend-bundled
+    spec:
+      initContainers:
+        - name: wait-mysql
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z apitable-mysql 3306; do echo waiting for mysql; sleep 3; done']
+      containers:
+        - name: backend-bundled
+          # Using patched version — original: apitable/backend-server:latest
+          image: stevehan2001/backend-server-patched:0.4
+          ports:
+            - containerPort: 8081
+              name: http
+          envFrom:
+            - configMapRef:
+                name: apitable-config
+            - secretRef:
+                name: apitable-db-secret
+            - secretRef:
+                name: apitable-minio-secret
+          env:
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-db-secret
+                  key: MYSQL_PASSWORD
+            - name: OSS_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-minio-secret
+                  key: MINIO_ROOT_PASSWORD
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-backend-bundled
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-backend-bundled
+  ports:
+    - port: 8081
+      targetPort: http
+---
+# ─── Socket server (WebSocket/realtime) ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-socket
+  namespace: apitable
+  labels:
+    app: apitable-socket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-socket
+  template:
+    metadata:
+      labels:
+        app: apitable-socket
+    spec:
+      containers:
+        - name: socket-server
+          image: apitable/socket-server:latest
+          ports:
+            - containerPort: 3001
+              name: http
+          envFrom:
+            - configMapRef:
+                name: apitable-config
+            - secretRef:
+                name: apitable-db-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-socket
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-socket
+  ports:
+    - port: 3001
+      targetPort: http
+---
+# ─── Room server ──────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-room
+  namespace: apitable
+  labels:
+    app: apitable-room
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-room
+  template:
+    metadata:
+      labels:
+        app: apitable-room
+    spec:
+      containers:
+        - name: room-server
+          image: apitable/room-server:latest
+          ports:
+            - containerPort: 3002
+              name: http
+          envFrom:
+            - configMapRef:
+                name: apitable-config
+            - secretRef:
+                name: apitable-db-secret
+          env:
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-db-secret
+                  key: MYSQL_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-room
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-room
+  ports:
+    - port: 3002
+      targetPort: http
+---
+# ─── Web server (frontend) ────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-web
+  namespace: apitable
+  labels:
+    app: apitable-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-web
+  template:
+    metadata:
+      labels:
+        app: apitable-web
+    spec:
+      containers:
+        - name: web-server
+          image: apitable/web-server:latest
+          env:
+            - name: API_PROXY
+              value: "http://apitable-backend-bundled:8081"
+            - name: SOCKET_PROXY
+              value: "http://apitable-socket:3001"
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+# ─── Gateway (nginx reverse proxy — the single entry point) ───────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-gateway
+  namespace: apitable
+  labels:
+    app: apitable-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-gateway
+  template:
+    metadata:
+      labels:
+        app: apitable-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: apitable/openresty:latest
+          env:
+            - name: API_PROXY
+              value: "http://apitable-backend-bundled:8081"
+            - name: SOCKET_PROXY
+              value: "http://apitable-socket:3001"
+            - name: IMAGEPROXY_SERVER
+              value: "http://apitable-imageproxy:8080"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-web
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-web
+  ports:
+    - port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-gateway
+  namespace: apitable
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.1.15"
+spec:
+  type: LoadBalancer
+  selector:
+    app: apitable-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+# ─── Alias services — names the openresty gateway expects ──────────────────
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-server
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-backend-bundled
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socket-server
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-socket
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: room-server
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-room
+  ports:
+    - name: grpc
+      port: 3334
+      targetPort: 3334
+    - name: http
+      port: 3002
+      targetPort: 3002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-server
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-minio
+  ports:
+    - port: 9000
+      targetPort: 9000

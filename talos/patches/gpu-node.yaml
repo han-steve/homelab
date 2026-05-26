@@ -1,0 +1,41 @@
+# Patch for the GPU worker node (ASUS Z390-A, i9-9900K, RTX 3080 Ti)
+# Apply after: talosctl gen config + merge with all-nodes patch
+machine:
+  network:
+    hostname: gpu
+    interfaces:
+      - interface: enp2s0    # Adjust if different — check with talosctl get links after initial boot
+        dhcp: false
+        addresses:
+          - 192.168.1.101/24
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.1.254
+        mtu: 1500
+    nameservers:
+      - 192.168.1.254
+      - 1.1.1.1
+      - 8.8.8.8
+
+  install:
+    disk: /dev/sda            # Samsung 870 EVO 1TB — verify with talosctl get disks after first boot
+    wipe: true
+    image: factory.talos.dev/installer/014aaff51f7e1b02c385aad275bf2f4496b0a6e78469710db7f2b8d2a4f8d9dd:v1.13.2
+
+  # Mount the media NVMe for Jellyfin (Crucial P3 1TB at /dev/nvme0n1)
+  disks:
+    - device: /dev/nvme0n1
+      partitions:
+        - mountpoint: /var/mnt/media
+
+  # NVIDIA kernel modules required for GPU workloads
+  kernel:
+    modules:
+      - name: nvidia
+      - name: nvidia_uvm
+      - name: nvidia_drm
+
+  nodeLabels:
+    node-role.kubernetes.io/worker: ""
+    node.kubernetes.io/gpu: "true"
+    nvidia.com/gpu.present: "true"

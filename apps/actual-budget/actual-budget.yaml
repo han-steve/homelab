@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: actual-budget
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: actual-budget-data
+  namespace: actual-budget
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actual-budget
+  namespace: actual-budget
+  labels:
+    app: actual-budget
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: actual-budget
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: actual-budget
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: actual-budget
+          image: actualbudget/actual-server:25.5.0
+          ports:
+            - containerPort: 5006
+              name: http
+          env:
+            - name: ACTUAL_UPLOAD_FILE_SYNC_SIZE_LIMIT_MB
+              value: "20"
+            - name: ACTUAL_UPLOAD_SYNC_ENCRYPTED_FILE_SYNC_SIZE_LIMIT_MB
+              value: "50"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: actual-budget-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actual-budget
+  namespace: actual-budget
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.1.12"
+spec:
+  type: LoadBalancer
+  selector:
+    app: actual-budget
+  ports:
+    - name: http
+      port: 5006
+      targetPort: http

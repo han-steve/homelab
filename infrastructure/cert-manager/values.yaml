@@ -1,0 +1,41 @@
+# cert-manager Helm values
+# Handles TLS for internal services and Let's Encrypt (via Tailscale Funnel for public)
+#
+# Install:
+#   helm repo add jetstack https://charts.jetstack.io && helm repo update
+#   helm install cert-manager jetstack/cert-manager \
+#     --namespace cert-manager --create-namespace \
+#     --values infrastructure/cert-manager/values.yaml
+
+# Install CRDs as part of helm install
+crds:
+  enabled: true
+
+# Replicas — single node cluster for now
+replicaCount: 1
+
+# Prometheus metrics
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: false  # Enable after kube-prometheus-stack is installed
+
+# Resources
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+webhook:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+cainjector:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi

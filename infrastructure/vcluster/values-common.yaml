@@ -1,0 +1,25 @@
+# Common vcluster values for all environments
+# Single-node homelab: minimal resources, k8s distro
+controlPlane:
+  distro:
+    k8s:
+      enabled: true
+  statefulSet:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+    persistence:
+      volumeClaim:
+        size: 5Gi
+
+sync:
+  toHost:
+    ingresses:
+      enabled: true
+    persistentVolumeClaims:
+      enabled: true
+    storageClasses:
+      enabled: true

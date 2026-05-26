@@ -1,0 +1,10 @@
+# Talos — generated secrets and node configs (sensitive — store secrets.yaml in 1Password)
+talos/secrets.yaml
+talos/controlplane.yaml
+talos/worker.yaml
+talos/talosconfig
+talos/.m2-schematic-id
+talos/.gpu-schematic-id
+
+# OS
+.DS_Store

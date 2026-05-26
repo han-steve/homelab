@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab — Architecture</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff;
+    --orange: #ffa657;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  h1 { font-size: 1.8rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.2rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .4rem; }
+  h3 { font-size: 1rem; color: var(--orange); margin: 1.2rem 0 .5rem; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: 'SF Mono', Consolas, monospace; font-size: .85em; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: .5rem 0 1rem; }
+  pre code { background: none; border: none; padding: 0; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 600; }
+  .badge-green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+  .badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
+  .badge-red { background: rgba(248,81,73,.15); color: var(--red); border: 1px solid rgba(248,81,73,.3); }
+  .badge-blue { background: rgba(88,166,255,.15); color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+  table { width: 100%; border-collapse: collapse; margin: .5rem 0 1rem; }
+  th { background: var(--surface); color: var(--muted); font-weight: 600; text-align: left; padding: .5rem .75rem; border: 1px solid var(--border); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: .5rem .75rem; border: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .stack { margin: 1rem 0; }
+  .layer { border: 1px solid var(--border); border-radius: 8px; margin-bottom: .5rem; overflow: hidden; }
+  .layer-header { padding: .4rem 1rem; font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .layer-header:hover { filter: brightness(1.1); }
+  .layer-body { padding: .75rem 1rem; display: flex; flex-wrap: wrap; gap: .5rem; }
+  .layer-apps { background: rgba(18,31,18,.8); }
+  .layer-platform { background: rgba(14,22,36,.8); }
+  .layer-infra { background: rgba(20,15,30,.8); }
+  .layer-os { background: rgba(25,20,10,.8); }
+  .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .35rem .7rem; font-size: .8rem; display: flex; align-items: center; gap: .4rem; }
+  .chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red { background: var(--red); }
+  .net-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin: .75rem 0; }
+  .net-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .75rem; }
+  .net-ip { font-family: monospace; font-size: 1.1rem; color: var(--accent); font-weight: 700; }
+  .net-label { color: var(--muted); font-size: .75rem; margin-top: .1rem; }
+  .net-service { color: var(--text); font-size: .8rem; margin-top: .3rem; }
+  .cmd-block { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: .75rem 1rem; margin: .5rem 0; font-family: monospace; font-size: .82rem; color: var(--green); }
+  .warn { background: rgba(210,153,34,.1); border: 1px solid rgba(210,153,34,.3); border-radius: 6px; padding: .6rem .9rem; margin: .5rem 0; color: var(--yellow); font-size: .85rem; }
+  .todo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .5rem; margin: .5rem 0; }
+  .todo-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .5rem .75rem; font-size: .82rem; display: flex; align-items: flex-start; gap: .5rem; }
+  .todo-item.done { opacity: .6; }
+  summary { cursor: pointer; outline: none; }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Homelab</h1>
+<p style="color:var(--muted)">Talos Linux v1.13.2 · Kubernetes v1.36.0 · Last updated May 2026</p>
+
+<!-- ── Network Map ──────────────────────────────────────────────────── -->
+<h2>Network</h2>
+<div class="net-grid">
+  <div class="net-card">
+    <div class="net-ip">192.168.1.10</div>
+    <div class="net-label">m2 — Minisforum EliteMini M2</div>
+    <div class="net-service">Core Ultra 7 · 32GB DDR5 · 1TB NVMe<br>Control Plane + Worker</div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.11</div>
+    <div class="net-label">MetalLB · <span class="badge badge-green">Live</span></div>
+    <div class="net-service"><a href="http://192.168.1.11:8096">Jellyfin :8096</a></div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.12</div>
+    <div class="net-label">MetalLB · <span class="badge badge-green">Live</span></div>
+    <div class="net-service"><a href="http://192.168.1.12:5006">Actual Budget :5006</a></div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.13</div>
+    <div class="net-label">MetalLB · <span class="badge badge-green">Live</span></div>
+    <div class="net-service"><a href="http://192.168.1.13">Grafana :80</a></div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.14</div>
+    <div class="net-label">MetalLB · <span class="badge badge-green">Live</span></div>
+    <div class="net-service"><a href="http://192.168.1.14">ArgoCD :80</a></div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.15</div>
+    <div class="net-label">MetalLB · <span class="badge badge-green">Live</span></div>
+    <div class="net-service"><a href="http://192.168.1.15">APITable :80</a></div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">192.168.1.101</div>
+    <div class="net-label">GPU Node · <span class="badge badge-yellow">Not Joined</span></div>
+    <div class="net-service">i9-9900K · 32GB · RTX 3080 Ti<br>Debian (pending Talos)</div>
+  </div>
+  <div class="net-card">
+    <div class="net-ip">.16 – .20</div>
+    <div class="net-label">MetalLB · Available</div>
+    <div class="net-service">Reserved for future services</div>
+  </div>
+</div>
+
+<p style="color:var(--muted);font-size:.8rem;margin:.5rem 0">Gateway: 192.168.1.254 (AT&amp;T) · MetalLB L2 via Cilium eBPF ARP (no port forwarding needed) · Tailscale handles remote access</p>
+
+<!-- ── Stack Diagram ────────────────────────────────────────────────── -->
+<h2>Stack</h2>
+<div class="stack">
+  <div class="layer">
+    <div class="layer-header layer-apps" style="background:rgba(18,40,18,.9);color:var(--green)">
+      Apps <span style="font-weight:400;color:var(--muted);font-size:.8rem">user-facing services</span>
+    </div>
+    <div class="layer-body" style="background:rgba(18,40,18,.5)">
+      <div class="chip"><span class="chip-dot dot-green"></span>Jellyfin :11</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>Actual Budget :12</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>APITable :15</div>
+      <div class="chip"><span class="chip-dot dot-yellow"></span>SimpleFin (needs custom image)</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>vcluster dev/staging/prod</div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-header layer-platform" style="background:rgba(14,22,45,.9);color:var(--accent)">
+      Platform <span style="font-weight:400;color:var(--muted);font-size:.8rem">cluster services</span>
+    </div>
+    <div class="layer-body" style="background:rgba(14,22,45,.5)">
+      <div class="chip"><span class="chip-dot dot-green"></span>ArgoCD :14</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>Prometheus + Grafana :13</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>cert-manager</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>External Secrets</div>
+      <div class="chip"><span class="chip-dot dot-yellow"></span>1Password Connect (needs bootstrap)</div>
+      <div class="chip"><span class="chip-dot dot-yellow"></span>Tailscale Operator (needs OAuth)</div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-header layer-infra" style="background:rgba(20,15,40,.9);color:var(--purple)">
+      Infrastructure <span style="font-weight:400;color:var(--muted);font-size:.8rem">networking + storage</span>
+    </div>
+    <div class="layer-body" style="background:rgba(20,15,40,.5)">
+      <div class="chip"><span class="chip-dot dot-green"></span>Cilium 1.19.4 (CNI + kube-proxy + L2 ARP)</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>MetalLB (IP allocation)</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>Longhorn (default PVC)</div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-header layer-os" style="background:rgba(30,25,10,.9);color:var(--orange)">
+      OS <span style="font-weight:400;color:var(--muted);font-size:.8rem">immutable · no SSH · API-driven</span>
+    </div>
+    <div class="layer-body" style="background:rgba(30,25,10,.5)">
+      <div class="chip"><span class="chip-dot dot-green"></span>Talos Linux v1.13.2</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>intel-ucode</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>iscsi-tools</div>
+      <div class="chip"><span class="chip-dot dot-green"></span>util-linux-tools</div>
+      <div class="chip"><span class="chip-dot dot-red"></span>SecureBoot: OFF (see below)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Why Cilium ───────────────────────────────────────────────────── -->
+<h2>Why Cilium?</h2>
+<table>
+  <tr><th>Feature</th><th>Cilium</th><th>Flannel</th><th>Calico</th></tr>
+  <tr><td>kube-proxy replacement</td><td>✅ eBPF replaces iptables entirely</td><td>❌</td><td>Partial</td></tr>
+  <tr><td>Network observability</td><td>✅ Hubble UI — flow-level visibility</td><td>❌</td><td>Limited</td></tr>
+  <tr><td>NetworkPolicy</td><td>✅ + FQDN policies, CiliumNetworkPolicy</td><td>❌</td><td>✅</td></tr>
+  <tr><td>L2 announcements (MetalLB replacement)</td><td>✅ Built-in, no conflict</td><td>❌</td><td>❌</td></tr>
+  <tr><td>Talos compatibility</td><td>✅ Talos disables kube-proxy — Cilium is the intended CNI</td><td>⚠️</td><td>⚠️</td></tr>
+  <tr><td>Performance</td><td>✅ XDP + TC eBPF, ~2-5× lower latency than iptables</td><td>Baseline</td><td>Better than flannel</td></tr>
+</table>
+<p style="font-size:.85rem;color:var(--muted)"><strong>Note:</strong> Cilium's L2 announcements (<code>CiliumL2AnnouncementPolicy</code>) replace MetalLB's ARP layer entirely. MetalLB still allocates IPs; Cilium handles the ARP — no conflict with its own eBPF programs.</p>
+
+<!-- ── SecureBoot ───────────────────────────────────────────────────── -->
+<h2>SecureBoot — Why it shows ✗ False</h2>
+<p>Talos SecureBoot requires the <code>installer-secureboot</code> image variant. We used the standard <code>installer</code>, so Talos never enrolled its own UEFI keys.</p>
+<div class="warn">⚠ To enable: put the M2's BIOS into <strong>Setup Mode</strong> (clear SecureBoot keys), then run the upgrade command below. Talos will enroll its own keys on first boot.</div>
+<pre><code># Enable SecureBoot (requires BIOS in Setup Mode first)
+talosctl upgrade --nodes 192.168.1.10 \
+  --image factory.talos.dev/installer-secureboot/36cd6536eaec8ba802be2d38974108359069cedba8857302f69792b26b87c010:v1.13.2</code></pre>
+<p style="font-size:.85rem;color:var(--muted)">For a homelab with physical access control, this is optional. Talos is still immutable and API-only even without SecureBoot.</p>
+
+<!-- ── Quick Access ──────────────────────────────────────────────────── -->
+<h2>Quick Access</h2>
+<table>
+  <tr><th>Service</th><th>URL</th><th>Credentials</th></tr>
+  <tr><td>Jellyfin</td><td><a href="http://192.168.1.11:8096">192.168.1.11:8096</a></td><td>Create on first visit</td></tr>
+  <tr><td>Actual Budget</td><td><a href="http://192.168.1.12:5006">192.168.1.12:5006</a></td><td>Create on first visit</td></tr>
+  <tr><td>Grafana</td><td><a href="http://192.168.1.13">192.168.1.13</a></td><td><code>kubectl -n monitoring get secret prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d</code></td></tr>
+  <tr><td>ArgoCD</td><td><a href="http://192.168.1.14">192.168.1.14</a></td><td><code>kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d</code></td></tr>
+  <tr><td>APITable</td><td><a href="http://192.168.1.15">192.168.1.15</a></td><td>Create on first visit (admin email)</td></tr>
+</table>
+
+<!-- ── Commands ─────────────────────────────────────────────────────── -->
+<h2>Key Commands</h2>
+
+<h3>Cluster health</h3>
+<pre><code>kubectl get nodes
+kubectl get pods -A
+talosctl health --nodes 192.168.1.10</code></pre>
+
+<h3>Approve kubelet CSRs (run after node reboots)</h3>
+<pre><code>kubectl get csr | grep Pending | awk '{print $1}' | xargs kubectl certificate approve</code></pre>
+
+<h3>vcluster access</h3>
+<pre><code>vcluster connect dev --namespace vc-dev
+vcluster connect staging --namespace vc-staging
+vcluster connect prod --namespace vc-prod
+vcluster disconnect   # return to host cluster</code></pre>
+
+<h3>Talos — regenerate &amp; apply config</h3>
+<pre><code>talosctl gen config homelab https://192.168.1.10:6443 \
+  --with-secrets talos/secrets.yaml \
+  --config-patch-control-plane @talos/patches/controlplane.yaml \
+  --config-patch @talos/patches/all-nodes.yaml \
+  --config-patch @talos/patches/m2-node.yaml \
+  --output talos/ --force
+sed -i '' 's/^auto: stable$/hostname: m2/' talos/controlplane.yaml
+talosctl apply-config --nodes 192.168.1.10 --file talos/controlplane.yaml</code></pre>
+
+<!-- ── Remaining Setup ───────────────────────────────────────────────── -->
+<h2>Remaining Setup</h2>
+
+<h3>1. 1Password Connect (run once)</h3>
+<pre><code>./scripts/bootstrap-1password.sh
+# Requires 1Password desktop app open and authenticated
+# Creates Connect server, generates token, creates K8s secrets</code></pre>
+
+<h3>2. Tailscale Operator</h3>
+<pre><code># Get OAuth creds from: https://login.tailscale.com/admin/settings/oauth
+# Scopes needed: devices:core:write, dns:read, routes:read, routes:write
+helm repo add tailscale https://pkgs.tailscale.com/helmcharts
+helm install tailscale-operator tailscale/tailscale-operator \
+  --namespace tailscale --create-namespace \
+  --values infrastructure/tailscale-operator/values.yaml \
+  --set oauth.clientId=YOUR_CLIENT_ID \
+  --set oauth.clientSecret=YOUR_CLIENT_SECRET
+
+# Tailscale punches through AT&T NAT via DERP relay (port 443 outbound).
+# No port forwarding required.</code></pre>
+
+<h3>3. GPU Node (boot from USB)</h3>
+<pre><code># Download ISO (includes NVIDIA extensions):
+# https://factory.talos.dev/image/014aaff51f7e1b02c385aad275bf2f4496b0a6e78469710db7f2b8d2a4f8d9dd/v1.13.2/metal-amd64.iso
+#
+# Flash to USB, boot GPU node, then:
+talosctl apply-config --insecure --nodes 192.168.1.101 --file talos/worker-gpu.yaml
+# Wait ~3 min, then node joins cluster automatically</code></pre>
+
+<h3>4. SimpleFin Exporter (needs custom image rebuild)</h3>
+<pre><code># Source was at: ~/repos/simplefin-bridge-exporter-modified/ (old server)
+# Upstream: https://github.com/eduser25/simplefin-bridge-exporter
+# After rebuild, update image in apps/simplefin/simplefin-cronjob.yaml
+# Add real setup token to apps/simplefin/simplefin-secret.yaml
+kubectl apply -f apps/simplefin/simplefin-secret.yaml
+kubectl apply -f apps/simplefin/simplefin-cronjob.yaml</code></pre>
+
+<!-- ── Parity Check ──────────────────────────────────────────────────── -->
+<h2>Old Server → New Cluster Parity</h2>
+<table>
+  <tr><th>Old Server Service</th><th>Status</th><th>Notes</th></tr>
+  <tr><td>Jellyfin (port 8096)</td><td><span class="badge badge-green">✓ Running</span></td><td>192.168.1.11:8096 — no GPU transcoding yet (GPU node not joined)</td></tr>
+  <tr><td>Actual Budget (port 5006)</td><td><span class="badge badge-green">✓ Running</span></td><td>192.168.1.12:5006 — fresh DB, restore from backup when GPU node joins</td></tr>
+  <tr><td>APITable</td><td><span class="badge badge-yellow">⚡ Starting</span></td><td>192.168.1.15 — DB migrations running, restore MySQL dump after GPU node joins</td></tr>
+  <tr><td>SimpleFin Exporter</td><td><span class="badge badge-yellow">⚠ Needs image</span></td><td>Upstream image deployed, custom K8s-secret-persistence build needed</td></tr>
+  <tr><td>Prometheus + Grafana</td><td><span class="badge badge-green">✓ Running</span></td><td>192.168.1.13 — fresh TSDB, no historical financial metrics yet</td></tr>
+  <tr><td>WireGuard VPN</td><td><span class="badge badge-blue">→ Tailscale</span></td><td>Being replaced by Tailscale Operator (no port forwarding needed)</td></tr>
+  <tr><td>QBitTorrent + PIA VPN</td><td><span class="badge badge-red">⏸ Pending</span></td><td>Requires GPU node (data disk for downloads)</td></tr>
+</table>
+
+<!-- ── File Structure ───────────────────────────────────────────────── -->
+<h2>Repository Structure</h2>
+<pre><code>homelab/
+├── talos/                          # Talos machine configs (controlplane.yaml gitignored)
+│   ├── patches/
+│   │   ├── controlplane.yaml       # PodSecurity, CNI, proxy, certSANs
+│   │   ├── all-nodes.yaml          # sysctls, NTP, KubePrism :7445
+│   │   ├── m2-node.yaml            # Static IP, installer w/ extensions
+│   │   └── gpu-node.yaml           # NVIDIA extensions, media disk mount
+│   ├── cilium-values.yaml          # Cilium Helm values (l2announcements enabled)
+│   └── schematic-gpu.yaml          # GPU node extensions for Image Factory
+│
+├── infrastructure/
+│   ├── cilium-l2-policy.yaml       # CiliumL2AnnouncementPolicy (ARP for MetalLB IPs)
+│   ├── lb-services.yaml            # MetalLB IPs for Grafana (.13) + ArgoCD (.14)
+│   ├── longhorn/values.yaml
+│   ├── argocd/values.yaml
+│   ├── external-secrets/
+│   │   └── 1password-connect.yaml  # Deploy after bootstrap-1password.sh
+│   └── tailscale-operator/values.yaml
+│
+├── apps/
+│   ├── actual-budget/              # Actual Budget at 192.168.1.12:5006
+│   ├── apitable/                   # APITable at 192.168.1.15
+│   └── simplefin/                  # SimpleFin exporter (needs custom image)
+│
+├── simplefin-exporter/base/        # Original K8s manifests (custom image)
+├── prometheus-monitoring/          # kube-prometheus-stack config
+└── scripts/
+    └── bootstrap-1password.sh      # One-time 1Password Connect setup</code></pre>
+
+</div>
+</body>
+</html>

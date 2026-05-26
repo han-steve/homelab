@@ -1,0 +1,44 @@
+# Tailscale Operator Helm values
+# Install:
+#   helm repo add tailscale https://pkgs.tailscale.com/helmcharts
+#   helm install tailscale-operator tailscale/tailscale-operator \
+#     --namespace tailscale --create-namespace \
+#     --values infrastructure/tailscale-operator/values.yaml \
+#     --set oauth.clientId=<from-tailscale-admin> \
+#     --set oauth.clientSecret=<from-tailscale-admin>
+#
+# OAuth creds: https://login.tailscale.com/admin/settings/oauth
+# Required scopes: devices:core:write, dns:read, routes:read, routes:write
+#
+# AT&T NAT traversal: No port forwarding required.
+# Tailscale uses DERP relay fallback on port 443 (outbound TCP) when direct UDP
+# holes cannot be punched. AT&T's gateway only blocks inbound; outbound 443 is
+# always open. Connection confirmed working behind AT&T BGW320.
+
+operatorConfig:
+  hostname: homelab-operator
+
+proxyConfig:
+  defaultProxyClass: homelab
+# Install:
+#   helm repo add tailscale https://pkgs.tailscale.com/helmcharts
+#   helm install tailscale-operator tailscale/tailscale-operator \
+#     --namespace tailscale --create-namespace \
+#     --values infrastructure/tailscale-operator/values.yaml \
+#     --set oauth.clientId=<from-tailscale-admin> \
+#     --set oauth.clientSecret=<from-tailscale-admin>
+#
+# OAuth credentials: https://login.tailscale.com/admin/settings/oauth
+# Required scopes: devices:core:write, dns:read, routes:read, routes:write
+#
+# AT&T router: No port forwarding needed.
+# Tailscale punches through NAT via DERP relays (Tailscale's global relay network).
+# Even if direct UDP is blocked, DERP relay provides TCP fallback on port 443.
+# AT&T's RG typically allows outbound connections, so Tailscale works without config.
+
+operatorConfig:
+  hostname: homelab-operator
+  # Subnet router: exposes entire  # Subnet router: exposes entire  # Subnet roul:  # Subnet router: exposes entire  # Subnet router: exposesut  # Subnet router: exposes enti-   # Subne1.0/24"
+
+proxyConfig:
+  defaultProxyClass: homelab

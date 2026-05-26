@@ -1,0 +1,11 @@
+# Image Factory schematic for GPU node (ASUS Z390-A, i9-9900K, RTX 3080 Ti)
+# Extensions: Intel microcode, NVIDIA proprietary drivers + toolkit, iSCSI + util-linux for Longhorn
+# Submit to factory:  curl -sX POST --data-binary @talos/schematic-gpu.yaml https://factory.talos.dev/schematics
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/intel-ucode               # i9-9900K microcode updates
+      - siderolabs/iscsi-tools               # Required by Longhorn
+      - siderolabs/util-linux-tools          # Required by Longhorn
+      - siderolabs/nonfree-kmod-nvidia-lts   # NVIDIA proprietary kernel modules (RTX 3080 Ti, LTS branch)
+      - siderolabs/nvidia-container-toolkit-lts  # NVIDIA container runtime + CDI

@@ -1,0 +1,28 @@
+# ArgoCD App of Apps — root Application that manages all other Applications
+# This is the bootstrap entry point for GitOps after ArgoCD is installed.
+# Apply once:  kubectl apply -f infrastructure/argocd/app-of-apps.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homelab-bootstrap
+  namespace: argocd
+  # Protect from accidental deletion
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/stevehanstudio/homelab.git   # Update to actual repo URL
+    targetRevision: HEAD
+    path: app-of-apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false   # Don't auto-prune — require manual deletion confirmation
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

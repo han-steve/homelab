@@ -1,0 +1,64 @@
+# Longhorn Helm values for Talos Linux
+# Requirements on each node:
+#   - siderolabs/iscsi-tools extension installed
+#   - siderolabs/util-linux-tools extension installed
+#   - node.longhorn.io/create-default-disk label set to "true" or "config"
+#
+# Install:
+#   helm repo add longhorn https://charts.longhorn.io && helm repo update
+#   helm install longhorn longhorn/longhorn \
+#     --namespace longhorn-system --create-namespace \
+#     --values infrastructure/longhorn/values.yaml
+
+defaultSettings:
+  # Default replica count — 2 nodes in cluster so 2 replicas max
+  defaultReplicaCount: 2
+  # Default data path — lives on ephemeral XFS partition of NVMe (M2) or ADATA partition (GPU)
+  defaultDataPath: /var/lib/longhorn
+  # Replica soft anti-affinity: allow 2 replicas on same node if only 1 node available
+  replicaSoftAntiAffinity: true
+  # Auto-balance replicas when new nodes join
+  replicaAutoBalance: best-effort
+  # Storage reserved for system on each disk (10GB buffer)
+  storageReservedPercentageForDefaultDisk: 10
+  # Concurrent automatic engine upgrades per node
+  concurrentAutomaticEngineUpgradePerNodeLimit: 1
+  # Backup target — configure Backblaze B2 after initial setup
+  # backupTarget: s3://homelab-backups@us-west-004/longhorn/
+  # backupTargetCredentialSecret: longhorn-backup-secret
+  # Longhorn UI access via Tailscale (no public exposure)
+  # Node drain policy
+  nodeDrainPolicy: block-if-contains-last-replica
+  # Fast replica rebuild
+  fastReplicaRebuildEnabled: true
+  # Snapshot data integrity check
+  snapshotDataIntegrity: fast-check
+  # Remove snapshots on backup completion
+  removeSnapshotsDuringFilesystemTrim: enabled
+
+persistence:
+  # Default storage class — 2 replicas for stateful apps
+  defaultClass: true
+  defaultClassReplicaCount: 2
+  # Reclaim policy: Retain so PVs aren't accidentally deleted
+  reclaimPolicy: Retain
+
+# Longhorn UI ingress (optional — Tailscale handles access)
+ingress:
+  enabled: false
+
+# Service type for UI
+longhornUI:
+  replicas: 1
+
+# Resources for manager DaemonSet
+longhornManager:
+  tolerations: []
+  priorityClass: ""
+
+# CSI driver settings
+csi:
+  attacherReplicaCount: 1
+  provisionerReplicaCount: 1
+  resizerReplicaCount: 1
+  snapshotterReplicaCount: 1

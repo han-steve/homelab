@@ -1,0 +1,100 @@
+# Cilium Helm values for Talos Linux
+# Uses:
+#   - kube-proxy replacement mode (Talos disabled kube-proxy in cluster.proxy.disabled=true)
+#   - KubePrism on localhost:7445 for API server discovery
+#   - Talos cgroup v2 mount (autoMount disabled, hostRoot=/sys/fs/cgroup)
+#   - Hubble observability enabled
+#
+# Install:
+#   helm repo add cilium https://helm.cilium.io/ && helm repo update
+#   helm install cilium cilium/cilium --namespace kube-system --values talos/cilium-values.yaml
+
+ipam:
+  mode: kubernetes
+
+# kube-proxy replacement — Cilium handles all service routing via eBPF
+kubeProxyReplacement: true
+
+# KubePrism: Talos local API proxy on each node (set in machine.features.kubePrism)
+k8sServiceHost: localhost
+k8sServicePort: 7445
+
+# Required for Talos: drop SYS_MODULE (Talos doesn't allow kernel module loading from containers)
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+
+# Talos already mounts cgroupv2 — don't let Cilium try to mount it again
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# Hubble — eBPF-based network observability (visible in Grafana via Prometheus)
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enabled:
+      - dns:query;ignoreAAAA
+      - drop
+      - tcp
+      - flow
+      - icmp
+
+# L2 announcements — Cilium handles ARP for LoadBalancer IPs (replaces MetalLB L2)
+# MetalLB still handles IP allocation; Cilium handles the ARP announcements via eBPF
+l2announcements:
+  enabled: true
+
+# Required for L2 announcements and for Tailscale/external traffic to reach services
+externalIPs:
+  enabled: true
+
+# Single-node cluster: only 1 operator replica can schedule
+operator:
+  replicas: 1
+      - http
+
+# Enable Prometheus metrics scraping
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: false  # Enable after kube-prometheus-stack is installed
+
+operator:
+  prometheus:
+    enabled: true
+
+# eBPF host routing for better performance (bypass iptables entirely)
+bpf:
+  masquerade: false   # Keep false: forwardKubeDNSToHost=false already set, but masquerade + Talos hostDNS has known issues
+
+# BGP not needed; MetalLB handles L2 advertisement
+bgpControlPlane:
+  enabled: false
+
+# Socket load balancing replaces kube-proxy socket-level
+socketLB:
+  enabled: true
+
+# Band-aid for nodes behind NAT (home router)
+externalIPs:
+  enabled: true
