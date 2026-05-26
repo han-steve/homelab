@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NOTE: Do NOT apply argocd-app.yaml directly via kustomize.
+# ArgoCD auto-discovers apps from this repo.
+# To deploy the tailscale operator:
+#   1. Create the OAuth secret: see values.yaml header for instructions
+#   2. kubectl apply -f infrastructure/tailscale-operator/argocd-app.yaml
+#   3. ArgoCD will sync the Helm chart automatically
+
+resources: []

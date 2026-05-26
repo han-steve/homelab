@@ -1,4 +1,4 @@
-# Patch for the GPU worker node (ASUS Z390-A, i9-9900K, RTX 3080 Ti)
+# Patch for the GPU worker node (ASUS Z390-P, i9-9900K, RTX 3080 Ti)
 # Apply after: talosctl gen config + merge with all-nodes patch
 machine:
   network:

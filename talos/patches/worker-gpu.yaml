@@ -1,4 +1,4 @@
-# Patch applied to the GPU worker node (ASUS Z390-A, i9-9900K, RTX 3080 Ti).
+# Patch applied to the GPU worker node (ASUS Z390-P, i9-9900K, RTX 3080 Ti).
 # Applied when generating worker config for this node.
 # NOTE: GPU node is still running Debian + Docker. Apply this when ready to migrate.
 machine:

@@ -1,4 +1,4 @@
-# Image Factory schematic for GPU node (ASUS Z390-A, i9-9900K, RTX 3080 Ti)
+# Image Factory schematic for GPU node (ASUS Z390-P, i9-9900K, RTX 3080 Ti)
 # Extensions: Intel microcode, NVIDIA proprietary drivers + toolkit, iSCSI + util-linux for Longhorn
 # Submit to factory:  curl -sX POST --data-binary @talos/schematic-gpu.yaml https://factory.talos.dev/schematics
 customization:

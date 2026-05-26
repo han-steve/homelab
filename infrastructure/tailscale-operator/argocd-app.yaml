@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  # Multi-source: Helm chart from Tailscale repo + values from this git repo
+  # Requires: kubectl create secret generic operator-oauth -n tailscale
+  #           --from-literal=client_id=... --from-literal=client_secret=...
+  sources:
+    - repoURL: https://pkgs.tailscale.com/helmcharts
+      chart: tailscale-operator
+      targetRevision: "1.*"
+      helm:
+        valueFiles:
+          - $values/infrastructure/tailscale-operator/values.yaml
+    - repoURL: https://github.com/han-steve/homelab.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

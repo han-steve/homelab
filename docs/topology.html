@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab Interactive Topology</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--blue:#58a6ff;--green:#3fb950;--yellow:#d29922;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:200;background:rgba(13,17,23,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 20px;}
+.topbar-logo{font-size:1rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;}
+.topbar-logo span{color:var(--blue);}
+.back-link{font-size:.8rem;color:var(--blue);text-decoration:none;}
+.back-link:hover{text-decoration:underline;}
+.topbar-hint{font-size:.75rem;color:var(--muted);margin-left:auto;}
+.topbar-hint kbd{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(63,185,80,.4)}60%{box-shadow:0 0 0 6px rgba(63,185,80,0)}}
+#canvas{position:fixed;top:52px;left:0;right:0;bottom:0;cursor:grab;}
+#canvas:active{cursor:grabbing;}
+svg{width:100%;height:100%;}
+#panel{position:fixed;top:52px;right:0;bottom:0;width:400px;z-index:150;background:var(--bg2);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);overflow-y:auto;}
+#panel.open{transform:translateX(0);}
+.ph{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg3);position:sticky;top:0;z-index:10;}
+.pi{font-size:2rem;}
+.pt{font-size:1.1rem;font-weight:700;color:#fff;}
+.ps{font-size:.78rem;color:var(--muted);margin-top:2px;font-family:monospace;}
+.pc{margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:6px;padding:6px 10px;font-size:.8rem;}
+.pc:hover{background:var(--bg3);color:#fff;}
+.pb{padding:20px;}
+.psc{margin-bottom:20px;}
+.pst{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.sr{display:flex;gap:10px;margin-bottom:8px;font-size:.85rem;}
+.sl{color:var(--muted);min-width:100px;flex-shrink:0;}
+.sv{color:var(--text);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:.7rem;font-weight:600;}
+.bg{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);}
+.by{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3);}
+.br{margin-bottom:12px;}
+.bh{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px;}
+.bl{color:var(--muted);}
+.bv{color:#fff;font-weight:700;}
+.bb{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.bf{height:100%;border-radius:3px;transition:width 1s ease;}
+.bf.cpu{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.bf.mem{background:linear-gradient(90deg,var(--green),#39d353);}
+.tt{position:fixed;z-index:100;pointer-events:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:nowrap;opacity:0;transition:opacity .15s;}
+.tt.v{opacity:1;}
+.zc{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px;}
+.zb{width:36px;height:36px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;}
+.zb:hover{background:var(--bg3);border-color:var(--blue);color:var(--blue);}
+.leg{position:fixed;bottom:20px;left:20px;z-index:200;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:.75rem;}
+.lr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.lr:last-child{margin-bottom:0;}
+.ld{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ll{width:24px;height:2px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">&#127968; <span>homelab</span> topology</div>
+  <div class="pulse-dot"></div>
+  <span style="font-size:.75rem;color:var(--green);font-weight:600">CLUSTER ONLINE</span>
+  <a class="back-link" href="cluster-dashboard.html">&larr; Dashboard</a>
+  <div class="topbar-hint"><kbd>scroll</kbd> zoom &nbsp;<kbd>drag</kbd> pan &nbsp;<kbd>click</kbd> details &nbsp;<kbd>Esc</kbd> close</div>
+</div>
+<div id="canvas"><svg id="svg"></svg></div>
+<div id="panel">
+  <div class="ph"><div class="pi" id="pi">&#9889;</div><div><div class="pt" id="pt">Details</div><div class="ps" id="ps">click a node</div></div><button class="pc" onclick="cp()">&#10005;</button></div>
+  <div class="pb" id="pb"></div>
+</div>
+<div class="tt" id="tt"></div>
+<div class="zc"><button class="zb" id="zi">+</button><button class="zb" id="zr" style="font-size:.65rem">FIT</button><button class="zb" id="zo">&#8722;</button></div>
+<div class="leg">
+  <div class="lr"><div class="ld" style="background:#58a6ff;box-shadow:0 0 6px #58a6ff"></div><span>K8s node (active)</span></div>
+  <div class="lr"><div class="ld" style="background:#d29922"></div><span>Node (planned)</span></div>
+  <div class="lr"><div class="ld" style="background:#3fb950"></div><span>Service (healthy)</span></div>
+  <div class="lr"><div class="ll" style="background:#58a6ff"></div><span>Network link</span></div>
+</div>
+<script>
+const N=[
+ {id:'internet',lb:'Internet',ic:'&#127760;',tp:'infra',x:520,y:60,c:'#30363d',gw:false,tt:'AT&T Fiber upstream',d:null},
+ {id:'router',lb:'AT&T BGW320',ic:'&#128225;',tp:'router',x:520,y:180,c:'#8b949e',gw:false,tt:'AT&T BGW320 192.168.1.1',
+  d:{ic:'&#128225;',ti:'AT&T BGW320',su:'192.168.1.1',ss:[
+   {t:'SPECS',r:[['Model','BGW320-505 (integrated fiber ONT)'],['LAN','1x 5 GbE + 3x 1 GbE'],['Admin','http://192.168.254.254']]},
+   {t:'TAILSCALE DIRECT P2P',r:[['Default','Outbound UDP 41641 (auto NAT traversal)'],['For direct conn','Forward UDP 41641 on BGW320 -> 192.168.1.10'],['Path','Firewall -> Port Forwarding'],['Verify','tailscale status -> "direct" not "relay"']]},
+   {t:'NETWORKING NOTES',r:[['M2 NICs','2x 2.5 GbE (BGW320 5GbE port limited by M2 NIC)'],['LACP bond','2x M2 NICs -> 5 Gbps aggregate (needs managed switch)'],['Recommended','TP-Link TL-SG108-M2 (8x 2.5GbE LACP ~$60)'],['GPU NIC','Intel I219-V = 1 GbE (bottleneck)']]}
+  ]}
+ },
+ {id:'m2',lb:'Minisforum M2',ic:'&#9889;',tp:'na',x:340,y:320,c:'#58a6ff',gw:true,tt:'K8s control-plane+worker 192.168.1.10',
+  d:{ic:'&#9889;',ti:'Minisforum M2',su:'192.168.1.10 | Talos v1.13.2 | K8s v1.36.0',badge:{t:'READY',c:'g'},ss:[
+   {t:'HARDWARE',r:[['CPU','Intel Core Ultra 7 356H (16C: 6P+10E) 28W TDP'],['Memory','32 GB DDR5-4800 | 1x SO-DIMM (single-channel)'],['Storage','1 TB Crucial P3 Plus NVMe (PCIe 4.0 ~5 GB/s)'],['Network','2x 2.5 GbE (enp44s0=LB, enp45s0=free)']]},
+   {t:'BENCHMARKS',bn:true,r:[
+    {lb:'CPU 16-thread prime sieve 60s',vl:'73,462 ev/s',pt:78,cl:'cpu',nt:'avg 0.22ms | 95th 0.30ms'},
+    {lb:'RAM DDR5-4800 throughput',vl:'9,593 MiB/s',pt:52,cl:'mem',nt:'Single-channel. Add 2nd SO-DIMM for ~19 GB/s (2x)'}
+   ]},
+   {t:'KUBERNETES STACK',r:[['K8s','v1.36.0 | containerd v2.2.3'],['CNI','Cilium v1.19.4 | LB-IPAM 192.168.1.11-20'],['Storage','Longhorn v1.11.2 (default StorageClass)'],['GitOps','ArgoCD v3.4.2'],['PKI','cert-manager v1.20.2 | ECDSA P-256 CA'],['vClusters','vc-prod, vc-dev, vc-staging']]},
+   {t:'RAM IMPROVEMENT',r:[['Issue','Single SO-DIMM = single-channel (~9.6 GB/s)'],['Fix','Add 2nd Corsair CMSX32GX5M1A4800C40 SO-DIMM'],['Expected','~18-20 GB/s dual-channel (2x improvement)'],['Better tool','STREAM benchmark > sysbench for RAM accuracy']]}
+  ]}
+ },
+ {id:'gpu',lb:'GPU Node',ic:'&#127918;',tp:'np',x:700,y:320,c:'#d29922',gw:false,tt:'i9-9900K + RTX 3080 Ti | 192.168.1.101 | pending Talos',
+  d:{ic:'&#127918;',ti:'GPU Node',su:'192.168.1.101 | Debian 12 -> Talos (pending)',badge:{t:'PENDING',c:'y'},ss:[
+   {t:'HARDWARE',r:[['CPU','Intel i9-9900K | 8C/16T | 5.0 GHz boost'],['Memory','2x 16 GB Team Group DDR4 | XMP 3200MHz 16-20-20-40'],['GPU','NVIDIA RTX 3080 Ti (GA102) | 12 GB GDDR6X | 350W'],['CUDA','v12.6 | Driver 560.35.05'],['Board','ASUS PRIME Z390-P | LGA1151'],['NIC','Intel I219-V | 1 GbE only']]},
+   {t:'BIOS (idle readings)',r:[['CPU Temp','30 C'],['MB Temp','24 C'],['CPU Fan','528 RPM'],['CHA2 Fan','839 RPM'],['CPU Voltage','0.995V'],['Intel RST','ON']]},
+   {t:'DRIVES',r:[['sda (free)','ADATA SU650 894 GB -> Windows 11 (planned)'],['sdb','NT-2TB 1.9 TB | data storage'],['sdc (OS)','Samsung 870 EVO 1TB | Debian 12 -> Talos']]},
+   {t:'SETUP ROADMAP',r:[['Done','Backup moved to /home/stevehan/nuc-backup'],['Step 2','Install Talos v1.13.2 on sdc'],['Step 3','Join as GPU worker + NVIDIA device plugin'],['Step 4','Windows 11 dual-boot on sda']]}
+  ]}
+ },
+ {id:'tailscale',lb:'Tailscale',ic:'&#128272;',tp:'infra',x:700,y:180,c:'#8b949e',gw:false,tt:'WireGuard VPN | K8s operator (planned)',
+  d:{ic:'&#128272;',ti:'Tailscale Operator',su:'infrastructure/tailscale-operator/',ss:[
+   {t:'GITOPS STATUS',r:[['ArgoCD app','argocd-app.yaml ready'],['OAuth secret','Create before syncing (see values.yaml)'],['Namespace','tailscale'],['Hostname','homelab-operator']]},
+   {t:'NAT TRAVERSAL',r:[['Auto','UDP 41641 outbound (works behind AT&T by default)'],['Direct p2p','Forward UDP 41641 on BGW320 to 192.168.1.10'],['DERP','TCP 443 fallback if UDP blocked']]},
+   {t:'SUBNET ROUTER',r:[['Advertise','192.168.1.0/24 to all Tailscale clients'],['Approve','admin.tailscale.com -> Machines -> homelab-operator -> Routes']]}
+  ]}
+ },
+ {id:'cilium',lb:'Cilium LB-IPAM',ic:'&#128256;',tp:'virt',x:340,y:440,c:'#3fb950',gw:false,tt:'Pool 192.168.1.11-20 | L2 ARP | enp44s0',
+  d:{ic:'&#128256;',ti:'Cilium LB-IPAM',su:'v1.19.4 | 192.168.1.11-20',ss:[{t:'CONFIG',r:[['Pool','192.168.1.11-20 (10 IPs)'],['Interface','enp44s0 (2.5 GbE)'],['Mode','L2 ARP announcement'],['Replaced','MetalLB (migrated this session)']]}]}
+ },
+ {id:'jellyfin',lb:'Jellyfin',ic:'&#127902;',tp:'svc',x:130,y:560,c:'#3fb950',gw:false,tt:'192.168.1.11 | HTTP 302 OK',
+  d:{ic:'&#127902;',ti:'Jellyfin',su:'192.168.1.11:8096',ss:[{t:'STATUS',r:[['HTTP','302 OK'],['Storage','Longhorn PVC 500 GiB'],['Media','Movies & TV via NVMe']]}]}
+ },
+ {id:'actual',lb:'Actual Budget',ic:'&#128176;',tp:'svc',x:265,y:560,c:'#3fb950',gw:false,tt:'192.168.1.12 | HTTPS 200 OK | cert-manager TLS',
+  d:{ic:'&#128176;',ti:'Actual Budget',su:'192.168.1.12:5006',ss:[{t:'STATUS',r:[['HTTPS','200 OK (cert-manager cert)'],['Issuer','Homelab Root CA (ECDSA P-256)'],['Expiry','May 2027 (auto-renew)']]}]}
+ },
+ {id:'grafana',lb:'Grafana',ic:'&#128202;',tp:'svc',x:400,y:560,c:'#3fb950',gw:false,tt:'192.168.1.13 | HTTP 302 OK',
+  d:{ic:'&#128202;',ti:'Grafana',su:'192.168.1.13:80',ss:[{t:'STATUS',r:[['HTTP','302 OK'],['Backend','Prometheus (kube-prometheus-stack)'],['Dashboards','SimpleFIN finances, node-exporter, kube-state-metrics']]}]}
+ },
+ {id:'argocd',lb:'ArgoCD',ic:'&#128260;',tp:'svc',x:530,y:560,c:'#3fb950',gw:false,tt:'192.168.1.14 | HTTP 200 OK',
+  d:{ic:'&#128260;',ti:'ArgoCD',su:'192.168.1.14 | v3.4.2',ss:[{t:'STATUS',r:[['HTTP','200 OK'],['vClusters','vc-prod, vc-staging, vc-dev'],['Repo','han-steve/homelab']]}]}
+ },
+ {id:'apitable',lb:'APITable',ic:'&#128203;',tp:'svc',x:660,y:560,c:'#3fb950',gw:false,tt:'192.168.1.15 | HTTP 302 OK',
+  d:{ic:'&#128203;',ti:'APITable',su:'192.168.1.15:80',ss:[{t:'STATUS',r:[['HTTP','302 OK'],['Backend','MySQL + Redis + RabbitMQ'],['Storage','Longhorn PVC 20 GiB']]}]}
+ }
+];
+const L=[
+ {s:'internet',t:'router',ty:'s',c:'#8b949e'},
+ {s:'router',t:'m2',ty:'s',c:'#58a6ff'},
+ {s:'router',t:'tailscale',ty:'d',c:'#8b949e'},
+ {s:'router',t:'gpu',ty:'d',c:'#d29922'},
+ {s:'tailscale',t:'m2',ty:'d',c:'#8b949e'},
+ {s:'m2',t:'cilium',ty:'s',c:'#3fb950'},
+ {s:'m2',t:'gpu',ty:'d',c:'#d29922',lb:'planned worker'},
+ {s:'cilium',t:'jellyfin',ty:'s',c:'#3fb950'},
+ {s:'cilium',t:'actual',ty:'s',c:'#3fb950'},
+ {s:'cilium',t:'grafana',ty:'s',c:'#3fb950'},
+ {s:'cilium',t:'argocd',ty:'s',c:'#3fb950'},
+ {s:'cilium',t:'apitable',ty:'s',c:'#3fb950'}
+];
+const W=window.innerWidth,H=window.innerHeight-52;
+const svg=d3.select('#svg').attr('viewBox',`0 0 ${W} ${H}`);
+const zoom=d3.zoom().scaleExtent([0.3,3]).on('zoom',e=>g.attr('transform',e.transform));
+d3.select('#svg').call(zoom);
+const g=svg.append('g');
+const defs=svg.append('defs');
+const fl=defs.append('filter').attr('id','fl').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+fl.append('feGaussianBlur').attr('stdDeviation','4').attr('result','cb');
+const fm=fl.append('feMerge');
+fm.append('feMergeNode').attr('in','cb');
+fm.append('feMergeNode').attr('in','SourceGraphic');
+const sx=d3.scaleLinear().domain([0,860]).range([60,W-60]);
+const sy=d3.scaleLinear().domain([0,620]).range([40,H-40]);
+const pos={};
+N.forEach(n=>{pos[n.id]={x:sx(n.x),y:sy(n.y)};});
+L.forEach(l=>{
+ const s=pos[l.s],t=pos[l.t];if(!s||!t)return;
+ const mx=(s.x+t.x)/2,my=(s.y+t.y)/2,dx=t.x-s.x,dy=t.y-s.y,len=Math.sqrt(dx*dx+dy*dy);
+ const cx=mx+(-dy/len)*30,cy=my+(dx/len)*30;
+ g.append('path').attr('d',`M${s.x},${s.y} Q${cx},${cy} ${t.x},${t.y}`).attr('fill','none').attr('stroke',l.c).attr('stroke-width',l.ty==='s'?1.5:1).attr('stroke-dasharray',l.ty==='d'?'5,4':'none').attr('opacity',0.6);
+ if(l.lb)g.append('text').attr('x',mx).attr('y',my-8).attr('text-anchor','middle').attr('fill','#8b949e').attr('font-size','10').attr('font-family','monospace').text(l.lb);
+});
+const nr={'na':42,'np':38,'router':32,'infra':26,'virt':30,'svc':28};
+N.forEach(n=>{
+ const p=pos[n.id],r=nr[n.tp]||28;
+ const grp=g.append('g').attr('transform',`translate(${p.x},${p.y})`).style('cursor',n.d?'pointer':'default');
+ if(n.gw)grp.append('circle').attr('r',r+8).attr('fill','none').attr('stroke',n.c).attr('stroke-width',1).attr('opacity',0.3).attr('filter','url(#fl)');
+ grp.append('circle').attr('r',r).attr('fill','#161b22').attr('stroke',n.c).attr('stroke-width',n.gw?2:1.5);
+ grp.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle').attr('y',-5).attr('font-size',r*0.7).html(n.ic);
+ grp.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle').attr('y',r*0.4).attr('font-size',Math.max(9,r*0.25)).attr('fill','#c9d1d9').attr('font-family','system-ui').text(n.lb.length>14?n.lb.slice(0,13)+'..':n.lb);
+ if(n.tp==='svc')grp.append('circle').attr('cx',r*0.65).attr('cy',-r*0.65).attr('r',5).attr('fill',n.c);
+ grp.on('mousemove',function(e){const tt=document.getElementById('tt');tt.textContent=n.tt;tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';tt.classList.add('v');}).on('mouseleave',()=>document.getElementById('tt').classList.remove('v'));
+ if(n.d)grp.on('click',()=>op(n.d));
+});
+function op(d){
+ document.getElementById('pi').innerHTML=d.ic;
+ document.getElementById('pt').textContent=d.ti;
+ document.getElementById('ps').textContent=d.su;
+ let h='';
+ if(d.badge){const c=d.badge.c==='g'?'bg':'by';h+=`<div style="margin-bottom:16px"><span class="badge ${c}">${d.badge.t}</span></div>`;}
+ (d.ss||[]).forEach(s=>{
+  h+=`<div class="psc"><div class="pst">${s.t}</div>`;
+  if(s.bn){s.r.forEach(r=>{h+=`<div class="br"><div class="bh"><span class="bl">${r.lb}</span><span class="bv">${r.vl}</span></div><div class="bb"><div class="bf ${r.cl}" style="width:${r.pt}%"></div></div><div style="font-size:.7rem;color:var(--muted);margin-top:3px">${r.nt}</div></div>`;});}
+  else{s.r.forEach(r=>{h+=`<div class="sr"><span class="sl">${r[0]}</span><span class="sv">${r[1]}</span></div>`;});}
+  h+='</div>';
+ });
+ document.getElementById('pb').innerHTML=h;
+ document.getElementById('panel').classList.add('open');
+}
+function cp(){document.getElementById('panel').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cp();});
+document.getElementById('zi').onclick=()=>d3.select('#svg').transition().call(zoom.scaleBy,1.4);
+document.getElementById('zo').onclick=()=>d3.select('#svg').transition().call(zoom.scaleBy,0.7);
+document.getElementById('zr').onclick=()=>d3.select('#svg').transition().call(zoom.transform,d3.zoomIdentity);
+window.addEventListener('resize',()=>d3.select('#svg').attr('viewBox',`0 0 ${window.innerWidth} ${window.innerHeight-52}`));
+</script>
+</body>
+</html>
