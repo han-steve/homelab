@@ -15,7 +15,8 @@ spec:
     namespace: monitoring
   syncPolicy:
     automated:
-      selfHeal: true
+      selfHeal: false  # Manual sync only — prevents ArgoCD disrupting running Prometheus
+      prune: false     # Never auto-prune resources
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true

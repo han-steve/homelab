@@ -1,6 +1,12 @@
 # Minimal Helm values for kube-prometheus-stack
 # Only includes changes from default configuration
 
+grafana:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: longhorn
+
 prometheus:
   prometheusSpec:
     # Extended retention (default is 24h) 

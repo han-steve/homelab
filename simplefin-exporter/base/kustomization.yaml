@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
 - simplefin-secret.yaml
+- simplefin-exporter-script.yaml
 - simplefin-cronjob.yaml
 - simplefin-servicemonitor.yaml
 - simplefin-dashboard.yaml

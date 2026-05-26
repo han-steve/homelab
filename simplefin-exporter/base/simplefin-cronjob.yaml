@@ -8,6 +8,8 @@ metadata:
     app.kubernetes.io/component: financial-exporter
 spec:
   schedule: "0 6 * * *"  # Run daily at 6 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
@@ -20,30 +22,14 @@ spec:
           serviceAccountName: simplefin-exporter
           containers:
           - name: simplefin-exporter
-            image: simplefin-bridge-exporter:fixed
-            imagePullPolicy: IfNotPresent  # Use local image since we built it locally
-            command: ["/bin/sh"]
-            args:
-            - "-c"
-            - |
-              # Start the modified exporter in the background with Kubernetes secret integration and account mappings
-              ./simplefin-bridge-exporter-modified \
-                -setupToken "$SIMPLEFIN_SETUP_TOKEN" \
-                -secretName "simplefin-config" \
-                -secretNamespace "monitoring" \
-                -accountMappingsFile "/etc/account-mappings/account-mappings.json" \
-                -updateInterval "5m" &
-              
-              # Wait for the exporter to be ready
-              sleep 10
-              
-              # Keep the pod alive for 5 minutes to allow Prometheus to scrape and secret updates to complete
-              # (ServiceMonitor scrapes every 30s, so 5 minutes ensures multiple scrapes and secret persistence)
-              echo "SimpleFIN exporter started, sleeping for 5 minutes to allow scraping and secret updates..."
-              sleep 300  # 5 minutes
-              
-              echo "Shutting down after scrape window"
+            # Uses python:3.11-slim with urllib (no pip needed — stdlib only).
+            # Script is mounted from simplefin-exporter-script ConfigMap.
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command: ["python3", "/etc/simplefin/exporter.py"]
             env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
             - name: SIMPLEFIN_SETUP_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -53,21 +39,28 @@ spec:
             - containerPort: 8000
               name: metrics
             volumeMounts:
+            - name: exporter-script
+              mountPath: /etc/simplefin
+              readOnly: true
             - name: account-mappings
               mountPath: /etc/account-mappings
               readOnly: true
             resources:
               requests:
-                memory: "64Mi"
-                cpu: "50m"
-              limits:
                 memory: "128Mi"
                 cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
           volumes:
+          - name: exporter-script
+            configMap:
+              name: simplefin-exporter-script
+              defaultMode: 0755
           - name: account-mappings
             configMap:
               name: simplefin-account-mappings
-              optional: true  # Make it optional so deployment works even without mappings
+              optional: true
 ---
 apiVersion: v1
 kind: Service
