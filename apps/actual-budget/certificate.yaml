@@ -1,0 +1,25 @@
+# cert-manager Certificate for Actual Budget
+# cert-manager will create/renew the "actual-budget-tls" secret automatically.
+# The Actual Budget deployment reads ACTUAL_HTTPS_CERT and ACTUAL_HTTPS_KEY
+# from this secret (keys: tls.crt / tls.key).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: actual-budget-tls
+  namespace: actual-budget
+spec:
+  secretName: actual-budget-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: actual-budget.homelab
+  dnsNames:
+    - actual-budget.homelab
+    - actual-budget.homelab.local
+  ipAddresses:
+    - 192.168.1.12
+  duration: 8760h     # 1 year
+  renewBefore: 720h   # auto-renew 30 days before expiry
+  privateKey:
+    algorithm: ECDSA
+    size: 256

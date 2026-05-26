@@ -1,0 +1,95 @@
+# cert-manager Certificates for all homelab services
+# All issued by homelab-ca ClusterIssuer (trusted via homelab-root-ca)
+# Run `bash scripts/trust-local-ca.sh` on Mac/devices to trust all of these.
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  namespace: monitoring
+spec:
+  secretName: grafana-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: grafana.homelab
+  dnsNames:
+    - grafana.homelab
+    - grafana.homelab.local
+  ipAddresses:
+    - 192.168.1.13
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-tls
+  namespace: argocd
+spec:
+  secretName: argocd-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: argocd.homelab
+  dnsNames:
+    - argocd.homelab
+    - argocd.homelab.local
+  ipAddresses:
+    - 192.168.1.14
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: jellyfin-tls
+  namespace: jellyfin
+spec:
+  secretName: jellyfin-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: jellyfin.homelab
+  dnsNames:
+    - jellyfin.homelab
+    - jellyfin.homelab.local
+  ipAddresses:
+    - 192.168.1.11
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: apitable-tls
+  namespace: apitable
+spec:
+  secretName: apitable-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: apitable.homelab
+  dnsNames:
+    - apitable.homelab
+    - apitable.homelab.local
+  ipAddresses:
+    - 192.168.1.15
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256

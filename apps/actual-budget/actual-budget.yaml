@@ -52,12 +52,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: actual-budget-tls
-                  key: selfhost.key
+                  key: tls.key
             - name: ACTUAL_HTTPS_CERT
               valueFrom:
                 secretKeyRef:
                   name: actual-budget-tls
-                  key: selfhost.crt
+                  key: tls.crt
           volumeMounts:
             - name: data
               mountPath: /data

@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Homelab PKI — cert-manager ClusterIssuers
+#
+# Architecture:
+#   SelfSigned ClusterIssuer (bootstrap)
+#     └─> homelab-root-ca Certificate (10 yr, stored in cert-manager namespace)
+#           └─> homelab-ca ClusterIssuer  ← ALL app certs use this
+#
+# To trust on Mac:
+#   kubectl get secret homelab-root-ca -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/homelab-root-ca.crt
+#   security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/homelab-root-ca.crt
+#   # or use the helper script:  bash scripts/trust-local-ca.sh
+#
+# To trust on iPhone:
+#   AirDrop /tmp/homelab-root-ca.crt → Settings > Downloaded Profile > Install
+#   Then: Settings > General > About > Certificate Trust Settings → enable
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Step 1: Bootstrap issuer (self-signed, only used to sign the root CA)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+
+---
+
+# Step 2: Root CA certificate (10 years, ECDSA P-256)
+# Stored in cert-manager namespace as "homelab-root-ca" secret
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: "Homelab Root CA"
+  subject:
+    organizations: ["Homelab"]
+    countries: ["US"]
+  secretName: homelab-root-ca
+  duration: 87600h       # 10 years
+  renewBefore: 8760h     # renew 1 year before expiry
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+
+# Step 3: CA ClusterIssuer — all app certs issued from this
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-ca
+spec:
+  ca:
+    secretName: homelab-root-ca

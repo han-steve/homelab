@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab Cluster Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --teal: #39d353;
+    --orange: #f0883e;
+    --card-radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; line-height:1.6; }
+  a { color:var(--blue); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+
+  /* ── NAV ── */
+  nav {
+    position:sticky; top:0; z-index:100;
+    background:rgba(13,17,23,0.92); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:0 24px; height:56px;
+    display:flex; align-items:center; gap:32px;
+  }
+  nav .logo { font-size:1.1rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px; }
+  nav .logo span { color:var(--blue); }
+  nav ul { list-style:none; display:flex; gap:4px; }
+  nav ul li a {
+    color:var(--muted); font-size:.875rem; padding:6px 12px; border-radius:6px;
+    transition:all .2s; display:block;
+  }
+  nav ul li a:hover { color:#fff; background:var(--bg3); text-decoration:none; }
+  .status-pill {
+    margin-left:auto; display:flex; align-items:center; gap:6px;
+    font-size:.75rem; color:var(--green); font-weight:600;
+  }
+  .pulse { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(63,185,80,.4)} 50%{opacity:.8;box-shadow:0 0 0 6px rgba(63,185,80,0)} }
+
+  /* ── HERO ── */
+  .hero {
+    padding:64px 24px 48px;
+    text-align:center;
+    background:radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88,166,255,.12), transparent);
+    border-bottom:1px solid var(--border);
+    position:relative; overflow:hidden;
+  }
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2358a6ff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events:none;
+  }
+  .hero h1 { font-size:2.75rem; font-weight:800; color:#fff; margin-bottom:8px; }
+  .hero h1 span { color:var(--blue); }
+  .hero p { color:var(--muted); font-size:1.05rem; margin-bottom:32px; }
+  .hero-stats { display:flex; justify-content:center; gap:32px; flex-wrap:wrap; }
+  .hero-stat { text-align:center; }
+  .hero-stat .num { font-size:2rem; font-weight:700; color:#fff; display:block; }
+  .hero-stat .lbl { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+
+  /* ── LAYOUT ── */
+  .section { padding:48px 24px; max-width:1200px; margin:0 auto; }
+  .section-title {
+    font-size:1.4rem; font-weight:700; color:#fff; margin-bottom:24px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── CARDS ── */
+  .card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+    padding:20px; box-shadow:var(--shadow); transition:border-color .2s, transform .15s;
+  }
+  .card:hover { border-color:var(--blue); transform:translateY(-2px); }
+  .card-title { font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:12px; }
+  .card h3 { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px; }
+
+  /* ── GRID ── */
+  .grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+  .grid-services { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+
+  /* ── NODE CARDS ── */
+  .node-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); overflow:hidden; box-shadow:var(--shadow); transition:all .2s; }
+  .node-card:hover { border-color:var(--blue); transform:translateY(-3px); box-shadow:0 8px 32px rgba(88,166,255,.15); }
+  .node-header { padding:20px; background:linear-gradient(135deg,var(--bg3),var(--bg2)); border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; }
+  .node-header h3 { font-size:1.15rem; font-weight:700; color:#fff; }
+  .node-header .node-ip { font-size:.75rem; color:var(--muted); font-family:monospace; margin-top:2px; }
+  .node-header .badge { font-size:.7rem; padding:3px 8px; border-radius:20px; font-weight:600; }
+  .badge-green { background:rgba(63,185,80,.15); color:var(--green); border:1px solid rgba(63,185,80,.3); }
+  .badge-blue { background:rgba(88,166,255,.15); color:var(--blue); border:1px solid rgba(88,166,255,.3); }
+  .badge-yellow { background:rgba(210,153,34,.15); color:var(--yellow); border:1px solid rgba(210,153,34,.3); }
+  .badge-muted { background:var(--bg3); color:var(--muted); border:1px solid var(--border); }
+  .node-body { padding:20px; }
+  .spec-row { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; font-size:.875rem; }
+  .spec-icon { width:22px; text-align:center; flex-shrink:0; margin-top:1px; }
+  .spec-label { color:var(--muted); min-width:70px; flex-shrink:0; }
+  .spec-value { color:var(--text); }
+  .spec-value .highlight { color:var(--blue); font-weight:600; }
+  .chip-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip { font-size:.72rem; padding:2px 8px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--muted); }
+  .chip.active { background:rgba(88,166,255,.1); border-color:rgba(88,166,255,.3); color:var(--blue); }
+
+  /* ── TOPOLOGY DIAGRAM ── */
+  .topology { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:32px; margin-bottom:48px; overflow:hidden; position:relative; }
+  .topology svg { width:100%; max-width:900px; display:block; margin:0 auto; }
+
+  /* ── SERVICE CARDS ── */
+  .svc-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+    padding:16px; display:flex; flex-direction:column; gap:8px;
+    transition:all .2s; cursor:default;
+  }
+  .svc-card:hover { border-color:var(--green); transform:translateY(-2px); box-shadow:0 4px 20px rgba(63,185,80,.1); }
+  .svc-top { display:flex; align-items:center; justify-content:space-between; }
+  .svc-icon { font-size:1.5rem; }
+  .svc-dot { width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; }
+  .svc-dot.offline { background:var(--red); animation:none; }
+  .svc-dot.online { animation:pulse 2s infinite; }
+  .svc-name { font-weight:700; font-size:.95rem; color:#fff; }
+  .svc-desc { font-size:.78rem; color:var(--muted); }
+  .svc-ip { font-family:monospace; font-size:.78rem; color:var(--blue); background:rgba(88,166,255,.08); padding:3px 8px; border-radius:6px; display:inline-block; }
+
+  /* ── BENCHMARK ── */
+  .bench-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:24px; }
+  .bench-metric { margin-bottom:20px; }
+  .bench-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .bench-label { font-size:.875rem; color:var(--text); }
+  .bench-value { font-size:1.4rem; font-weight:700; color:#fff; }
+  .bench-unit { font-size:.8rem; color:var(--muted); margin-left:4px; }
+  .bench-bar { height:8px; background:var(--bg3); border-radius:4px; overflow:hidden; }
+  .bench-fill { height:100%; border-radius:4px; animation:grow .8s ease-out forwards; transform-origin:left; }
+  @keyframes grow { from{width:0} }
+  .bench-fill.cpu { background:linear-gradient(90deg,var(--blue),var(--purple)); }
+  .bench-fill.mem { background:linear-gradient(90deg,var(--green),var(--teal)); }
+  .bench-fill.gpu { background:linear-gradient(90deg,var(--orange),var(--yellow)); }
+  .bench-note { font-size:.75rem; color:var(--muted); margin-top:4px; }
+
+  /* ── PKI ── */
+  .pki-chain { display:flex; flex-direction:column; gap:0; }
+  .pki-node {
+    background:var(--bg2); border:1px solid var(--border); border-radius:8px;
+    padding:14px 18px; position:relative;
+    display:flex; align-items:center; gap:16px;
+  }
+  .pki-node::before {
+    content:''; position:absolute; left:29px; top:100%; width:2px; height:20px;
+    background:var(--border); display:block;
+  }
+  .pki-node:last-child::before { display:none; }
+  .pki-connector { height:20px; display:flex; align-items:center; padding-left:28px; }
+  .pki-connector::before { content:''; width:2px; height:100%; background:var(--border); display:block; }
+  .pki-icon { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
+  .pki-root .pki-icon { background:rgba(188,140,255,.2); border:1px solid var(--purple); }
+  .pki-issuer .pki-icon { background:rgba(88,166,255,.2); border:1px solid var(--blue); }
+  .pki-cert .pki-icon { background:rgba(63,185,80,.2); border:1px solid var(--green); }
+  .pki-info h4 { font-size:.9rem; font-weight:600; color:#fff; }
+  .pki-info p { font-size:.78rem; color:var(--muted); }
+  .pki-meta { margin-left:auto; text-align:right; font-size:.75rem; color:var(--muted); }
+  .pki-meta .expiry { color:var(--green); font-weight:600; }
+  .pki-certs-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:20px; }
+  .cert-item {
+    background:var(--bg3); border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; display:flex; align-items:center; gap:10px;
+  }
+  .cert-item .cert-icon { font-size:1.1rem; }
+  .cert-item h5 { font-size:.82rem; font-weight:600; color:#fff; }
+  .cert-item p { font-size:.72rem; color:var(--muted); }
+
+  /* ── STORAGE ── */
+  .storage-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:20px; }
+  .pvc-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; font-size:.85rem; }
+  .pvc-name { min-width:180px; color:var(--text); font-family:monospace; font-size:.78rem; }
+  .pvc-bar-wrap { flex:1; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+  .pvc-bar { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--blue),var(--purple)); animation:grow .6s ease-out; }
+  .pvc-size { color:var(--muted); font-size:.75rem; min-width:50px; text-align:right; }
+  .pvc-ns { font-size:.7rem; padding:1px 6px; border-radius:4px; background:var(--bg3); color:var(--muted); }
+
+  /* ── GPU / BIOS ── */
+  .bios-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:24px; }
+  .bios-table { width:100%; border-collapse:collapse; font-size:.875rem; }
+  .bios-table tr:nth-child(even) { background:rgba(255,255,255,.02); }
+  .bios-table td { padding:8px 12px; }
+  .bios-table td:first-child { color:var(--muted); width:40%; }
+  .bios-table td:last-child { color:var(--text); font-family:monospace; font-size:.8rem; }
+  .gpu-bar { height:12px; background:var(--bg3); border-radius:6px; margin-top:6px; overflow:hidden; }
+  .gpu-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,#76b900,#a8d800); width:0.016%; }
+
+  /* ── VCLUSTER ── */
+  .vc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+  .vc-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:16px; text-align:center; transition:all .2s; }
+  .vc-card:hover { border-color:var(--purple); transform:translateY(-2px); }
+  .vc-card .vc-env { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--purple); margin-bottom:8px; }
+  .vc-card .vc-name { font-size:1rem; font-weight:700; color:#fff; margin-bottom:6px; }
+  .vc-card .vc-detail { font-size:.75rem; color:var(--muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align:center; padding:32px 24px;
+    border-top:1px solid var(--border);
+    color:var(--muted); font-size:.8rem;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:640px) {
+    nav ul { display:none; }
+    .hero h1 { font-size:1.8rem; }
+    .hero-stats { gap:20px; }
+    .grid-2,.grid-3 { grid-template-columns:1fr; }
+  }
+
+  /* ── ANIMATIONS ── */
+  .fade-in { animation:fadeIn .5s ease forwards; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .stagger > * { animation:fadeIn .5s ease forwards; }
+  .stagger > *:nth-child(1) { animation-delay:.05s; }
+  .stagger > *:nth-child(2) { animation-delay:.1s; }
+  .stagger > *:nth-child(3) { animation-delay:.15s; }
+  .stagger > *:nth-child(4) { animation-delay:.2s; }
+  .stagger > *:nth-child(5) { animation-delay:.25s; }
+  .stagger > *:nth-child(6) { animation-delay:.3s; }
+
+  /* ── TABS ── */
+  .tab-nav { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:24px; overflow-x:auto; }
+  .tab-btn { font-size:.85rem; padding:8px 16px; border-radius:8px 8px 0 0; background:none; border:none; color:var(--muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:all .2s; }
+  .tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
+  .tab-btn:hover { color:#fff; background:var(--bg3); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; animation:fadeIn .3s ease; }
+
+  /* ── SCORE DISPLAY ── */
+  .score-ring { display:inline-flex; align-items:center; justify-content:center; position:relative; width:80px; height:80px; }
+  .score-ring svg { position:absolute; transform:rotate(-90deg); }
+  .score-ring .score-num { font-size:1.1rem; font-weight:800; color:#fff; }
+
+  /* ── COMMAND OUTPUT ── */
+  pre.cmd { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:16px; font-size:.8rem; overflow-x:auto; color:var(--text); font-family:'Fira Code','Cascadia Code',monospace; }
+  .cmd-inline { font-family:monospace; background:var(--bg3); padding:2px 6px; border-radius:4px; font-size:.85em; color:var(--blue); }
+
+  /* ── ALERTS ── */
+  .alert { border-radius:8px; padding:14px 16px; font-size:.875rem; display:flex; gap:10px; align-items:flex-start; margin-bottom:16px; }
+  .alert-info { background:rgba(88,166,255,.08); border:1px solid rgba(88,166,255,.2); color:var(--text); }
+  .alert-warn { background:rgba(210,153,34,.08); border:1px solid rgba(210,153,34,.2); color:var(--text); }
+  .alert-icon { font-size:1.1rem; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <div class="logo">🏠 <span>homelab</span>.local</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#nodes">Nodes</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#benchmarks">Benchmarks</a></li>
+    <li><a href="#pki">PKI</a></li>
+    <li><a href="#storage">Storage</a></li>
+    <li><a href="#vclusters">vClusters</a></li>
+    <li><a href="#gpu-bios">GPU BIOS</a></li>
+  </ul>
+  <div class="status-pill"><div class="pulse"></div>CLUSTER ONLINE</div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero fade-in">
+  <h1>Homelab <span>Cluster</span> Dashboard</h1>
+  <p>Talos Linux · Kubernetes v1.36.0 · Cilium · Longhorn · ArgoCD</p>
+  <div class="hero-stats stagger">
+    <div class="hero-stat"><span class="num" id="nodeCount">1</span><span class="lbl">Nodes</span></div>
+    <div class="hero-stat"><span class="num">61</span><span class="lbl">Running Pods</span></div>
+    <div class="hero-stat"><span class="num">5</span><span class="lbl">Services</span></div>
+    <div class="hero-stat"><span class="num">3</span><span class="lbl">vClusters</span></div>
+    <div class="hero-stat"><span class="num">5</span><span class="lbl">TLS Certs</span></div>
+    <div class="hero-stat"><span class="num">192.168.1</span><span class="lbl">LB IP Pool</span></div>
+  </div>
+</div>
+
+<!-- ── TOPOLOGY ── -->
+<div class="section" id="overview">
+  <div class="section-title">🗺️ Cluster Topology</div>
+  <div class="topology fade-in">
+    <svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#30363d"/>
+        </marker>
+        <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#58a6ff"/>
+        </marker>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1c2128"/>
+          <stop offset="100%" style="stop-color:#0d1117"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Router / Internet -->
+      <g transform="translate(430,30)">
+        <rect x="-50" y="-20" width="100" height="40" rx="8" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+        <text x="0" y="-4" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">🌐 Router</text>
+        <text x="0" y="10" text-anchor="middle" fill="#58a6ff" font-size="9" font-family="monospace">192.168.1.1</text>
+      </g>
+
+      <!-- Line: Router → K8s Node -->
+      <line x1="430" y1="50" x2="215" y2="110" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+      <!-- Line: Router → Tailscale -->
+      <line x1="430" y1="50" x2="645" y2="110" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- ── K8s Node: Minisforum M2 ── -->
+      <g transform="translate(110,110)">
+        <rect x="-100" y="0" width="210" height="115" rx="10" fill="url(#nodeGrad)" stroke="#58a6ff" stroke-width="2" filter="url(#glow)"/>
+        <text x="5" y="20" fill="white" font-size="12" font-weight="bold" font-family="sans-serif">⚡ Minisforum M2</text>
+        <text x="5" y="35" fill="#8b949e" font-size="9" font-family="monospace">192.168.1.10 · m2</text>
+        <rect x="5" y="42" width="70" height="14" rx="3" fill="rgba(88,166,255,.15)" stroke="rgba(88,166,255,.3)" stroke-width="1"/>
+        <text x="40" y="52" text-anchor="middle" fill="#58a6ff" font-size="8" font-family="sans-serif">control-plane</text>
+        <rect x="82" y="42" width="50" height="14" rx="3" fill="rgba(63,185,80,.15)" stroke="rgba(63,185,80,.3)" stroke-width="1"/>
+        <text x="107" y="52" text-anchor="middle" fill="#3fb950" font-size="8" font-family="sans-serif">worker</text>
+        <text x="5" y="70" fill="#c9d1d9" font-size="9" font-family="monospace">CPU Intel Ultra 7 356H × 16</text>
+        <text x="5" y="83" fill="#c9d1d9" font-size="9" font-family="monospace">RAM 32 GB DDR5-4800</text>
+        <text x="5" y="96" fill="#c9d1d9" font-size="9" font-family="monospace">SSD 1 TB NVMe P3+</text>
+        <text x="5" y="109" fill="#8b949e" font-size="8" font-family="monospace">Talos v1.13.2 · K8s v1.36.0</text>
+      </g>
+
+      <!-- ── GPU Node (coming soon) ── -->
+      <g transform="translate(550,110)">
+        <rect x="-70" y="0" width="190" height="115" rx="10" fill="url(#nodeGrad)" stroke="#d29922" stroke-width="2" stroke-dasharray="6,3"/>
+        <text x="25" y="20" fill="white" font-size="12" font-weight="bold" font-family="sans-serif">🎮 GPU Node</text>
+        <text x="25" y="35" fill="#8b949e" font-size="9" font-family="monospace">192.168.1.101</text>
+        <rect x="25" y="42" width="95" height="14" rx="3" fill="rgba(210,153,34,.15)" stroke="rgba(210,153,34,.3)" stroke-width="1"/>
+        <text x="72" y="52" text-anchor="middle" fill="#d29922" font-size="8" font-family="sans-serif">worker (pending)</text>
+        <text x="25" y="70" fill="#c9d1d9" font-size="9" font-family="monospace">CPU i9-9900K × 8C/16T</text>
+        <text x="25" y="83" fill="#c9d1d9" font-size="9" font-family="monospace">RAM 32 GB</text>
+        <text x="25" y="96" fill="#f0883e" font-size="9" font-family="monospace">GPU RTX 3080 Ti 12 GB</text>
+        <text x="25" y="109" fill="#8b949e" font-size="8" font-family="monospace">→ Talos (planned)</text>
+      </g>
+
+      <!-- ── Cilium LB-IPAM ── -->
+      <g transform="translate(215,265)">
+        <rect x="-95" y="-20" width="190" height="36" rx="8" fill="#21262d" stroke="#3fb950" stroke-width="1.5"/>
+        <text x="0" y="-6" text-anchor="middle" fill="#3fb950" font-size="10" font-weight="bold" font-family="sans-serif">🔀 Cilium LB-IPAM</text>
+        <text x="0" y="8" text-anchor="middle" fill="#8b949e" font-size="9" font-family="monospace">pool: 192.168.1.11–20</text>
+      </g>
+      <line x1="215" y1="225" x2="215" y2="245" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+      <!-- ── Services ── -->
+      <g transform="translate(430,310)">
+        <rect x="-195" y="-20" width="390" height="58" rx="8" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+        <text x="-180" y="-5" fill="#58a6ff" font-size="8" font-family="monospace">●.11 Jellyfin</text>
+        <text x="-100" y="-5" fill="#3fb950" font-size="8" font-family="monospace">●.12 Actual</text>
+        <text x="-20" y="-5" fill="#bc8cff" font-size="8" font-family="monospace">●.13 Grafana</text>
+        <text x="70" y="-5" fill="#f0883e" font-size="8" font-family="monospace">●.14 ArgoCD</text>
+        <text x="155" y="-5" fill="#39d353" font-size="8" font-family="monospace">●.15 APITable</text>
+        <text x="-180" y="12" fill="#8b949e" font-size="8" font-family="monospace">:8096</text>
+        <text x="-100" y="12" fill="#8b949e" font-size="8" font-family="monospace">:5006 HTTPS</text>
+        <text x="-20" y="12" fill="#8b949e" font-size="8" font-family="monospace">:80</text>
+        <text x="70" y="12" fill="#8b949e" font-size="8" font-family="monospace">:80</text>
+        <text x="155" y="12" fill="#8b949e" font-size="8" font-family="monospace">:80</text>
+        <text x="-180" y="26" fill="#8b949e" font-size="7" font-family="monospace">Longhorn PVC</text>
+        <text x="-100" y="26" fill="#8b949e" font-size="7" font-family="monospace">cert-manager TLS</text>
+        <text x="-20" y="26" fill="#8b949e" font-size="7" font-family="monospace">Prometheus</text>
+        <text x="70" y="26" fill="#8b949e" font-size="7" font-family="monospace">GitOps</text>
+        <text x="155" y="26" fill="#8b949e" font-size="7" font-family="monospace">RabbitMQ+MySQL</text>
+      </g>
+      <line x1="215" y1="245" x2="310" y2="290" stroke="#3fb950" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="215" y1="245" x2="430" y2="290" stroke="#3fb950" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="215" y1="245" x2="550" y2="290" stroke="#3fb950" stroke-width="1" stroke-dasharray="3,2"/>
+
+      <!-- ── Tailscale ── -->
+      <g transform="translate(710,130)">
+        <rect x="-65" y="0" width="130" height="75" rx="8" fill="#21262d" stroke="#8b949e" stroke-width="1.5"/>
+        <text x="0" y="18" text-anchor="middle" fill="#c9d1d9" font-size="10" font-weight="bold" font-family="sans-serif">🔐 Tailscale</text>
+        <text x="0" y="33" text-anchor="middle" fill="#8b949e" font-size="8" font-family="monospace">100.98.40.26 (Mac)</text>
+        <text x="0" y="47" text-anchor="middle" fill="#8b949e" font-size="8" font-family="monospace">WireGuard VPN</text>
+        <text x="0" y="61" text-anchor="middle" fill="#3fb950" font-size="8" font-family="monospace">→ Remote Access</text>
+      </g>
+
+      <!-- Tailscale → K8s line -->
+      <line x1="645" y1="167" x2="320" y2="180" stroke="#8b949e" stroke-width="1" stroke-dasharray="5,3"/>
+
+      <!-- ── Legend ── -->
+      <g transform="translate(20,340)">
+        <circle cx="8" cy="8" r="4" fill="#58a6ff"/>
+        <text x="16" y="12" fill="#8b949e" font-size="8" font-family="sans-serif">Running</text>
+        <circle cx="80" cy="8" r="4" fill="#d29922"/>
+        <text x="88" y="12" fill="#8b949e" font-size="8" font-family="sans-serif">Planned</text>
+        <line x1="140" y1="8" x2="160" y2="8" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="165" y="12" fill="#8b949e" font-size="8" font-family="sans-serif">Network path</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ── QUICK STATS GRID ── -->
+  <div class="grid-3 stagger" style="margin-bottom:0">
+    <div class="card">
+      <div class="card-title">Kubernetes</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><div style="font-size:1.4rem;font-weight:800;color:#fff">v1.36.0</div><div style="font-size:.75rem;color:var(--muted)">K8s version</div></div>
+        <div><div style="font-size:1.4rem;font-weight:800;color:#fff">v1.13.2</div><div style="font-size:.75rem;color:var(--muted)">Talos version</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Networking</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><div style="font-size:1rem;font-weight:700;color:var(--green)">Cilium</div><div style="font-size:.75rem;color:var(--muted)">CNI v1.19.4</div></div>
+        <div><div style="font-size:1rem;font-weight:700;color:var(--blue)">LB-IPAM</div><div style="font-size:.75rem;color:var(--muted)">.11–.20</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">GitOps</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><div style="font-size:1rem;font-weight:700;color:var(--orange)">ArgoCD</div><div style="font-size:.75rem;color:var(--muted)">v3.4.2</div></div>
+        <div><div style="font-size:1rem;font-weight:700;color:var(--text)">GitHub</div><div style="font-size:.75rem;color:var(--muted)">han-steve/homelab</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NODES ── -->
+<div class="section" id="nodes">
+  <div class="section-title">🖥️ Nodes</div>
+  <div class="grid-2 stagger">
+
+    <!-- Minisforum M2 -->
+    <div class="node-card">
+      <div class="node-header">
+        <div>
+          <h3>⚡ Minisforum M2</h3>
+          <div class="node-ip">192.168.1.10 · hostname: m2</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="badge badge-green">● READY</span>
+          <span class="badge badge-blue">control-plane + worker</span>
+        </div>
+      </div>
+      <div class="node-body">
+        <div class="spec-row">
+          <div class="spec-icon">🧠</div>
+          <div class="spec-label">CPU</div>
+          <div class="spec-value"><span class="highlight">Intel Core Ultra 7 356H</span> (Meteor Lake)<br>16 cores · 4.0 GHz Boost · 28W TDP</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">💾</div>
+          <div class="spec-label">Memory</div>
+          <div class="spec-value"><span class="highlight">32 GB</span> DDR5-4800<br>Corsair CMSX32GX5M1A4800C40 SO-DIMM</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">💿</div>
+          <div class="spec-label">Storage</div>
+          <div class="spec-value"><span class="highlight">1 TB</span> Crucial P3 Plus NVMe (CT1000P3PSSD8)<br>PCIe 4.0 · ~5,000 MB/s seq read</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">🌐</div>
+          <div class="spec-label">Network</div>
+          <div class="spec-value">2.5 GbE · Cilium CNI<br>LB IPs: 192.168.1.11–20</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">🐋</div>
+          <div class="spec-label">Runtime</div>
+          <div class="spec-value">containerd v2.2.3<br>Talos v1.13.2 · K8s v1.36.0</div>
+        </div>
+        <div class="chip-row">
+          <span class="chip active">Talos Linux</span>
+          <span class="chip active">K8s v1.36</span>
+          <span class="chip active">Cilium v1.19</span>
+          <span class="chip active">Longhorn v1.11</span>
+          <span class="chip active">ArgoCD v3.4</span>
+          <span class="chip">cert-manager v1.20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPU Node -->
+    <div class="node-card" style="border-color:rgba(210,153,34,.4)">
+      <div class="node-header" style="background:linear-gradient(135deg,rgba(210,153,34,.05),var(--bg2))">
+        <div>
+          <h3>🎮 GPU Node (steve-gpu-node)</h3>
+          <div class="node-ip">192.168.1.101 · hostname: steve-gpu-node</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="badge badge-yellow">⏳ WORKER PENDING</span>
+          <span class="badge badge-muted">Debian 12 → Talos</span>
+        </div>
+      </div>
+      <div class="node-body">
+        <div class="alert alert-warn" style="margin-bottom:16px">
+          <span class="alert-icon">⚠️</span>
+          <span>Talos installation pending. Currently running Debian 12. Will join cluster as GPU worker node.</span>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">🧠</div>
+          <div class="spec-label">CPU</div>
+          <div class="spec-value"><span class="highlight">Intel Core i9-9900K</span> (Coffee Lake)<br>8 cores / 16 threads · 3.6–5.0 GHz · 95W TDP</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">💾</div>
+          <div class="spec-label">Memory</div>
+          <div class="spec-value"><span class="highlight">32 GB</span> DDR4</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">🎮</div>
+          <div class="spec-label">GPU</div>
+          <div class="spec-value"><span class="highlight" style="color:var(--orange)">NVIDIA RTX 3080 Ti</span> (GA102, ASUS)<br>12 GB GDDR6X · 350W TDP · CUDA 12.6<br>Driver: 560.35.05</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">💿</div>
+          <div class="spec-label">Storage</div>
+          <div class="spec-value">Samsung 870 EVO 1TB <span style="color:var(--muted);font-size:.8em">(→ Talos OS)</span><br>ADATA SU650 894GB <span style="color:var(--muted);font-size:.8em">(→ Windows 11 games)</span><br>NT-2TB 1.9TB <span style="color:var(--muted);font-size:.8em">(data)</span></div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-icon">🏠</div>
+          <div class="spec-label">Board</div>
+          <div class="spec-value">ASUS PRIME Z390-A · LGA1151<br>AMI BIOS v3006 (Oct 2021)</div>
+        </div>
+        <div class="chip-row">
+          <span class="chip">i9-9900K</span>
+          <span class="chip active" style="background:rgba(240,136,62,.1);border-color:rgba(240,136,62,.3);color:var(--orange)">RTX 3080 Ti</span>
+          <span class="chip">CUDA 12.6</span>
+          <span class="chip" style="color:var(--yellow)">→ Talos worker</span>
+          <span class="chip">Debian 12 (now)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SERVICES ── -->
+<div class="section" id="services">
+  <div class="section-title">🚀 Services</div>
+  <div class="grid-services stagger">
+
+    <div class="svc-card">
+      <div class="svc-top"><span class="svc-icon">🎬</span><span class="svc-dot online"></span></div>
+      <div class="svc-name">Jellyfin</div>
+      <div class="svc-desc">Media server · Movies, TV, Music</div>
+      <a class="svc-ip" href="http://192.168.1.11:8096" target="_blank">192.168.1.11:8096</a>
+      <div class="chip-row"><span class="chip">HTTP</span><span class="chip">Longhorn PVC</span></div>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-top"><span class="svc-icon">💰</span><span class="svc-dot online"></span></div>
+      <div class="svc-name">Actual Budget</div>
+      <div class="svc-desc">Personal finance · Self-hosted</div>
+      <a class="svc-ip" href="https://192.168.1.12:5006" target="_blank">192.168.1.12:5006</a>
+      <div class="chip-row"><span class="chip active">HTTPS</span><span class="chip active">cert-manager</span></div>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-top"><span class="svc-icon">📊</span><span class="svc-dot online"></span></div>
+      <div class="svc-name">Grafana</div>
+      <div class="svc-desc">Metrics dashboards · Prometheus</div>
+      <a class="svc-ip" href="http://192.168.1.13" target="_blank">192.168.1.13:80</a>
+      <div class="chip-row"><span class="chip">Prometheus</span><span class="chip">ServiceMonitor</span></div>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-top"><span class="svc-icon">🔄</span><span class="svc-dot online"></span></div>
+      <div class="svc-name">ArgoCD</div>
+      <div class="svc-desc">GitOps · Continuous delivery</div>
+      <a class="svc-ip" href="http://192.168.1.14" target="_blank">192.168.1.14:80</a>
+      <div class="chip-row"><span class="chip">GitOps</span><span class="chip">v3.4.2</span></div>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-top"><span class="svc-icon">📋</span><span class="svc-dot online"></span></div>
+      <div class="svc-name">APITable</div>
+      <div class="svc-desc">Airtable alternative · Team DB</div>
+      <a class="svc-ip" href="http://192.168.1.15" target="_blank">192.168.1.15:80</a>
+      <div class="chip-row"><span class="chip">MySQL</span><span class="chip">Redis</span><span class="chip">RabbitMQ</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── BENCHMARKS ── -->
+<div class="section" id="benchmarks">
+  <div class="section-title">⚡ Benchmarks — Minisforum M2 (Intel Ultra 7 356H)</div>
+
+  <div class="alert alert-info">
+    <span class="alert-icon">ℹ️</span>
+    <span>Benchmarks run via K8s Job on node <code class="cmd-inline">m2</code> using <strong>sysbench 1.0.20</strong> and <strong>stress-ng</strong>. Measured May 25, 2026.</span>
+  </div>
+
+  <div class="grid-2 stagger">
+    <div class="bench-card">
+      <h3 style="color:#fff;margin-bottom:20px">🧠 CPU Performance</h3>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">sysbench Prime — 16 threads, 60s</span>
+          <span><span class="bench-value">73,462</span><span class="bench-unit">events/sec</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill cpu" style="width:78%"></div></div>
+        <div class="bench-note">73,462 total events · avg latency 0.22ms · 95th percentile 0.30ms</div>
+      </div>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">Total events in 60s</span>
+          <span><span class="bench-value">4,407,925</span><span class="bench-unit">ops</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill cpu" style="width:85%"></div></div>
+        <div class="bench-note">16 threads · sum exec time 959,245ms · excellent thread fairness</div>
+      </div>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">CPU Latency (avg)</span>
+          <span><span class="bench-value">0.22</span><span class="bench-unit">ms</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill cpu" style="width:35%"></div></div>
+        <div class="bench-note">min: 0.18ms · max: 39.54ms · 95th: 0.30ms · excellent</div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--bg3);border-radius:8px;font-size:.8rem">
+        <div style="color:var(--muted);margin-bottom:6px">sysbench command:</div>
+        <code style="color:var(--blue);font-family:monospace">sysbench cpu --threads=16 --time=60 run</code>
+        <div style="color:var(--muted);margin-top:6px">Algorithm: compute primes up to 10,000</div>
+      </div>
+    </div>
+
+    <div class="bench-card">
+      <h3 style="color:#fff;margin-bottom:20px">💾 Memory Performance</h3>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">Memory throughput — 16 threads</span>
+          <span><span class="bench-value">9,593</span><span class="bench-unit">MiB/s</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill mem" style="width:72%"></div></div>
+        <div class="bench-note">Sequential read · 32 GB total transferred in 3.4s · DDR5-4800</div>
+      </div>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">Operations per second</span>
+          <span><span class="bench-value">9.82M</span><span class="bench-unit">ops/s</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill mem" style="width:68%"></div></div>
+        <div class="bench-note">33,554,432 total ops · 3.4147s runtime</div>
+      </div>
+
+      <div class="bench-metric">
+        <div class="bench-header">
+          <span class="bench-label">Memory capacity</span>
+          <span><span class="bench-value">32</span><span class="bench-unit">GB DDR5</span></span>
+        </div>
+        <div class="bench-bar"><div class="bench-fill mem" style="width:50%"></div></div>
+        <div class="bench-note">Corsair CMSX32GX5M1A4800C40 · Single channel SO-DIMM</div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--bg3);border-radius:8px;font-size:.8rem">
+        <div style="color:var(--muted);margin-bottom:6px">sysbench command:</div>
+        <code style="color:var(--green);font-family:monospace">sysbench memory --threads=16 --memory-total-size=32768M run</code>
+        <div style="color:var(--muted);margin-top:6px">Operation: sequential memory read, 1 KiB blocks</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score comparison -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-title">Context — How Does It Compare?</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Intel Core Ultra 7 356H · sysbench multi-thread score vs reference points</div>
+    <div style="display:grid;grid-template-columns:1fr auto 100px;gap:8px;align-items:center;font-size:.85rem">
+      <div style="color:var(--text)">Ultra 7 356H (this node, 16T)</div>
+      <div class="bench-bar" style="width:200px;display:inline-block"><div class="bench-fill cpu" style="width:78%"></div></div>
+      <div style="color:var(--blue);text-align:right;font-weight:700">73,462 ev/s</div>
+
+      <div style="color:var(--muted)">i9-9900K (GPU node, 16T)</div>
+      <div class="bench-bar" style="width:200px;display:inline-block"><div class="bench-fill" style="width:65%;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>
+      <div style="color:var(--yellow);text-align:right;font-weight:700">~58,000 ev/s</div>
+
+      <div style="color:var(--muted)">Typical i7-6700HQ (NUC, 8T)</div>
+      <div class="bench-bar" style="width:200px;display:inline-block"><div class="bench-fill" style="width:28%;background:linear-gradient(90deg,#8b949e,var(--muted))"></div></div>
+      <div style="color:var(--muted);text-align:right;font-weight:700">~18,000 ev/s</div>
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:12px">* i9-9900K and NUC scores are estimates for comparison only. Run benchmark on GPU node after Talos install.</div>
+  </div>
+</div>
+
+<!-- ── PKI ── -->
+<div class="section" id="pki">
+  <div class="section-title">🔐 PKI — Certificate Authority Chain</div>
+
+  <div class="grid-2 stagger">
+    <div>
+      <div class="alert alert-info" style="margin-bottom:20px">
+        <span class="alert-icon">🔑</span>
+        <span>All certs auto-managed by <strong>cert-manager v1.20.2</strong>. Root CA is 10 years, service certs are 1 year and auto-renew 30 days before expiry. No manual work ever.</span>
+      </div>
+
+      <div class="pki-chain">
+        <div class="pki-node pki-root" style="border-color:var(--purple)">
+          <div class="pki-icon" style="font-size:1rem">🏛️</div>
+          <div class="pki-info">
+            <h4>Homelab Root CA</h4>
+            <p>ECDSA P-256 · Self-signed bootstrap · Secret: <code class="cmd-inline">homelab-root-ca</code></p>
+          </div>
+          <div class="pki-meta">
+            <div class="expiry">10 years</div>
+            <div>2024–2034</div>
+          </div>
+        </div>
+        <div class="pki-connector"></div>
+        <div class="pki-node pki-issuer" style="border-color:var(--blue)">
+          <div class="pki-icon" style="font-size:1rem">🏭</div>
+          <div class="pki-info">
+            <h4>homelab-ca ClusterIssuer</h4>
+            <p>Signs all service certs · cert-manager CA issuer</p>
+          </div>
+          <div class="pki-meta">
+            <div style="color:var(--blue)">Active</div>
+            <div>READY=True</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pki-certs-grid" style="margin-top:20px">
+        <div class="cert-item"><span class="cert-icon">💰</span><div><h5>actual-budget-tls</h5><p>192.168.1.12 · actual-budget.homelab · 1yr</p></div></div>
+        <div class="cert-item"><span class="cert-icon">📊</span><div><h5>grafana-tls</h5><p>192.168.1.13 · grafana.homelab · 1yr</p></div></div>
+        <div class="cert-item"><span class="cert-icon">🔄</span><div><h5>argocd-tls</h5><p>192.168.1.14 · argocd.homelab · 1yr</p></div></div>
+        <div class="cert-item"><span class="cert-icon">📋</span><div><h5>apitable-tls</h5><p>192.168.1.15 · apitable.homelab · 1yr</p></div></div>
+        <div class="cert-item"><span class="cert-icon">🎬</span><div><h5>jellyfin-tls</h5><p>192.168.1.11 · jellyfin.homelab · 1yr</p></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Trust on Your Devices</div>
+        <div style="font-size:.85rem;margin-bottom:16px">Run once — all current and future certs will be trusted automatically.</div>
+        <pre class="cmd"># Mac — installs to System Keychain
+bash scripts/trust-local-ca.sh
+
+# Mac + iPhone — also opens AirDrop
+bash scripts/trust-local-ca.sh --iphone</pre>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:10px">iPhone: tap AirDrop → Settings → Install → General → About → Certificate Trust Settings → Enable</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Why This Approach vs Alternatives</div>
+        <div style="font-size:.82rem">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:start">
+            <span style="color:var(--green);font-weight:700">✓ cert-manager</span><span style="color:var(--text)">Auto-renewal, K8s-native, zero ops overhead. <strong>This is what we use.</strong></span>
+            <span style="color:var(--muted)">~ Vault PKI</span><span style="color:var(--muted)">Better for multi-team, audit logging, short-lived certs. Overkill for homelab.</span>
+            <span style="color:var(--muted)">~ mkcert</span><span style="color:var(--muted)">Good for dev, but manual renewal. We use it only to <em>trust</em> our CA on Mac.</span>
+            <span style="color:var(--muted)">✗ Self-signed (old)</span><span style="color:var(--muted)">What we had before — manual, browser warnings, one secret per service.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STORAGE ── -->
+<div class="section" id="storage">
+  <div class="section-title">🗄️ Storage — Longhorn</div>
+  <div class="grid-2 stagger">
+    <div class="storage-card">
+      <div class="card-title">Persistent Volume Claims</div>
+      <div class="pvc-row"><span class="pvc-name">actual-budget-data</span><div class="pvc-bar-wrap"><div class="pvc-bar" style="width:12%"></div></div><span class="pvc-size">5 GiB</span><span class="pvc-ns">actual-budget</span></div>
+      <div class="pvc-row"><span class="pvc-name">prometheus-db</span><div class="pvc-bar-wrap"><div class="pvc-bar" style="width:35%"></div></div><span class="pvc-size">50 GiB</span><span class="pvc-ns">monitoring</span></div>
+      <div class="pvc-row"><span class="pvc-name">jellyfin-config</span><div class="pvc-bar-wrap"><div class="pvc-bar" style="width:5%"></div></div><span class="pvc-size">5 GiB</span><span class="pvc-ns">jellyfin</span></div>
+      <div class="pvc-row"><span class="pvc-name">jellyfin-media</span><div class="pvc-bar-wrap"><div class="pvc-bar" style="width:80%"></div></div><span class="pvc-size">500 GiB</span><span class="pvc-ns">jellyfin</span></div>
+      <div class="pvc-row"><span class="pvc-name">apitable-mysql</span><div class="pvc-bar-wrap"><div class="pvc-bar" style="width:8%"></div></div><span class="pvc-size">20 GiB</span><span class="pvc-ns">apitable</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Storage Classes</div>
+      <div style="font-size:.875rem">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span><strong style="color:var(--green)">longhorn</strong> <span style="font-size:.75rem;color:var(--muted)">(default)</span></span>
+          <span class="chip active">Retain</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <span>longhorn-static</span>
+          <span class="chip">Delete</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:.82rem;color:var(--muted)">
+        Longhorn v1.11.2 · Single node (m2) · Block storage<br>
+        Replication: 1 replica (add replicas when GPU node joins)
+      </div>
+      <div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:8px;font-size:.8rem">
+        <div style="color:var(--muted)">Node capacity:</div>
+        <div style="color:#fff;font-weight:700;font-size:1rem;margin-top:4px">~900 GB</div>
+        <div style="color:var(--muted)">Available on Crucial 1TB NVMe (OS uses ~100GB)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VCLUSTERS ── -->
+<div class="section" id="vclusters">
+  <div class="section-title">🏗️ vClusters</div>
+  <div class="alert alert-info" style="margin-bottom:24px">
+    <span class="alert-icon">ℹ️</span>
+    <span>Three vClusters run inside the host cluster. All registered with ArgoCD for GitOps deployment. Internal DNS: <code class="cmd-inline">{env}.vc-{env}.svc.cluster.local</code></span>
+  </div>
+  <div class="vc-grid stagger">
+    <div class="vc-card">
+      <div class="vc-env">Production</div>
+      <div class="vc-name">vc-prod</div>
+      <div class="chip active" style="display:inline-block;margin-bottom:8px">ArgoCD Registered</div>
+      <div class="vc-detail">Namespace: vc-prod<br>Apps: actual-budget, apitable, jellyfin<br>ArgoCD target: vcluster-prod</div>
+    </div>
+    <div class="vc-card">
+      <div class="vc-env">Staging</div>
+      <div class="vc-name">vc-staging</div>
+      <div class="chip" style="display:inline-block;margin-bottom:8px">ArgoCD Registered</div>
+      <div class="vc-detail">Namespace: vc-staging<br>Apps: (empty)<br>ArgoCD target: vcluster-staging</div>
+    </div>
+    <div class="vc-card">
+      <div class="vc-env">Development</div>
+      <div class="vc-name">vc-dev</div>
+      <div class="chip" style="display:inline-block;margin-bottom:8px">ArgoCD Registered</div>
+      <div class="vc-detail">Namespace: vc-dev<br>Apps: (empty)<br>ArgoCD target: vcluster-dev</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GPU BIOS ── -->
+<div class="section" id="gpu-bios">
+  <div class="section-title">🎮 GPU Node — Hardware &amp; BIOS Details</div>
+  <div class="grid-2 stagger">
+    <div class="bios-card">
+      <h3 style="color:#fff;margin-bottom:16px">System BIOS</h3>
+      <table class="bios-table">
+        <tr><td>BIOS Vendor</td><td>American Megatrends Inc. (AMI)</td></tr>
+        <tr><td>BIOS Version</td><td>3006</td></tr>
+        <tr><td>Release Date</td><td>October 12, 2021</td></tr>
+        <tr><td>UEFI / Legacy</td><td>UEFI</td></tr>
+        <tr><td>Secure Boot</td><td>Supported (disabled for Linux)</td></tr>
+        <tr><td>USB Flashback</td><td>Yes (rear I/O port)</td></tr>
+        <tr><td>BIOS Entry</td><td>Del or F2 at POST</td></tr>
+        <tr><td>Boot Menu</td><td>F8 at POST</td></tr>
+      </table>
+    </div>
+    <div class="bios-card">
+      <h3 style="color:#fff;margin-bottom:16px">Motherboard</h3>
+      <table class="bios-table">
+        <tr><td>Model</td><td>ASUS PRIME Z390-A</td></tr>
+        <tr><td>Form Factor</td><td>ATX</td></tr>
+        <tr><td>CPU Socket</td><td>LGA1151 (Intel 8th/9th gen)</td></tr>
+        <tr><td>Chipset</td><td>Intel Z390</td></tr>
+        <tr><td>RAM slots</td><td>4× DDR4, max 128 GB</td></tr>
+        <tr><td>PCIe x16 (slot 1)</td><td>RTX 3080 Ti</td></tr>
+        <tr><td>M.2 slot 1</td><td>PCIe 3.0 x4 + SATA</td></tr>
+        <tr><td>M.2 slot 2</td><td>PCIe 3.0 x4 (NVMe only)</td></tr>
+        <tr><td>SATA ports</td><td>6× SATA 6Gb/s</td></tr>
+        <tr><td>USB (rear)</td><td>2× USB 3.1 Gen2, 4× USB 3.1 Gen1</td></tr>
+      </table>
+    </div>
+
+    <div class="bios-card">
+      <h3 style="color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <span style="color:var(--orange)">🎮 NVIDIA RTX 3080 Ti</span>
+      </h3>
+      <table class="bios-table">
+        <tr><td>Model</td><td>GeForce RTX 3080 Ti (GA102, ASUS)</td></tr>
+        <tr><td>VRAM</td><td>12 GB GDDR6X</td></tr>
+        <tr><td>Memory Bus</td><td>384-bit</td></tr>
+        <tr><td>CUDA Cores</td><td>10,240</td></tr>
+        <tr><td>Tensor Cores</td><td>320 (3rd gen)</td></tr>
+        <tr><td>RT Cores</td><td>80 (2nd gen)</td></tr>
+        <tr><td>TDP</td><td>350W</td></tr>
+        <tr><td>Driver</td><td>560.35.05</td></tr>
+        <tr><td>CUDA Version</td><td>12.6</td></tr>
+        <tr><td>GPU Temp (idle)</td><td>36°C · Fan 0% (Persistence Mode ON)</td></tr>
+        <tr><td>Power (idle)</td><td>26W / 350W</td></tr>
+        <tr><td>Current utilization</td><td>0% GPU · 2MiB VRAM used</td></tr>
+      </table>
+
+      <div style="margin-top:16px">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">VRAM utilization:</div>
+        <div class="gpu-bar"><div class="gpu-fill" style="width:0.016%"></div></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">2 MiB / 12,288 MiB (0.016%)</div>
+      </div>
+
+      <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:8px;font-size:.8rem">
+        <div style="color:var(--muted);margin-bottom:6px">Live GPU status (nvidia-smi output):</div>
+        <pre style="color:var(--orange);font-family:monospace;font-size:.75rem;white-space:pre-wrap">GPU 0: NVIDIA GeForce RTX 3080 Ti
+  Temp:    36°C
+  Fan:     0%
+  Perf:    P8
+  Power:   26W / 350W
+  Memory:  2MiB / 12288MiB
+  Util:    0%  GPU
+  Driver:  560.35.05 / CUDA 12.6
+  Mode:    Persistence ON</pre>
+      </div>
+    </div>
+
+    <div class="bios-card">
+      <h3 style="color:#fff;margin-bottom:16px">Drives</h3>
+      <table class="bios-table">
+        <tr><td><code>sda</code></td><td>ADATA SU650 · 894 GB SATA SSD<br><span style="font-size:.75em;color:var(--yellow)">→ Plan: Windows 11 (games)</span></td></tr>
+        <tr><td><code>sdb</code></td><td>NT-2TB 2280 · 1.9 TB<br><span style="font-size:.75em;color:var(--muted)">→ Data storage</span></td></tr>
+        <tr><td><code>sdc</code></td><td>Samsung SSD 870 EVO 1TB · 931 GB SATA<br><span style="font-size:.75em;color:var(--green)">→ Plan: Talos Linux (K8s worker)</span></td></tr>
+      </table>
+      <div style="margin-top:12px;font-size:.78rem;color:var(--muted)">
+        Note: sda previously contained NUC backup data (6.2 GB). Migrate before installing Windows. See <code class="cmd-inline">docs/GPU-NODE-SETUP.md</code>.
+      </div>
+
+      <h3 style="color:#fff;margin:20px 0 16px">Setup Roadmap</h3>
+      <div style="font-size:.85rem">
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+          <span style="color:var(--green);font-weight:700;min-width:20px">1.</span>
+          <span>Migrate NUC backup data from <code class="cmd-inline">sda</code> to K8s PVCs via migration bridges</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+          <span style="color:var(--green);font-weight:700;min-width:20px">2.</span>
+          <span>Install <strong>Talos v1.13.2</strong> on <code class="cmd-inline">sdc</code> (Samsung 870 EVO)</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+          <span style="color:var(--green);font-weight:700;min-width:20px">3.</span>
+          <span>Join GPU node as worker — enable NVIDIA device plugin + CUDA</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+          <span style="color:var(--green);font-weight:700;min-width:20px">4.</span>
+          <span>Install <strong>Windows 11</strong> on <code class="cmd-inline">sda</code> (ADATA SU650) for gaming</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--muted);font-weight:700;min-width:20px">5.</span>
+          <span style="color:var(--muted)">Configure dual-boot: BIOS selects Talos (sdc) by default, F8 for Windows</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div style="margin-bottom:8px">
+    <strong style="color:#fff">homelab</strong> ·
+    Kubernetes v1.36.0 · Talos v1.13.2 · Cilium v1.19.4 · cert-manager v1.20.2 · Longhorn v1.11.2 · ArgoCD v3.4.2
+  </div>
+  <div>
+    📦 <a href="https://github.com/han-steve/homelab">github.com/han-steve/homelab</a> ·
+    📊 Benchmarks: May 25, 2026 ·
+    🔐 PKI: homelab-root-ca (ECDSA P-256, 10yr)
+  </div>
+  <div style="margin-top:8px;color:var(--border);font-size:.75rem">
+    Generated by Homelab Dashboard · Single-node → Multi-node (GPU worker planned)
+  </div>
+</footer>
+
+<script>
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Animate benchmark bars when they come into view
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.bench-fill, .pvc-bar').forEach(bar => {
+          bar.style.animation = 'none';
+          bar.offsetHeight; // reflow
+          bar.style.animation = 'grow .8s ease-out forwards';
+        });
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.bench-card, .storage-card').forEach(el => observer.observe(el));
+
+  // Active nav link highlighting based on scroll
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('nav ul li a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = '#' + s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === current ? '#fff' : '';
+    });
+  });
+
+  // Render timestamp
+  document.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    const ts = document.createElement('div');
+    ts.style.cssText = 'position:fixed;bottom:16px;right:16px;font-size:.7rem;color:#30363d;font-family:monospace;z-index:10';
+    ts.textContent = 'Last rendered: ' + now.toISOString().slice(0,16).replace('T',' ');
+    document.body.appendChild(ts);
+  });
+</script>
+</body>
+</html>
