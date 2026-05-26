@@ -24,6 +24,13 @@ defaultSettings:
   storageReservedPercentageForDefaultDisk: 10
   # Concurrent automatic engine upgrades per node
   concurrentAutomaticEngineUpgradePerNodeLimit: 1
+  # Storage over-provisioning: 200% allows scheduling up to 2x disk capacity.
+  # On a single-node cluster with 1 replica, we need this because the scheduler
+  # otherwise counts "scheduled = volume_size * replica_count * overProvision%".
+  # With 2 replicas (old default) on 1 node and 100% overProvisioning:
+  # 450 GiB scheduled × 2 replicas = 900 GiB > 835 GiB limit → no new PVCs!
+  # With 200% overProvisioning, limit = 928 × 2 - 93 = 1764 GiB (plenty of room).
+  storageOverProvisioningPercentage: 200
   # Backup target — configure Backblaze B2 after initial setup
   # backupTarget: s3://homelab-backups@us-west-004/longhorn/
   # backupTargetCredentialSecret: longhorn-backup-secret
