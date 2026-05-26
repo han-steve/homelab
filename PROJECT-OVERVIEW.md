@@ -10,7 +10,7 @@
 | Node | Machine | CPU | RAM | Storage | Role | IP |
 |------|---------|-----|-----|---------|------|----|
 | **m2** | Minisforum EliteMini M2 | Core Ultra 7 356H (16c) | DDR5 | 1TB NVMe (Crucial P3) | Control plane + worker | `192.168.1.10` |
-| **gpu** | ASUS Z390-A | i9-9900K (8c/16t) | 32GB DDR4 | 1TB SSD boot + 1TB NVMe + 1.9TB SATA | Worker — GPU workloads | `192.168.1.101` (not yet joined) |
+| **gpu** | ASUS Z390-P | i9-9900K (8c/16t) | 32GB DDR4 | 1TB SSD boot + 1TB NVMe + 1.9TB SATA | Worker — GPU workloads | `192.168.1.101` (not yet joined) |
 
 ---
 
