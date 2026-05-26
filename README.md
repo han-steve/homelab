@@ -70,6 +70,7 @@ See [docs/PKI.md](docs/PKI.md) for trust installation instructions.
 
 ## Docs
 
+- [Networking](docs/NETWORKING.md) — Cilium LB-IPAM, AT&T BGW320, Tailscale architecture
 - [Cluster Dashboard](docs/cluster-dashboard.html) — hardware specs, benchmarks, service health
 - [Interactive Topology](docs/topology.html) — visual cluster topology (D3.js, zoomable)
 - [PKI Setup](docs/PKI.md) — certificate authority chain
