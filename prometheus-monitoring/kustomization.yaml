@@ -6,8 +6,9 @@ namespace: monitoring
 # Create monitoring namespace
 resources:
 - namespace.yaml
-- local-path-storageclass.yaml
-- prometheus-pv.yaml
+# NOTE: local-path-storageclass.yaml and prometheus-pv.yaml are kept for reference
+# but not included — Prometheus uses Longhorn (storageClassName: longhorn) via
+# PersistentVolumeClaim in helm-values.yaml, which Longhorn provisions dynamically.
 
 # Use Helm chart with our custom values
 helmCharts:
