@@ -34,7 +34,8 @@ spec:
   storageClassName: longhorn
   resources:
     requests:
-      storage: 50Gi  # Store Longhorn backups for critical volumes (expand when GPU node 2TB NVMe available)
+      storage: 20Gi  # Sized for critical PVC backups: actual-budget(5G) + grafana(10G) + extras
+      # Expand to GPU node 2TB NVMe when it joins the cluster
 ---
 apiVersion: v1
 kind: Secret
