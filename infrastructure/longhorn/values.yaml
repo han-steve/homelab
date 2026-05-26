@@ -11,8 +11,9 @@
 #     --values infrastructure/longhorn/values.yaml
 
 defaultSettings:
-  # Default replica count — 2 nodes in cluster so 2 replicas max
-  defaultReplicaCount: 2
+  # Default replica count — currently 1 active node (M2). GPU node join pending.
+  # With 1 node, replicas > 1 won't schedule. Will increase to 2 when GPU joins.
+  defaultReplicaCount: 1
   # Default data path — lives on ephemeral XFS partition of NVMe (M2) or ADATA partition (GPU)
   defaultDataPath: /var/lib/longhorn
   # Replica soft anti-affinity: allow 2 replicas on same node if only 1 node available
@@ -37,9 +38,9 @@ defaultSettings:
   removeSnapshotsDuringFilesystemTrim: enabled
 
 persistence:
-  # Default storage class — 2 replicas for stateful apps
+  # Default storage class — 1 replica for now (single node). Will increase to 2 when GPU node joins.
   defaultClass: true
-  defaultClassReplicaCount: 2
+  defaultClassReplicaCount: 1
   # Reclaim policy: Retain so PVs aren't accidentally deleted
   reclaimPolicy: Retain
 
