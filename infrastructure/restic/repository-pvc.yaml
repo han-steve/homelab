@@ -1,0 +1,30 @@
+---
+# Restic backup repository PVC
+# Temporary backup target — local Longhorn PVC until GPU node (2TB NVMe) joins the cluster
+# After GPU node joins with Talos + Longhorn, this should be changed to a PVC on the GPU node
+# or to an S3/SFTP remote repository
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restic-repository
+  namespace: backup
+  labels:
+    app.kubernetes.io/name: restic-backup
+    app.kubernetes.io/component: repository
+  annotations:
+    backup.note: "Temporary local repo until GPU node 2TB NVMe is available via Longhorn"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi  # Can hold several backup sets of critical PVCs
+---
+# Namespace for backup resources
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backup
+  labels:
+    app.kubernetes.io/name: backup

@@ -1,0 +1,146 @@
+---
+# Restic backup CronJob for critical PVCs
+# Backs up: actual-budget-data, grafana data, jellyfin-config
+# Repository: local Longhorn PVC (50Gi) at /repo
+# Schedule: 3 AM daily
+#
+# FUTURE: Switch to GPU node 2TB NVMe by changing RESTIC_REPOSITORY to:
+#   sftp:backup-node:/mnt/2tb-nvme/restic-homelab
+# Or to Backblaze B2 / Cloudflare R2 / any S3-compatible store.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: restic-backup
+  namespace: backup
+  labels:
+    app.kubernetes.io/name: restic-backup
+    app.kubernetes.io/component: cronjob
+spec:
+  schedule: "0 3 * * *"  # 3 AM daily
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid  # Don't run overlapping backups
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: restic-backup
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+          - name: init-repo
+            image: restic/restic:0.17.3
+            command:
+            - sh
+            - -c
+            - |
+              # Initialize repository if it doesn't exist
+              if ! restic snapshots > /dev/null 2>&1; then
+                echo "Initializing restic repository..."
+                restic init
+                echo "Repository initialized"
+              else
+                echo "Repository already initialized"
+              fi
+            env:
+            - name: RESTIC_REPOSITORY
+              value: /repo
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: restic-password
+                  key: password
+            volumeMounts:
+            - name: restic-repo
+              mountPath: /repo
+          containers:
+          - name: backup
+            image: restic/restic:0.17.3
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "=== Starting restic backup $(date) ==="
+
+              # Backup actual-budget data
+              if [ -d /data/actual-budget ]; then
+                echo "--- Backing up actual-budget-data ---"
+                restic backup /data/actual-budget \
+                  --tag actual-budget \
+                  --tag $(date +%Y-%m-%d) \
+                  --exclude='*.tmp' \
+                  --verbose
+              fi
+
+              # Backup Grafana data
+              if [ -d /data/grafana ]; then
+                echo "--- Backing up grafana ---"
+                restic backup /data/grafana \
+                  --tag grafana \
+                  --tag $(date +%Y-%m-%d) \
+                  --verbose
+              fi
+
+              # Backup Jellyfin config
+              if [ -d /data/jellyfin-config ]; then
+                echo "--- Backing up jellyfin-config ---"
+                restic backup /data/jellyfin-config \
+                  --tag jellyfin-config \
+                  --tag $(date +%Y-%m-%d) \
+                  --verbose
+              fi
+
+              echo "=== Backup complete. Pruning old snapshots ==="
+              # Keep: 7 daily, 4 weekly, 12 monthly
+              restic forget \
+                --keep-daily 7 \
+                --keep-weekly 4 \
+                --keep-monthly 12 \
+                --prune \
+                --verbose
+
+              echo "=== Restic snapshots ==="
+              restic snapshots
+
+              echo "=== Backup job complete $(date) ==="
+            env:
+            - name: RESTIC_REPOSITORY
+              value: /repo
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: restic-password
+                  key: password
+            volumeMounts:
+            - name: restic-repo
+              mountPath: /repo
+            - name: actual-budget-data
+              mountPath: /data/actual-budget
+              readOnly: true
+            - name: grafana-data
+              mountPath: /data/grafana
+              readOnly: true
+            - name: jellyfin-config
+              mountPath: /data/jellyfin-config
+              readOnly: true
+            resources:
+              requests:
+                cpu: 200m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+          volumes:
+          - name: restic-repo
+            persistentVolumeClaim:
+              claimName: restic-repository
+          - name: actual-budget-data
+            persistentVolumeClaim:
+              claimName: actual-budget-data
+          - name: grafana-data
+            persistentVolumeClaim:
+              claimName: prometheus-grafana
+          - name: jellyfin-config
+            persistentVolumeClaim:
+              claimName: jellyfin-config

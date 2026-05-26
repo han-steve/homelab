@@ -1,0 +1,25 @@
+---
+# ArgoCD Application: Backup stack (Longhorn RecurringJobs + MinIO)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backup-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: "infrastructure/restic"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab.git'
+    targetRevision: HEAD
+    path: infrastructure/restic
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: backup
+  syncPolicy:
+    automated:
+      selfHeal: false  # Manual sync — backup config is sensitive
+      prune: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,44 @@
+---
+# Longhorn RecurringJob: Daily snapshot for critical volumes
+# This creates local Longhorn snapshots (no backup target needed)
+# Snapshots enable point-in-time restore within the same cluster
+# NOTE: For true off-volume backup, configure Longhorn backup target
+# (see docs/BACKUP.md)
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: snapshot-daily
+  namespace: longhorn-system
+  labels:
+    app.kubernetes.io/name: longhorn-backup
+spec:
+  cron: "0 2 * * *"  # 2 AM daily
+  task: snapshot
+  groups:
+    - default  # Applied to all volumes in the "default" group
+  retain: 7           # Keep 7 daily snapshots
+  concurrency: 1
+  labels:
+    backup-type: daily-snapshot
+---
+# Longhorn RecurringJob: Weekly snapshot (retained longer)
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: snapshot-weekly
+  namespace: longhorn-system
+  labels:
+    app.kubernetes.io/name: longhorn-backup
+spec:
+  cron: "0 3 * * 0"  # 3 AM every Sunday
+  task: snapshot
+  groups:
+    - default  # Applied to all volumes in the "default" group
+  retain: 4           # Keep 4 weekly snapshots
+  concurrency: 1
+  labels:
+    backup-type: weekly-snapshot
+---
+# Default RecurringJob group assignment — all Longhorn volumes auto-join "default" group
+# which maps to these jobs. This enables snapshots on ALL volumes without per-volume config.
+# ref: https://longhorn.io/docs/latest/concepts/#22-volume-recurring-snapshots-and-backups

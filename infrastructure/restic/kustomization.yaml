@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- longhorn-recurring-jobs.yaml
+- minio.yaml
+# NOTE: restic-cronjob.yaml and repository-pvc.yaml are included for reference
+# but use Longhorn RecurringJobs (above) for actual snapshot/backup.
+# The restic-secret.yaml is a placeholder — create the actual secret manually:
+#   kubectl create secret generic restic-password -n backup \
+#     --from-literal=password=$(openssl rand -base64 32)
