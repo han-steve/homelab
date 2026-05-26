@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ocis
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: "apps/ocis/base"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab.git'
+    targetRevision: HEAD
+    path: apps/ocis/base
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: ocis
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

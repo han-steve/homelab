@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocis
+  namespace: ocis
+  labels:
+    app: ocis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ocis
+  template:
+    metadata:
+      labels:
+        app: ocis
+    spec:
+      initContainers:
+        - name: ocis-init
+          image: owncloud/ocis:8.0.4
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /etc/ocis/ocis.yaml ]; then
+                echo "Initializing oCIS configuration..."
+                ocis init --insecure true --admin-password "${ADMIN_PASSWORD}"
+              else
+                echo "oCIS config already exists, skipping init"
+              fi
+          env:
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ocis-admin
+                  key: password
+          volumeMounts:
+            - name: ocis-config
+              mountPath: /etc/ocis
+            - name: ocis-data
+              mountPath: /var/lib/ocis
+      containers:
+        - name: ocis
+          image: owncloud/ocis:8.0.4
+          command: ["ocis", "server"]
+          env:
+            - name: OCIS_URL
+              value: "https://192.168.1.20:9200"
+            - name: OCIS_INSECURE
+              value: "true"
+            - name: PROXY_HTTP_ADDR
+              value: "0.0.0.0:9200"
+            - name: OCIS_LOG_LEVEL
+              value: "warn"
+            - name: PROXY_TLS
+              value: "true"
+            - name: IDM_CREATE_DEMO_USERS
+              value: "false"
+          ports:
+            - containerPort: 9200
+              name: https
+              protocol: TCP
+          volumeMounts:
+            - name: ocis-config
+              mountPath: /etc/ocis
+            - name: ocis-data
+              mountPath: /var/lib/ocis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9200
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9200
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: ocis-config
+          persistentVolumeClaim:
+            claimName: ocis-config
+        - name: ocis-data
+          persistentVolumeClaim:
+            claimName: ocis-data

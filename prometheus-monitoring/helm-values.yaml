@@ -2,6 +2,7 @@
 # Only includes changes from default configuration
 
 grafana:
+  adminPassword: homelab2024
   persistence:
     enabled: true
     size: 10Gi
