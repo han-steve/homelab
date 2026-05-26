@@ -99,6 +99,11 @@ Secrets belong in 1Password or as kubectl-applied K8s Secrets (not in this repo)
 4. ArgoCD Applications: Use `syncPolicy.automated` with `prune: true` and `selfHeal: true`.
 5. Namespaces: Declare explicitly. Use `CreateNamespace=true` in syncOptions.
 6. StorageClass: Default is `longhorn`. For single-node testing, 1 replica is fine.
+7. app-of-apps/: This directory contains ArgoCD Application CRDs only (not regular K8s resources).
+   ArgoCD scans it recursively (directory.recurse: true set in app-of-apps.yaml).
+   Do NOT add kustomization.yaml here — ArgoCD handles discovery directly.
+   Current apps: apps-prod/applications.yaml, prometheus-monitoring/base/prometheus-monitoring.yaml,
+   simplefin-exporter/base/simplefin-exporter.yaml
 
 ## NETWORKING — SPECIFIC FACTS
 
