@@ -106,7 +106,7 @@ metadata:
   name: jellyfin
   namespace: jellyfin
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.1.11"
+    lbipam.cilium.io/ips: "192.168.1.11"
 spec:
   type: LoadBalancer
   selector:

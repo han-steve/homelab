@@ -4,7 +4,7 @@ metadata:
   name: prometheus-grafana-lb
   namespace: monitoring
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.1.13"
+    lbipam.cilium.io/ips: "192.168.1.13"
 spec:
   type: LoadBalancer
   selector:
@@ -21,7 +21,7 @@ metadata:
   name: argocd-lb
   namespace: argocd
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.1.14"
+    lbipam.cilium.io/ips: "192.168.1.14"
 spec:
   type: LoadBalancer
   selector:

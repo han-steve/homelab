@@ -1,0 +1,456 @@
+---
+# ── MIGRATION BRIDGES ────────────────────────────────────────────────────────
+# One sshd pod per namespace, each mounting that namespace's PVCs.
+# NUC connects to these IPs and rsyncs data directly into the PVCs.
+#
+# IPs assigned (from reserved range):
+#   192.168.1.16 → actual-budget-bridge  (Actual Budget SQLite data)
+#   192.168.1.17 → prometheus-bridge     (Prometheus TSDB)
+#   192.168.1.18 → jellyfin-bridge       (Jellyfin config + media)
+#   192.168.1.19 → apitable-bridge       (MySQL dump staging)
+#
+# After migration is complete, delete this manifest:
+#   kubectl delete -f infrastructure/migration/bridges.yaml
+#
+# Auth: place your Mac's public key in the secret below (or use password).
+# Default: use the same key as ~/.ssh/id_ed25519.pub
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: migration
+---
+# ── SSH authorized key (paste your Mac's ~/.ssh/id_ed25519.pub here) ────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-ssh-authorized-keys
+  namespace: migration
+data:
+  authorized_keys: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJTF61/iDnvWM7nM8/nZa1G1CpGTMQbxXKlgEUfLZ8ih stevehan@Mac.attlocal.net
+
+---
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. ACTUAL BUDGET BRIDGE — mounts actual-budget-data PVC
+# ═══════════════════════════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-bridge
+  namespace: actual-budget
+  labels:
+    app: migration-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: migration-bridge
+  template:
+    metadata:
+      labels:
+        app: migration-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache openssh-server rsync
+              ssh-keygen -A
+              mkdir -p /root/.ssh /data
+              if [ -f /ssh-keys/authorized_keys ]; then
+                cp /ssh-keys/authorized_keys /root/.ssh/authorized_keys
+                chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
+              fi
+              cat > /etc/ssh/sshd_config <<'EOF'
+              Port 2222
+              PermitRootLogin yes
+              PasswordAuthentication no
+              PubkeyAuthentication yes
+              AuthorizedKeysFile /root/.ssh/authorized_keys
+              EOF
+              echo "Actual Budget bridge ready on :2222 — rsync to /data/"
+              /usr/sbin/sshd -D -e
+          ports:
+            - containerPort: 2222
+          volumeMounts:
+            - name: actual-budget-data
+              mountPath: /data
+            - name: ssh-keys
+              mountPath: /ssh-keys
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+      volumes:
+        - name: actual-budget-data
+          persistentVolumeClaim:
+            claimName: actual-budget-data
+        - name: ssh-keys
+          configMap:
+            name: migration-ssh-authorized-keys
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-bridge
+  namespace: actual-budget
+  annotations:
+    lbipam.cilium.io/ips: "192.168.1.16"
+spec:
+  type: LoadBalancer
+  selector:
+    app: migration-bridge
+  ports:
+    - port: 2222
+      targetPort: 2222
+---
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. PROMETHEUS BRIDGE — mounts prometheus TSDB PVC
+# ═══════════════════════════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-bridge
+  namespace: monitoring
+  labels:
+    app: migration-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: migration-bridge
+  template:
+    metadata:
+      labels:
+        app: migration-bridge
+    spec:
+      # Scale down Prometheus first - TSDB can't be written to concurrently
+      initContainers:
+        - name: scale-down-prometheus
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              kubectl scale statefulset prometheus-prometheus-kube-prometheus-prometheus \
+                --replicas=0 -n monitoring 2>/dev/null || true
+              echo "Scaled down Prometheus (may take 30s to fully stop)"
+              sleep 30
+      containers:
+        - name: bridge
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache openssh-server rsync
+              ssh-keygen -A
+              mkdir -p /root/.ssh /data
+              if [ -f /ssh-keys/authorized_keys ]; then
+                cp /ssh-keys/authorized_keys /root/.ssh/authorized_keys
+                chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
+              fi
+              cat > /etc/ssh/sshd_config <<'EOF'
+              Port 2222
+              PermitRootLogin yes
+              PasswordAuthentication no
+              PubkeyAuthentication yes
+              AuthorizedKeysFile /root/.ssh/authorized_keys
+              EOF
+              echo "Prometheus bridge ready on :2222 — rsync to /data/"
+              /usr/sbin/sshd -D -e
+          ports:
+            - containerPort: 2222
+          volumeMounts:
+            - name: prometheus-db
+              mountPath: /data
+            - name: ssh-keys
+              mountPath: /ssh-keys
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+      serviceAccountName: migration-bridge-sa
+      volumes:
+        - name: prometheus-db
+          persistentVolumeClaim:
+            claimName: prometheus-prometheus-kube-prometheus-prometheus-db-prometheus-prometheus-kube-prometheus-prometheus-0
+        - name: ssh-keys
+          configMap:
+            name: migration-ssh-authorized-keys
+            optional: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: migration-bridge-sa
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: scale-prometheus
+  namespace: monitoring
+rules:
+  - apiGroups: [apps]
+    resources: [statefulsets, deployments]
+    verbs: [get, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: scale-prometheus
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: scale-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: migration-bridge-sa
+    namespace: monitoring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-bridge
+  namespace: monitoring
+  annotations:
+    lbipam.cilium.io/ips: "192.168.1.17"
+spec:
+  type: LoadBalancer
+  selector:
+    app: migration-bridge
+  ports:
+    - port: 2222
+      targetPort: 2222
+---
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. JELLYFIN BRIDGE — mounts both jellyfin PVCs
+# ═══════════════════════════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-bridge
+  namespace: jellyfin
+  labels:
+    app: migration-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: migration-bridge
+  template:
+    metadata:
+      labels:
+        app: migration-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache openssh-server rsync
+              ssh-keygen -A
+              mkdir -p /root/.ssh /data/config /data/media
+              if [ -f /ssh-keys/authorized_keys ]; then
+                cp /ssh-keys/authorized_keys /root/.ssh/authorized_keys
+                chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
+              fi
+              cat > /etc/ssh/sshd_config <<'EOF'
+              Port 2222
+              PermitRootLogin yes
+              PasswordAuthentication no
+              PubkeyAuthentication yes
+              AuthorizedKeysFile /root/.ssh/authorized_keys
+              EOF
+              echo "Jellyfin bridge ready on :2222"
+              echo "  rsync /opt/jellyfin/      → root@IP:/data/config/"
+              echo "  rsync /mnt/data/jellyfin/ → root@IP:/data/media/"
+              /usr/sbin/sshd -D -e
+          ports:
+            - containerPort: 2222
+          volumeMounts:
+            - name: jellyfin-config
+              mountPath: /data/config
+            - name: jellyfin-media
+              mountPath: /data/media
+            - name: ssh-keys
+              mountPath: /ssh-keys
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 2000m, memory: 512Mi}
+      volumes:
+        - name: jellyfin-config
+          persistentVolumeClaim:
+            claimName: jellyfin-config
+        - name: jellyfin-media
+          persistentVolumeClaim:
+            claimName: jellyfin-media
+        - name: ssh-keys
+          configMap:
+            name: migration-ssh-authorized-keys
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-bridge
+  namespace: jellyfin
+  annotations:
+    lbipam.cilium.io/ips: "192.168.1.18"
+spec:
+  type: LoadBalancer
+  selector:
+    app: migration-bridge
+  ports:
+    - port: 2222
+      targetPort: 2222
+---
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. APITABLE MySQL STAGING — for SQL dump restore
+# ═══════════════════════════════════════════════════════════════════════════════
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: migration-mysql-dump
+  namespace: apitable
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-bridge
+  namespace: apitable
+  labels:
+    app: migration-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: migration-bridge
+  template:
+    metadata:
+      labels:
+        app: migration-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache openssh-server rsync
+              ssh-keygen -A
+              mkdir -p /root/.ssh /dump
+              if [ -f /ssh-keys/authorized_keys ]; then
+                cp /ssh-keys/authorized_keys /root/.ssh/authorized_keys
+                chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
+              fi
+              cat > /etc/ssh/sshd_config <<'EOF'
+              Port 2222
+              PermitRootLogin yes
+              PasswordAuthentication no
+              PubkeyAuthentication yes
+              AuthorizedKeysFile /root/.ssh/authorized_keys
+              EOF
+              echo "APITable bridge ready on :2222 — rsync dump to /dump/"
+              /usr/sbin/sshd -D -e
+          ports:
+            - containerPort: 2222
+          volumeMounts:
+            - name: mysql-dump
+              mountPath: /dump
+            - name: ssh-keys
+              mountPath: /ssh-keys
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+      volumes:
+        - name: mysql-dump
+          persistentVolumeClaim:
+            claimName: migration-mysql-dump
+        - name: ssh-keys
+          configMap:
+            name: migration-ssh-authorized-keys
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-bridge
+  namespace: apitable
+  annotations:
+    lbipam.cilium.io/ips: "192.168.1.19"
+spec:
+  type: LoadBalancer
+  selector:
+    app: migration-bridge
+  ports:
+    - port: 2222
+      targetPort: 2222
+---
+# ═══════════════════════════════════════════════════════════════════════════════
+# MySQL restore job — run AFTER rsyncing dump to apitable bridge
+# Trigger: kubectl create job mysql-restore --from=job/mysql-restore-template -n apitable
+# ═══════════════════════════════════════════════════════════════════════════════
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-restore
+  namespace: apitable
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-dump
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until ls /dump/*.sql 2>/dev/null | grep -q .; do
+                echo "Waiting for SQL dump in /dump/..."
+                sleep 5
+              done
+              echo "Dump found: $(ls /dump/*.sql)"
+      containers:
+        - name: mysql-restore
+          image: mysql:8.0.32
+          command:
+            - sh
+            - -c
+            - |
+              echo "Restoring MySQL from dump..."
+              DUMP_FILE=$(ls /dump/*.sql | head -1)
+              echo "Using: $DUMP_FILE"
+              mysql -h apitable-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < "$DUMP_FILE"
+              echo "MySQL restore complete!"
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apitable-db-secret
+                  key: MYSQL_ROOT_PASSWORD
+          volumeMounts:
+            - name: mysql-dump
+              mountPath: /dump
+      volumes:
+        - name: mysql-dump
+          persistentVolumeClaim:
+            claimName: migration-mysql-dump

@@ -515,6 +515,9 @@ spec:
       containers:
         - name: gateway
           image: apitable/openresty:latest
+          ports:
+            - containerPort: 80
+              name: http
           env:
             - name: API_PROXY
               value: "http://apitable-backend-bundled:8081"
@@ -547,7 +550,7 @@ metadata:
   name: apitable-gateway
   namespace: apitable
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.1.15"
+    lbipam.cilium.io/ips: "192.168.1.15"
 spec:
   type: LoadBalancer
   selector:
@@ -555,7 +558,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: http
+      targetPort: 80
 # ─── Alias services — names the openresty gateway expects ──────────────────
 ---
 apiVersion: v1
