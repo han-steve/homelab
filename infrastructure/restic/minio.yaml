@@ -34,7 +34,7 @@ spec:
   storageClassName: longhorn
   resources:
     requests:
-      storage: 100Gi  # Store Longhorn backups for all critical volumes
+      storage: 50Gi  # Store Longhorn backups for critical volumes (expand when GPU node 2TB NVMe available)
 ---
 apiVersion: v1
 kind: Secret
