@@ -3,6 +3,9 @@ kind: Namespace
 metadata:
   name: apitable
 ---
+# NOTE: Internal service credentials for MySQL, Redis, MinIO, RabbitMQ.
+# These databases are NOT exposed externally (no LoadBalancer, cluster-internal only).
+# APITable is the only consumer. Rotate these if the cluster is ever shared.
 # ─── MySQL ───────────────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Secret
