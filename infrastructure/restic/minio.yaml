@@ -46,9 +46,8 @@ metadata:
     app.kubernetes.io/name: minio
 type: Opaque
 stringData:
-  # IMPORTANT: Change these before deploying!
-  MINIO_ROOT_USER: "minioadmin"
-  MINIO_ROOT_PASSWORD: "CHANGE_ME_MINIO_PASSWORD"
+  MINIO_ROOT_USER: "minio-homelab"
+  MINIO_ROOT_PASSWORD: "B-bJtI72Ek3H73Wd-ksZu2gd5m_wWVP7"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -68,9 +67,18 @@ spec:
       labels:
         app.kubernetes.io/name: minio
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
       containers:
       - name: minio
         image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         command: ["/usr/bin/minio", "server", "/data", "--console-address", ":9001"]
         env:
         - name: MINIO_ROOT_USER
