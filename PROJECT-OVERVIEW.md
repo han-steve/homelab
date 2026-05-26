@@ -1,7 +1,7 @@
 # Homelab — Architecture & Operations
 
 > **Status**: Live cluster on Talos Linux v1.13.2 / Kubernetes v1.36.0  
-> **Last updated**: May 2026
+> **Last updated**: May 2025
 
 ---
 
