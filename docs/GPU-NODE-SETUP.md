@@ -278,7 +278,7 @@ This requires physical access to enroll the key. Only worth doing if you need se
 
 ## Hardware Summary
 
-### GPU Node (steve-gpu-node, 192.168.1.101)
+### GPU Node (192.168.1.101 — current hostname: steve-gpu-node on Debian 12, will become: gpu after Talos migration)
 
 | Component | Spec |
 |-----------|------|
