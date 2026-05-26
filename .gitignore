@@ -8,3 +8,6 @@ talos/.gpu-schematic-id
 
 # OS
 .DS_Store
+talos/worker-gpu.yaml
+talos/worker.yaml
+talos/*.yaml
