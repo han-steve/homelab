@@ -65,13 +65,11 @@ kubectl get cert -A
 ### Mac (system-wide, all browsers)
 
 ```bash
-# Quick way — run the helper script:
-bash scripts/trust-local-ca.sh
-
-# Manual way:
+# 1. Export the Root CA cert from the cluster
 kubectl get secret homelab-root-ca -n cert-manager \
   -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/homelab-root-ca.crt
 
+# 2. Install to System Keychain (requires sudo — enter your Mac login password)
 sudo security add-trusted-cert \
   -d -r trustRoot \
   -k /Library/Keychains/System.keychain \
@@ -83,13 +81,16 @@ After this, `curl https://actual-budget.homelab:5006` works without `-k`, and Sa
 ### iPhone / iPad
 
 ```bash
-# Export the CA cert
-bash scripts/trust-local-ca.sh --iphone
-# This saves ~/Downloads/homelab-ca.crt and opens AirDrop
+# 1. Export the Root CA cert (same command as Mac step 1 above)
+kubectl get secret homelab-root-ca -n cert-manager \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/homelab-root-ca.crt
+
+# 2. AirDrop it to iPhone
+open /tmp/homelab-root-ca.crt   # opens AirDrop, share to iPhone
 ```
 
 Then on iPhone:
-1. Accept AirDrop → `homelab-ca.crt`
+1. Accept AirDrop → `homelab-root-ca.crt`
 2. Settings → General → VPN & Device Management → *Homelab Root CA* → **Install**
 3. Settings → General → About → Certificate Trust Settings → Toggle **Homelab Root CA** ON
 

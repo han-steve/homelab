@@ -511,7 +511,7 @@
         <div class="spec-row">
           <div class="spec-icon">💾</div>
           <div class="spec-label">Memory</div>
-          <div class="spec-value"><span class="highlight">32 GB</span> DDR4</div>
+          <div class="spec-value"><span class="highlight">2× 16 GB</span> Team Group DDR4<br>XMP: 3200 MHz 16-20-20-40 1.35V</div>
         </div>
         <div class="spec-row">
           <div class="spec-icon">🎮</div>
@@ -526,7 +526,7 @@
         <div class="spec-row">
           <div class="spec-icon">🏠</div>
           <div class="spec-label">Board</div>
-          <div class="spec-value">ASUS PRIME Z390-A · LGA1151<br>AMI BIOS v3006 (Oct 2021)</div>
+          <div class="spec-value">ASUS PRIME Z390-P · LGA1151<br>AMI BIOS v3006 (Oct 2021)</div>
         </div>
         <div class="chip-row">
           <span class="chip">i9-9900K</span>
@@ -744,13 +744,20 @@
     <div>
       <div class="card" style="margin-bottom:16px">
         <div class="card-title">Trust on Your Devices</div>
-        <div style="font-size:.85rem;margin-bottom:16px">Run once — all current and future certs will be trusted automatically.</div>
-        <pre class="cmd"># Mac — installs to System Keychain
-bash scripts/trust-local-ca.sh
+        <div style="font-size:.85rem;margin-bottom:16px">Run once — all current and future homelab certs will be trusted automatically.</div>
+        <pre class="cmd"># 1. Export Root CA from the cluster
+kubectl get secret homelab-root-ca -n cert-manager \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/homelab-root-ca.crt
 
-# Mac + iPhone — also opens AirDrop
-bash scripts/trust-local-ca.sh --iphone</pre>
-        <div style="font-size:.8rem;color:var(--muted);margin-top:10px">iPhone: tap AirDrop → Settings → Install → General → About → Certificate Trust Settings → Enable</div>
+# 2. Trust on Mac (requires sudo)
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain \
+  /tmp/homelab-root-ca.crt
+
+# 3. Trust on iPhone — AirDrop the file, then:
+#    Settings → General → VPN &amp; Device Management
+#    → Install → General → About → Certificate Trust Settings → Enable</pre>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:10px">Restart Chrome/Safari after adding. Re-run step 2 if certs ever stop being trusted (CA rollover).</div>
       </div>
 
       <div class="card">
@@ -854,15 +861,26 @@ bash scripts/trust-local-ca.sh --iphone</pre>
     <div class="bios-card">
       <h3 style="color:#fff;margin-bottom:16px">Motherboard</h3>
       <table class="bios-table">
-        <tr><td>Model</td><td>ASUS PRIME Z390-A</td></tr>
+        <tr><td>Model</td><td>ASUS PRIME Z390-P</td></tr>
         <tr><td>Form Factor</td><td>ATX</td></tr>
         <tr><td>CPU Socket</td><td>LGA1151 (Intel 8th/9th gen)</td></tr>
         <tr><td>Chipset</td><td>Intel Z390</td></tr>
         <tr><td>RAM slots</td><td>4× DDR4, max 128 GB</td></tr>
+        <tr><td>DIMM_A2 (installed)</td><td>Team Group Inc. 16384 MB 2400 MHz</td></tr>
+        <tr><td>DIMM_B2 (installed)</td><td>Team Group Inc. 16384 MB 2400 MHz</td></tr>
+        <tr><td>XMP Profile</td><td>DDR4-3200 · 16-20-20-40 · 1.35V</td></tr>
         <tr><td>PCIe x16 (slot 1)</td><td>RTX 3080 Ti</td></tr>
-        <tr><td>M.2 slot 1</td><td>PCIe 3.0 x4 + SATA</td></tr>
-        <tr><td>M.2 slot 2</td><td>PCIe 3.0 x4 (NVMe only)</td></tr>
-        <tr><td>SATA ports</td><td>6× SATA 6Gb/s</td></tr>
+        <tr><td>M.2 slot 2</td><td>PCIe 3.0 x4 (NVMe only) · NT-2TB installed</td></tr>
+        <tr><td>SATA6G_2</td><td>ADATA SU650 (960.1 GB)</td></tr>
+        <tr><td>SATA6G_3</td><td>Samsung SSD 870 EVO 1TB (1000.2 GB)</td></tr>
+        <tr><td>Boot priority</td><td>debian → SATA6G_3: Samsung SSD 870 EVO 1TB</td></tr>
+        <tr><td>Intel RST</td><td>ON (Intel Rapid Storage Technology)</td></tr>
+        <tr><td>CPU Temp (idle)</td><td>30°C</td></tr>
+        <tr><td>Motherboard Temp (idle)</td><td>24°C</td></tr>
+        <tr><td>CPU Voltage (idle)</td><td>0.995V</td></tr>
+        <tr><td>CPU FAN (idle)</td><td>528 RPM</td></tr>
+        <tr><td>CHA2 FAN (idle)</td><td>839 RPM</td></tr>
+        <tr><td>BIOS Fan Profile</td><td>Normal</td></tr>
         <tr><td>USB (rear)</td><td>2× USB 3.1 Gen2, 4× USB 3.1 Gen1</td></tr>
       </table>
     </div>
@@ -913,15 +931,16 @@ bash scripts/trust-local-ca.sh --iphone</pre>
         <tr><td><code>sdb</code></td><td>NT-2TB 2280 · 1.9 TB<br><span style="font-size:.75em;color:var(--muted)">→ Data storage</span></td></tr>
         <tr><td><code>sdc</code></td><td>Samsung SSD 870 EVO 1TB · 931 GB SATA<br><span style="font-size:.75em;color:var(--green)">→ Plan: Talos Linux (K8s worker)</span></td></tr>
       </table>
-      <div style="margin-top:12px;font-size:.78rem;color:var(--muted)">
-        Note: sda previously contained NUC backup data (6.2 GB). Migrate before installing Windows. See <code class="cmd-inline">docs/GPU-NODE-SETUP.md</code>.
+      <div style="margin-top:12px;font-size:.78rem;padding:10px 12px;background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.2);border-radius:6px">
+        ✅ NUC backup data (12 GB) already moved to <code class="cmd-inline">/home/stevehan/nuc-backup</code> on sdc.<br>
+        <span style="color:var(--green)">sda (ADATA SU650) is now free — ready for Windows 11 installation.</span>
       </div>
 
       <h3 style="color:#fff;margin:20px 0 16px">Setup Roadmap</h3>
       <div style="font-size:.85rem">
         <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
-          <span style="color:var(--green);font-weight:700;min-width:20px">1.</span>
-          <span>Migrate NUC backup data from <code class="cmd-inline">sda</code> to K8s PVCs via migration bridges</span>
+          <span style="color:var(--muted);font-weight:700;min-width:20px">✅</span>
+          <span style="color:var(--muted)">NUC backup data (12 GB) moved from <code class="cmd-inline">sda</code> to <code class="cmd-inline">/home/stevehan/nuc-backup</code></span>
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
           <span style="color:var(--green);font-weight:700;min-width:20px">2.</span>

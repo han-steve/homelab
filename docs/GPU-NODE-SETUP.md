@@ -1,6 +1,6 @@
 # GPU Node Setup Guide
 
-**Hardware:** ASUS PRIME Z390-A | Intel i9-9900K | 32GB RAM | RTX 3080 Ti  
+**Hardware:** ASUS PRIME Z390-P | Intel i9-9900K | 32GB Team Group DDR4-3200 | RTX 3080 Ti  
 **IP:** 192.168.1.101 (Debian 12 currently — will be Talos worker)
 
 ---
@@ -9,12 +9,12 @@
 
 | Device | Model | Size | Current State | Plan |
 |--------|-------|------|---------------|------|
-| `sda`  | ADATA SU650 | 894 GB | ext4 (`homelab-storage`) — has NUC backup data | **→ Windows 11** (games) |
+| `sda`  | ADATA SU650 | 894 GB | ✅ Free — backup data moved to `/home/stevehan/nuc-backup` | **→ Windows 11** (games) |
 | `sdb`  | NT-2TB 2280 | 1.9 TB | ext4 (`datavolume`) | Keep as data drive |
 | `sdc`  | Samsung SSD 870 EVO 1TB | 931 GB | **Current Debian Linux OS** | **→ Talos Linux** (K8s worker) |
 
-> **Important:** `sda` currently has NUC backup data (6.2 GB of k8s-storage + Docker volumes).  
-> Migrate this data first via the migration bridges, or confirm it's OK to lose before installing Windows.
+> ✅ **`sda` is now free.** NUC backup data (12 GB) has been moved to `/home/stevehan/nuc-backup` on `sdc`.
+> Windows 11 can be installed on `sda` at any time.
 
 ---
 
@@ -25,28 +25,20 @@
 Why Talos first:
 - Adds GPU to K8s cluster (CUDA workloads, AI inference)
 - Windows on `sda` is independent — doesn't touch `sdc`
-- NUC backup data on `sda` should be migrated before Windows install
+- ~~NUC backup data on `sda` should be migrated before Windows install~~ ✅ Done — data at `/home/stevehan/nuc-backup`
 
 ---
 
-## PART 1: Migrate NUC Backup Data from ADATA (before Windows install)
+## ~~PART 1: Migrate NUC Backup Data from ADATA~~ ✅ Complete
 
-The previous session backed up NUC data to `sda`:
+NUC backup data has already been moved from `/mnt/storage` (sda) to `/home/stevehan/nuc-backup` on sdc (the Linux OS drive):
 
-```
-/mnt/storage/
-  k8s-storage/        (6.2 GB — old K8s PV data: prometheus, apitable, etc.)
-    dev-vcluster/
-    prod-vcluster/
-    stage-vcluster/
-    prometheus/
-    apps/
-  docker-named-volumes.tar.gz   (68 MB — Docker volumes backup)
-  home/               (user home backup)
-  mysql-dump.sql      (APITable MySQL dump)
+```bash
+# Already done via rsync (12 GB moved)
+# rsync -avz --progress /mnt/storage/ /home/stevehan/nuc-backup/ --exclude='lost+found'
 ```
 
-Transfer to K8s via bridges (while bridges are still running):
+**sda (ADATA SU650 894GB) is now empty and ready for Windows 11.**
 
 ```bash
 # Prometheus TSDB history → monitoring bridge
@@ -123,7 +115,7 @@ talosctl gen config homelab https://192.168.1.10:6443 \
 ### Step 4: Boot from USB
 
 1. Insert USB into GPU node
-2. Enter BIOS (Del / F2 at startup on ASUS PRIME Z390-A)
+2. Enter BIOS (Del / F2 at startup on ASUS PRIME Z390-P)
 3. **Disable Secure Boot** (or see Section below for enabling it)
 4. Set boot priority to USB
 5. Boot — Talos will start in "maintenance mode"
@@ -200,7 +192,7 @@ brew install wimlib coreutils
 
 ### Step 2: Bypass TPM 2.0 Check (if needed)
 
-ASUS PRIME Z390-A doesn't have TPM 2.0 by default. Windows 11 requires it.
+ASUS PRIME Z390-P doesn't have TPM 2.0 by default. Windows 11 requires it.
 
 Options:
 - **Enable fTPM in BIOS**: BIOS → Advanced → PCH-FW Configuration → PTT → Enable
@@ -271,7 +263,7 @@ This requires physical access to enroll the key. Only worth doing if you need se
 | Vendor | American Megatrends Inc. (AMI) |
 | Version | 3006 |
 | Release Date | October 12, 2021 |
-| Motherboard | ASUS PRIME Z390-A |
+| Motherboard | ASUS PRIME Z390-P |
 | CPU Socket | LGA1151 (Intel 8th/9th gen) |
 | PCIe x16 | GPU: RTX 3080 Ti (slot 1) |
 | M.2 slots | M2_1: PCIe + SATA; M2_2: PCIe only |
@@ -294,7 +286,7 @@ This requires physical access to enroll the key. Only worth doing if you need se
 | RAM | 32 GB |
 | GPU | NVIDIA GeForce RTX 3080 Ti 12 GB (GA102, ASUS) |
 | GPU Driver | 560.35.05 (CUDA 12.6) |
-| Motherboard | ASUS PRIME Z390-A |
+| Motherboard | ASUS PRIME Z390-P |
 | BIOS | AMI v3006 (Oct 2021) |
 | OS (current) | Debian 12 Bookworm |
 | OS (target) | Talos Linux v1.13.2 (sdc) + Windows 11 (sda) |
