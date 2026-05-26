@@ -1,0 +1,47 @@
+# CoreDNS homelab configuration
+#
+# Patches CoreDNS to answer *.homelab DNS queries with the correct service IPs.
+# This enables split DNS for Tailscale remote access (see docs/SPLIT-DNS.md).
+#
+# Apply: kubectl apply -f infrastructure/coredns-homelab.yaml
+# Verify: kubectl exec -n kube-system ds/cilium -- nslookup grafana.homelab 192.168.1.10
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  homelab.server: |
+    homelab {
+        hosts {
+            # Service IPs for .homelab domain
+            192.168.1.11 jellyfin.homelab
+            192.168.1.12 actual-budget.homelab
+            192.168.1.13 grafana.homelab
+            192.168.1.14 argocd.homelab
+            192.168.1.15 apitable.homelab
+            fallthrough
+        }
+        log
+    }
+---
+# Patch CoreDNS Corefile to include custom config
+# Talos + Kubernetes CoreDNS: edit the coredns ConfigMap to add import
+# Note: The coredns-custom ConfigMap above requires the CoreDNS "import" plugin.
+# Alternative: patch the main CoreDNS ConfigMap directly:
+#
+# kubectl edit configmap coredns -n kube-system
+# Add inside the Corefile block (after the existing content):
+#
+#   homelab {
+#       hosts {
+#           192.168.1.11 jellyfin.homelab
+#           192.168.1.12 actual-budget.homelab
+#           192.168.1.13 grafana.homelab
+#           192.168.1.14 argocd.homelab
+#           192.168.1.15 apitable.homelab
+#           fallthrough
+#       }
+#       log
+#   }
