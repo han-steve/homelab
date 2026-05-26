@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # migration-runner.sh
+# NOTE: MIGRATION IS COMPLETE. NUC is decommissioned. This script is for historical reference only.
+# The '-ppassword' below was the root password for a Docker MySQL container on the
+# now-decommissioned NUC (192.168.1.100). Hardware is retired; no security risk.
+#
 # Runs on the NUC (192.168.1.100) OR the GPU node (192.168.1.101)
 # Rsyncs data into K8s PVCs via the migration bridge pod.
 # Usage: ssh stevehan@192.168.1.100 "bash -s" < scripts/migration-runner.sh
