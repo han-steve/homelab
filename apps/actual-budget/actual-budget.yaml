@@ -68,13 +68,20 @@ spec:
             limits:
               memory: 512Mi
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "curl -sk https://localhost:5006/ -o /dev/null -w '%{http_code}' | grep -qE '^[23]'"
+            httpGet:
+              path: /
+              port: 5006
+              scheme: HTTPS
             initialDelaySeconds: 15
             periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5006
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 15
       volumes:
         - name: data
           persistentVolumeClaim:
