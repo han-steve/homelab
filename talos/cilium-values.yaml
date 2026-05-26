@@ -73,17 +73,14 @@ externalIPs:
 # Single-node cluster: only 1 operator replica can schedule
 operator:
   replicas: 1
-      - http
+  prometheus:
+    enabled: true
 
 # Enable Prometheus metrics scraping
 prometheus:
   enabled: true
   serviceMonitor:
     enabled: false  # Enable after kube-prometheus-stack is installed
-
-operator:
-  prometheus:
-    enabled: true
 
 # eBPF host routing for better performance (bypass iptables entirely)
 bpf:
