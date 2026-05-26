@@ -10,3 +10,8 @@ talos/.gpu-schematic-id
 
 # OS
 .DS_Store
+
+# Dashboard
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
