@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Talos Cluster Bootstrap Script — Homelab
-# M2 control plane node: Minisforum EliteMini M2, Core Ultra 7 356H
-# Currently running Talos installer at 192.168.1.199, target static IP: 192.168.1.200
+# Talos Cluster Bootstrap Script - Homelab
+# M2 control plane node: Minisforum M2 (Intel Core Ultra 7 356H, 32GB DDR5)
+# Target static IP: 192.168.1.10 (configured via patches/m2-node.yaml)
 #
-# Run sections in order. Each section is idempotent where possible.
-# NEVER run the entire script at once — verify each section succeeds before continuing.
+# NOTE: This script documents the ORIGINAL cluster setup. For disaster recovery,
+# see talos/RECOVERY-STEPS.md instead. Run sections in order. Each section is
+# idempotent where possible. NEVER run the entire script at once.
+#
+# Current stack (as of 2024): Cilium (CNI + LB-IPAM), Longhorn, cert-manager,
+# External Secrets Operator (1Password Connect), ArgoCD (GitOps).
+# MetalLB was used during initial bootstrap and has since been replaced by Cilium LB-IPAM.
 
 set -euo pipefail
 HOMELAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,7 +67,7 @@ section4_gen_config() {
   echo "=== Section 4: Generating Talos machine configs ==="
   M2_SCHEMATIC=$(cat "${TALOS_DIR}/.m2-schematic-id")
 
-  talosctl gen config homelab https://192.168.1.200:6443 \
+  talosctl gen config homelab https://192.168.1.10:6443 \
     --with-secrets "${TALOS_DIR}/secrets.yaml" \
     --output "${TALOS_DIR}/" \
     --force \
@@ -83,52 +88,55 @@ section4_gen_config() {
 }
 
 ###############################################################################
-# SECTION 5: Apply config to M2 node (currently at 192.168.1.199)
-# This will WIPE nvme0n1 and install Talos. Node reboots to 192.168.1.200.
-# REMOVE THE T7 USB AFTER INSTALL COMPLETES (or set NVMe as first boot in BIOS)
+# SECTION 5: Apply config to M2 node (find temp DHCP IP first)
+# This will WIPE nvme0n1 and install Talos. Node reboots to 192.168.1.10.
+# REMOVE THE USB AFTER INSTALL COMPLETES (or set NVMe as first boot in BIOS)
 ###############################################################################
 section5_apply_config() {
-  echo "=== Section 5: Applying controlplane config to M2 at 192.168.1.199 ==="
+  # Find temp DHCP IP: arp -a | grep "84:47"  OR check AT&T BGW320 at http://192.168.254.254
+  echo "Enter the M2 temporary DHCP IP (from arp -a or AT&T router device list):"
+  read -r M2_DHCP_IP
+  echo "=== Section 5: Applying controlplane config to M2 at ${M2_DHCP_IP} ==="
   echo "WARNING: This will WIPE /dev/nvme0n1 on the M2 node."
   echo "Press Ctrl+C to abort, or Enter to continue..."
   read -r
 
   talosctl apply-config \
     --insecure \
-    --nodes 192.168.1.199 \
+    --nodes "${M2_DHCP_IP}" \
     --file "${TALOS_DIR}/controlplane.yaml"
 
   echo "Config applied. Node is now installing Talos to nvme0n1."
-  echo "Monitor install progress: watch -n2 'talosctl dmesg --insecure --nodes 192.168.1.199 2>/dev/null | tail -20'"
+  echo "Monitor install progress: watch -n2 'talosctl dmesg --insecure --nodes ${M2_DHCP_IP} 2>/dev/null | tail -20'"
   echo ""
-  echo "Node will reboot and come up at 192.168.1.200 after installation."
+  echo "Node will reboot and come up at 192.168.1.10 after installation."
   echo ""
   echo "NETWORK DETAILS:"
-  echo "  Gateway:     192.168.1.254  (NOT .1 — confirmed from Mac: route -n get default)"
-  echo "  DNS:         192.168.1.254  (NOT .1 — router DNS, confirmed from scutil --dns)"
-  echo "  Static IP:   192.168.1.200"
+  echo "  Gateway:     192.168.1.254  (AT&T BGW320 LAN interface)"
+  echo "  DNS:         192.168.1.254"
+  echo "  Static IP:   192.168.1.10  (configured via patches/m2-node.yaml)"
   echo ""
-  echo "IMPORTANT: Remove the Samsung T7 USB drive (or BIOS will try to boot from it again)."
+  echo "IMPORTANT: Remove the USB drive (or BIOS will try to boot from it again)."
 }
 
 ###############################################################################
 # SECTION 6: Configure talosctl client
-# Run after node reboots to 192.168.1.200
+# Run after node reboots to 192.168.1.10
 ###############################################################################
 section6_configure_talosctl() {
   echo "=== Section 6: Configuring talosctl ==="
   # Merge into default talosconfig
   talosctl config merge "${TALOSCONFIG}"
-  talosctl config endpoint 192.168.1.200
-  talosctl config node 192.168.1.200
+  talosctl config endpoint 192.168.1.10
+  talosctl config node 192.168.1.10
 
-  echo "Waiting for Talos API to be responsive at 192.168.1.200..."
-  until talosctl version --nodes 192.168.1.200 &>/dev/null; do
+  echo "Waiting for Talos API to be responsive at 192.168.1.10..."
+  until talosctl version --nodes 192.168.1.10 &>/dev/null; do
     echo "  Waiting..."
     sleep 5
   done
   echo "Talos API is up."
-  talosctl version --nodes 192.168.1.200
+  talosctl version --nodes 192.168.1.10
 }
 
 ###############################################################################
@@ -140,11 +148,11 @@ section7_bootstrap() {
   echo "Press Ctrl+C to abort, or Enter to continue..."
   read -r
 
-  talosctl bootstrap --nodes 192.168.1.200
+  talosctl bootstrap --nodes 192.168.1.10
 
   echo "Bootstrap initiated. Waiting for API server to become ready..."
   sleep 30
-  until talosctl health --nodes 192.168.1.200 2>&1 | grep -q "waiting to join"; do
+  until talosctl health --nodes 192.168.1.10 2>&1 | grep -q "waiting to join"; do
     echo "  Cluster coming up... (phase: CNI not yet installed)"
     sleep 10
   done
@@ -156,7 +164,7 @@ section7_bootstrap() {
 ###############################################################################
 section8_kubeconfig() {
   echo "=== Section 8: Getting kubeconfig ==="
-  talosctl kubeconfig --nodes 192.168.1.200 --force
+  talosctl kubeconfig --nodes 192.168.1.10 --force
   echo "kubeconfig merged. Current context:"
   kubectl config current-context
   echo ""
@@ -190,22 +198,18 @@ section9_cilium() {
 }
 
 ###############################################################################
-# SECTION 10: Install MetalLB
+# SECTION 10: Configure Cilium LB-IPAM (replaces MetalLB)
+# Cilium v1.19+ handles LoadBalancer IPs via LB-IPAM (L2 ARP mode).
+# The IP pool is configured in infrastructure/cilium/cilium-lb-pool.yaml.
+# No separate MetalLB installation needed.
 ###############################################################################
-section10_metallb() {
-  echo "=== Section 10: Installing MetalLB ==="
-  helm repo add metallb https://metallb.github.io/metallb --force-update
-  helm repo update metallb
-
-  helm install metallb metallb/metallb \
-    --namespace metallb-system --create-namespace \
-    --wait --timeout 5m
-
-  echo "MetalLB controller ready. Applying IPAddressPool..."
-  # Wait for MetalLB webhook to be ready
-  kubectl wait pods -n metallb-system -l component=controller --for condition=Ready --timeout=2m
-  kubectl apply -f "${TALOS_DIR}/metallb-config.yaml"
-  echo "MetalLB configured with pool 192.168.1.11-20."
+section10_cilium_lbipam() {
+  echo "=== Section 10: Configuring Cilium LB-IPAM ==="
+  echo "Cilium was already installed in section 9 with LB-IPAM enabled."
+  echo "Applying the LB IP pool and L2 announcement policy..."
+  kubectl apply -f "${HOMELAB_DIR}/infrastructure/cilium/cilium-lb-pool.yaml"
+  echo "LB-IPAM configured. IP pool 192.168.1.11-20 active."
+  kubectl get ciliumloadbalancerippool
 }
 
 ###############################################################################
@@ -214,7 +218,7 @@ section10_metallb() {
 section11_longhorn() {
   echo "=== Section 11: Installing Longhorn ==="
   # Verify prerequisites on each node
-  talosctl get extensions --nodes 192.168.1.200 | grep -E "iscsi|util-linux"
+  talosctl get extensions --nodes 192.168.1.10 | grep -E "iscsi|util-linux"
 
   helm repo add longhorn https://charts.longhorn.io --force-update
   helm repo update longhorn
@@ -356,7 +360,7 @@ echo "  6. section6_configure_talosctl  (run after node reboots to .200)"
 echo "  7. section7_bootstrap      (run EXACTLY ONCE)"
 echo "  8. section8_kubeconfig"
 echo "  9. section9_cilium"
-echo "  10. section10_metallb"
+echo "  10. section10_cilium_lbipam"
 echo "  11. section11_longhorn"
 echo "  12. section12_cert_manager"
 echo "  13. section13_eso"

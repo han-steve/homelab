@@ -1,0 +1,17 @@
+# External Secrets Operator
+#
+# Deployed via bootstrap.sh section13_eso (Helm install) + manual steps below.
+# After ESO is running, all app secrets are pulled from 1Password automatically.
+#
+# Manual bootstrap steps (run once):
+#   1. Download 1password-credentials.json from 1Password > Integrations > Connect Server
+#   2. kubectl create namespace external-secrets
+#   3. kubectl create secret generic onepassword-connect-secret \
+#        --namespace external-secrets \
+#        --from-file=1password-credentials.json
+#   4. kubectl apply -f infrastructure/external-secrets/1password-connect.yaml
+#
+# After step 4, the ClusterSecretStore named "onepassword" becomes available
+# and ExternalSecret resources can reference it.
+resources:
+  - 1password-connect.yaml

@@ -1,0 +1,19 @@
+# Data Migration Bridges (COMPLETED - do not redeploy)
+#
+# These SSH bridge pods were used to migrate data from the old NUC homelab
+# to the new M2 Kubernetes cluster. Migration is complete.
+#
+# What was migrated:
+#   actual-budget  -> actual-budget-data PVC  (via 192.168.1.16)
+#   prometheus     -> prometheus TSDB PVC      (via 192.168.1.17)
+#   jellyfin       -> jellyfin PVC             (via 192.168.1.18)
+#   apitable       -> apitable MySQL PVC        (via 192.168.1.19)
+#
+# The bridge pods have been deleted from the cluster. This file is kept for
+# reference in case a future data migration is needed.
+#
+# To redeploy for a new migration:
+#   kubectl apply -f infrastructure/migration/bridges.yaml
+#   # ... rsync data ...
+#   kubectl delete -f infrastructure/migration/bridges.yaml
+resources: []
