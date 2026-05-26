@@ -1,0 +1,21 @@
+# Promtail helm values — log shipping agent for Loki
+# Chart: grafana/promtail v6.17.1 (Promtail 3.5.1)
+# Runs as DaemonSet on all nodes, ships logs to Loki
+
+config:
+  # Point to Loki service in monitoring namespace
+  clients:
+    - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+  # Use default kubernetes pod scrape configs (no extraScrapeConfigs to avoid duplicate job names)
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+tolerations:
+  # Tolerate all taints so Promtail runs on every node including master
+  - operator: Exists
+    effect: NoSchedule
