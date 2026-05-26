@@ -1,0 +1,22 @@
+# Cilium LB-IPAM — IP address pool for LoadBalancer services
+# Replaces MetalLB's IPAddressPool. Cilium v1.15+ provides native LB-IPAM.
+#
+# IP range 192.168.1.11-20 is reserved on the AT&T BGW320 (outside its DHCP pool).
+# The L2 announcement policy (cilium-l2-policy.yaml) handles ARP on enp44s0.
+#
+# Current allocations:
+#   192.168.1.11  -> Jellyfin
+#   192.168.1.12  -> Actual Budget
+#   192.168.1.13  -> Grafana
+#   192.168.1.14  -> ArgoCD
+#   192.168.1.15  -> APITable
+#   192.168.1.16-20 -> reserved for future services
+---
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: homelab-pool
+spec:
+  blocks:
+    - start: "192.168.1.11"
+      stop: "192.168.1.20"

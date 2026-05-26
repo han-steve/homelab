@@ -3,14 +3,13 @@ kind: Application
 metadata:
   name: prometheus-monitoring
   annotations:
-    argocd.argoproj.io/manifest-generate-paths: "prometheus-monitoring/base"
+    argocd.argoproj.io/manifest-generate-paths: "prometheus-monitoring"
 spec:
   project: default
   source:
-    # Update repoURL to point to your deployment repository
     repoURL: 'https://github.com/han-steve/homelab.git'
     targetRevision: HEAD
-    path: prometheus-monitoring/base
+    path: prometheus-monitoring
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring

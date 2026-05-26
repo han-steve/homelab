@@ -59,8 +59,10 @@ hubble:
       - flow
       - icmp
 
-# L2 announcements — Cilium handles ARP for LoadBalancer IPs (replaces MetalLB L2)
-# MetalLB still handles IP allocation; Cilium handles the ARP announcements via eBPF
+# L2 announcements — Cilium handles both IP allocation (LB-IPAM) and ARP announcements.
+# CiliumLoadBalancerIPPool defines the pool (192.168.1.11-20).
+# CiliumL2AnnouncementPolicy defines which interfaces to announce on (enp44s0).
+# See infrastructure/cilium/ for the pool and policy manifests.
 l2announcements:
   enabled: true
 
@@ -87,7 +89,7 @@ operator:
 bpf:
   masquerade: false   # Keep false: forwardKubeDNSToHost=false already set, but masquerade + Talos hostDNS has known issues
 
-# BGP not needed; MetalLB handles L2 advertisement
+# BGP not needed; Cilium LB-IPAM + L2 announcements handle all LoadBalancer IPs
 bgpControlPlane:
   enabled: false
 

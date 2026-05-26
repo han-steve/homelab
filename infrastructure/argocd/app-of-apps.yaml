@@ -13,7 +13,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/stevehanstudio/homelab.git   # Update to actual repo URL
+    repoURL: https://github.com/han-steve/homelab.git
     targetRevision: HEAD
     path: app-of-apps
   destination:

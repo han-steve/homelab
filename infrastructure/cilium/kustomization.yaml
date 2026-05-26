@@ -1,0 +1,17 @@
+# Cilium CNI configuration
+#
+# Cilium is installed via bootstrap.sh section9_cilium (Helm install at cluster
+# bootstrap time, before any nodes are Ready). After ArgoCD is deployed, the
+# L2 pool and announcement policy are managed as GitOps resources here.
+#
+# Helm values for Cilium installation: talos/cilium-values.yaml
+#
+# Resources managed here:
+#   cilium-lb-pool.yaml     - CiliumLoadBalancerIPPool (192.168.1.11-20)
+#   cilium-l2-policy.yaml   - CiliumL2AnnouncementPolicy (ARP on enp44s0)
+#
+# Apply manually after bootstrap:
+#   kubectl apply -f infrastructure/cilium/
+resources:
+  - cilium-lb-pool.yaml
+  - cilium-l2-policy.yaml

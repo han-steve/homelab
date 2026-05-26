@@ -1,5 +1,10 @@
 # Homelab Migration Plan
 
+> **STATUS (2025)**: Migration from NUC to M2 is COMPLETE. The M2 cluster is fully
+> operational with all services running. The GPU node (192.168.1.101) is still on
+> Debian 12, pending Talos worker join (Phase 6). This document is kept as historical
+> reference. The active cluster state is documented in README.md.
+
 ## Overview
 
 Migrate from Intel NUC (`steve-homelab`, 192.168.1.100) to Minisforum M2 (Intel Series 3), with Talos Linux Kubernetes cluster. The GPU node (`steve-gpu-node`, 192.168.1.101) serves as interim backup storage and will become a Talos worker node.

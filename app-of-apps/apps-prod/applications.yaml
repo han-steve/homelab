@@ -68,24 +68,6 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
 ---
-# ArgoCD Application: Monitoring (Prometheus/Grafana) → host cluster (needs host node access)
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: monitoring-host
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: 'https://github.com/han-steve/homelab'
-    targetRevision: HEAD
-    path: prometheus-monitoring/base
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: monitoring
-  syncPolicy:
-    automated:
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+# NOTE: Monitoring (Prometheus/Grafana) is managed by app-of-apps/prometheus-monitoring/
+# which deploys to path: prometheus-monitoring on the host cluster.
+# See app-of-apps/prometheus-monitoring/base/prometheus-monitoring.yaml
