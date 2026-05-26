@@ -2,7 +2,7 @@
 # Chart: tailscale/tailscale-operator
 # Docs: https://tailscale.com/kb/1236/kubernetes-operator
 #
-# ─── PREREQUISITES ───────────────────────────────────────────────────────────
+# PREREQUISITES:
 #
 # 1. Create an OAuth client in the Tailscale admin console:
 #    https://login.tailscale.com/admin/settings/oauth
@@ -18,17 +18,35 @@
 #      --from-literal=client_id='<your-oauth-client-id>' \
 #      --from-literal=client_secret='<your-oauth-client-secret>'
 #
-# ─── DIRECT PEER-TO-PEER (no DERP relay) ───────�# ─── DIRECT PEER-TO-PEER (no DERP relay) ───────�# ─── DIR��# ─── DIRECT PEER-TOt NAT t# ─── DIRECT PEER-TO-PEER (no d # ─── DIRECT PEER-TO-PEER (no DERP relay) ── DERP # ─── DIRECT PEER-TO-PEER (no DERP relay) ───────�# ─── DIRECT PEER-TO-PEER (no DERP relay) ───────�# ─── DIR��# ─── DIRECT PEER-TOt NAT t# ─�e:
-#    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #    #     Int#    #    #    #      #    #    #    #    #    #sc#    #    #    #    #    #    #   ns#    #    #    #1.10#    #    #    #    #    #    #    #    #    #    #    #-...]            (relay)
+# DIRECT PEER-TO-PEER (no DERP relay):
 #
-#   Note: Even without port forwarding, Tailscale works via DERP fallback.
-#   Port forwarding only needed for latency-sensitive scenarios.
+# For lowest latency, forward UDP 41641 on the AT&T BGW320 router to the M2 node:
+#   AT&T BGW320 admin UI: http://192.168.254.254
+#   Firewall -> NAT/Gaming -> Add custom rule:
+#     Protocol: UDP
+#     Port range: 41641
+#     Device IP: 192.168.1.10 (M2 node)
 #
-# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ─────────�# ─── SUBNET ROUTER (LAN access from Tailscale) ──────�tProxyClass: homelab
+# Even without port forwarding, Tailscale works via DERP fallback.
+# Port forwarding only needed for latency-sensitive scenarios (e.g., 4K streaming).
+#
+# SUBNET ROUTER (LAN access from Tailscale):
+#
+# After deploying, approve the subnet route in Tailscale admin:
+#   https://login.tailscale.com/admin/machines
+#   Find "homelab-operator" -> ... -> Edit route settings -> Enable 192.168.1.0/24
+#
+# This lets Tailscale clients reach all homelab services (192.168.1.11-20) directly.
+
+operatorConfig:
+  hostname: homelab-operator
+
+proxyConfig:
+  defaultProxyClass: homelab
 
 apiServerProxyConfig:
   mode: "true"
 
 oauth:
-  clientId: ""   # Populated from operator-oauth secret (do not put real value here)
+  clientId: ""     # Populated from operator-oauth secret (do not put real value here)
   clientSecret: "" # Populated from operator-oauth secret (do not put real value here)
