@@ -1,0 +1,29 @@
+USER-SUPPLIED VALUES:
+controlPlane:
+  distro:
+    k8s:
+      enabled: true
+  statefulSet:
+    persistence:
+      volumeClaim:
+        size: 5Gi
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        cpu: 50m
+        memory: 256Mi
+sync:
+  fromHost:
+    storageClasses:
+      enabled: true
+  toHost:
+    ingresses:
+      enabled: true
+    persistentVolumeClaims:
+      enabled: true
+    storageClasses:
+      enabled: false
+telemetry:
+  instanceCreator: vclusterctl
+  machineID: 7bdc3ed1a1b35fdd6101e98b9562d739cc62624631fb62a411da0fa297e8a5f8

@@ -1,5 +1,7 @@
 ---
-# ArgoCD Application: Actual Budget → vcluster-prod
+# ArgoCD Application: Actual Budget → HOST cluster (not vcluster — data already migrated there)
+# Note: actual-budget data was migrated from GPU node to host-cluster PVC.
+# Keeping on host cluster until a full vcluster migration with data copy is planned.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -12,12 +14,12 @@ spec:
     targetRevision: HEAD
     path: apps/actual-budget
   destination:
-    server: 'https://prod.vc-prod.svc.cluster.local'
+    server: 'https://kubernetes.default.svc'
     namespace: actual-budget
   syncPolicy:
     automated:
       selfHeal: true
-      prune: true
+      prune: false
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
