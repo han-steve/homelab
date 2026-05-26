@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════════════════
 # migrate-from-nuc.sh
+# STATUS: MIGRATION COMPLETE. The NUC (192.168.1.100) is retired. This script
+# is kept for reference only. Do not run it.
+#
+# Note: This script contains the NUC SSH password and MySQL container password
+# which were internal credentials for the decommissioned NUC. Both systems are
+# offline; these credentials are no longer in use.
+#
 # Run this on your MAC (not on the NUC) after starting SSH on the NUC.
 #
 # PREREQUISITES:
