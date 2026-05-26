@@ -1,0 +1,91 @@
+---
+# ArgoCD Application: Actual Budget → vcluster-prod
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: actual-budget-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab'
+    targetRevision: HEAD
+    path: apps/actual-budget
+  destination:
+    server: 'https://prod.vc-prod.svc.cluster.local'
+    namespace: actual-budget
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD Application: APITable → vcluster-prod
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apitable-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab'
+    targetRevision: HEAD
+    path: apps/apitable
+  destination:
+    server: 'https://prod.vc-prod.svc.cluster.local'
+    namespace: apitable
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD Application: Jellyfin → vcluster-prod
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jellyfin-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab'
+    targetRevision: HEAD
+    path: infrastructure/jellyfin
+  destination:
+    server: 'https://prod.vc-prod.svc.cluster.local'
+    namespace: jellyfin
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD Application: Monitoring (Prometheus/Grafana) → host cluster (needs host node access)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-host
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab'
+    targetRevision: HEAD
+    path: prometheus-monitoring/base
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

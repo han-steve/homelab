@@ -42,12 +42,22 @@ spec:
           image: actualbudget/actual-server:25.5.0
           ports:
             - containerPort: 5006
-              name: http
+              name: https
           env:
             - name: ACTUAL_UPLOAD_FILE_SYNC_SIZE_LIMIT_MB
               value: "20"
             - name: ACTUAL_UPLOAD_SYNC_ENCRYPTED_FILE_SYNC_SIZE_LIMIT_MB
               value: "50"
+            - name: ACTUAL_HTTPS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: actual-budget-tls
+                  key: selfhost.key
+            - name: ACTUAL_HTTPS_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: actual-budget-tls
+                  key: selfhost.crt
           volumeMounts:
             - name: data
               mountPath: /data
@@ -58,9 +68,11 @@ spec:
             limits:
               memory: 512Mi
           livenessProbe:
-            httpGet:
-              path: /
-              port: http
+            exec:
+              command:
+                - sh
+                - -c
+                - "curl -sk https://localhost:5006/ -o /dev/null -w '%{http_code}' | grep -qE '^[23]'"
             initialDelaySeconds: 15
             periodSeconds: 30
       volumes:
@@ -80,6 +92,6 @@ spec:
   selector:
     app: actual-budget
   ports:
-    - name: http
+    - name: https
       port: 5006
-      targetPort: http
+      targetPort: 5006

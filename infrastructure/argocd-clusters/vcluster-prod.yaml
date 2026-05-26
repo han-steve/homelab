@@ -1,0 +1,8 @@
+# ArgoCD cluster secret for the prod vCluster
+# Re-generate with: python3 /tmp/register-vclusters.py (or scripts/register-vclusters.py)
+# The secret content contains client certs from the vcluster — regenerate if the vcluster is recreated.
+# This file is intentionally incomplete (no cert data) — apply via the script.
+#
+# Manual re-register:
+#   vcluster connect prod --namespace vc-prod --print --server=https://prod.vc-prod.svc.cluster.local > /tmp/vc-prod-kubeconfig.yaml
+#   python3 scripts/register-vclusters.py

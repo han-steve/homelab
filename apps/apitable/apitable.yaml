@@ -92,6 +92,67 @@ spec:
     - port: 3306
       targetPort: 3306
 ---
+# ─── RabbitMQ ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-rabbitmq
+  namespace: apitable
+  labels:
+    app: apitable-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-rabbitmq
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: apitable-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.11-management-alpine
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "apitable"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "apitable@com"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "ping"]
+            initialDelaySeconds: 20
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apitable-rabbitmq
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: amqp
+    - name: management
+      port: 15672
+      targetPort: management
+---
 # ─── Redis ───────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
@@ -254,6 +315,14 @@ data:
   ENV: "apitable"
   INITIAL_CREATE_ADMIN: "true"
   TIMEZONE: "America/Los_Angeles"
+  RABBITMQ_HOST: "apitable-rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USERNAME: "apitable"
+  RABBITMQ_PASSWORD: "apitable@com"
+  SPRING_RABBITMQ_HOST: "apitable-rabbitmq"
+  SPRING_RABBITMQ_PORT: "5672"
+  SPRING_RABBITMQ_USERNAME: "apitable"
+  SPRING_RABBITMQ_PASSWORD: "apitable@com"
 ---
 # ─── Init DB (run migrations before backend starts) ─────────────────────────
 apiVersion: batch/v1

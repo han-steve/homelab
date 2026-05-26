@@ -44,12 +44,38 @@ warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
 step()    { echo -e "\n${BLUE}══════════════════════════════════════${NC}"; echo -e "${BLUE}  $*${NC}"; echo -e "${BLUE}══════════════════════════════════════${NC}"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
+# ── SSH key passphrase setup ──────────────────────────────────────────────────
+# Add the SSH key to agent once (passphrase: 1024)
+setup_ssh_agent() {
+  if ! ssh-add -l &>/dev/null; then
+    info "Starting SSH agent..."
+    eval "$(ssh-agent -s)"
+  fi
+  # Check if our key is already added
+  local key_file="$HOME/.ssh/id_ed25519"
+  if [ ! -f "$key_file" ]; then
+    key_file="$HOME/.ssh/id_rsa"
+  fi
+  if [ -f "$key_file" ]; then
+    if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "$key_file" 2>/dev/null | awk '{print $2}')"; then
+      info "Adding SSH key to agent (enter passphrase: 1024)"
+      ssh-add "$key_file"
+    else
+      info "SSH key already in agent"
+    fi
+  fi
+}
+
+# NUC uses password auth (sshpass)
+NUC_SSH="sshpass -p '1024' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8"
+NUC_RSYNC_PREFIX="sshpass -p '1024'"
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 check_nuc() {
   info "Checking NUC SSH at $NUC_IP..."
-  if ! ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
-    -o BatchMode=yes "$NUC_USER@$NUC_IP" "echo ok" &>/dev/null; then
+  if ! sshpass -p '1024' ssh -o ConnectTimeout=8 -o StrictHostKeyChecking=no \
+    "$NUC_USER@$NUC_IP" "echo ok" &>/dev/null; then
     error "Cannot SSH to NUC at $NUC_IP. Start SSH first: sudo systemctl start ssh"
   fi
   info "✓ NUC reachable"
@@ -77,14 +103,14 @@ nuc_to_bridge() {
   # OR: use rsync directly from Mac pulling from NUC and pushing to bridge (two-hop)
   
   # Approach: run rsync on NUC pushing to bridge
-  ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
+  sshpass -p '1024' ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
     "rsync -avz --progress --stats \
       -e 'ssh -p $BRIDGE_PORT -o StrictHostKeyChecking=no' \
       '$src' \
       root@$bridge_ip:$dest" \
   && info "✓ $desc — done" \
   || { warn "$desc failed — trying one more time..."; sleep 5;
-       ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
+       sshpass -p '1024' ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
          "rsync -avz -e 'ssh -p $BRIDGE_PORT -o StrictHostKeyChecking=no' \
            '$src' root@$bridge_ip:$dest"; }
 }
@@ -97,6 +123,7 @@ echo "║          Homelab NUC → K8s Migration                ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo ""
 
+setup_ssh_agent
 check_nuc
 
 # ── STEP 1: Actual Budget ─────────────────────────────────────────────────────
@@ -127,7 +154,7 @@ warn "Rsyncing only sealed blocks (wal/ excluded) — safe to do while Prometheu
 
 # Rsync ONLY sealed TSDB blocks (skip wal and head chunks — those are ephemeral)
 # The old blocks will be discoverable by Prometheus on restart
-ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
+sshpass -p '1024' ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
   "rsync -avz --progress \
     --exclude='wal/' \
     --exclude='chunks_head/' \
@@ -180,7 +207,7 @@ step "4/4 — APITable MySQL dump"
 
 # Create dump on NUC first (if not already done)
 info "Dumping MySQL from NUC Docker container..."
-ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
+sshpass -p '1024' ssh -o StrictHostKeyChecking=no "$NUC_USER@$NUC_IP" \
   "docker exec mysql mysqldump -u root -ppassword --all-databases \
     --single-transaction --quick 2>/dev/null > /tmp/apitable-mysql-dump.sql && \
   echo 'Dump created: '$(du -sh /tmp/apitable-mysql-dump.sql)" \
