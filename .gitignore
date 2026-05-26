@@ -1,13 +1,12 @@
-# Talos — generated secrets and node configs (sensitive — store secrets.yaml in 1Password)
+# Talos — generated secrets and machine configs (contain cluster tokens)
+# Store in 1Password. Generate with: talosctl gen secrets + talosctl gen config
 talos/secrets.yaml
 talos/controlplane.yaml
 talos/worker.yaml
+talos/worker-gpu.yaml
 talos/talosconfig
 talos/.m2-schematic-id
 talos/.gpu-schematic-id
 
 # OS
 .DS_Store
-talos/worker-gpu.yaml
-talos/worker.yaml
-talos/*.yaml
