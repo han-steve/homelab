@@ -16,6 +16,8 @@ spec:
     repoURL: https://github.com/han-steve/homelab.git
     targetRevision: HEAD
     path: app-of-apps
+    directory:
+      recurse: true  # Scan all subdirectories for Application manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
