@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: "infrastructure/tailscale"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/han-steve/homelab.git'
+    targetRevision: HEAD
+    path: infrastructure/tailscale
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: tailscale
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: tailscale-operator
+      jsonPointers:
+        - /data
+        - /stringData
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
