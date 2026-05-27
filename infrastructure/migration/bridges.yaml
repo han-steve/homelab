@@ -28,7 +28,7 @@ metadata:
   namespace: migration
 data:
   authorized_keys: |
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJTF61/iDnvWM7nM8/nZa1G1CpGTMQbxXKlgEUfLZ8ih stevehan@Mac.attlocal.net
+    PLACEHOLDER_DEPLOY_MANUALLY
 
 ---
 # ═══════════════════════════════════════════════════════════════════════════════
