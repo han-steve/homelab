@@ -46,8 +46,10 @@ metadata:
     app.kubernetes.io/name: minio
 type: Opaque
 stringData:
-  MINIO_ROOT_USER: "minio-homelab"
-  MINIO_ROOT_PASSWORD: "B-bJtI72Ek3H73Wd-ksZu2gd5m_wWVP7"
+  # Deploy manually: kubectl create secret generic minio-credentials -n backup \
+  #   --from-literal=MINIO_ROOT_USER='<USER>' --from-literal=MINIO_ROOT_PASSWORD='<PASS>'
+  MINIO_ROOT_USER: "PLACEHOLDER_DEPLOY_MANUALLY"
+  MINIO_ROOT_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
 ---
 apiVersion: apps/v1
 kind: Deployment

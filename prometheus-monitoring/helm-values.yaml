@@ -2,7 +2,9 @@
 # Only includes changes from default configuration
 
 grafana:
-  adminPassword: homelab2026
+    # Deploy manually: kubectl patch secret prometheus-grafana -n monitoring --type='json' \
+  #   -p='[{"op":"replace","path":"/data/admin-password","value":"'$(printf '<PASSWORD>' | base64)'"}]'
+  adminPassword: PLACEHOLDER_DEPLOY_MANUALLY
   persistence:
     enabled: true
     size: 10Gi

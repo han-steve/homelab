@@ -16,6 +16,19 @@ spec:
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: backup
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: minio-credentials
+      jsonPointers:
+        - /data
+        - /stringData
+    - group: ""
+      kind: Secret
+      name: restic-password
+      jsonPointers:
+        - /data
+        - /stringData
   syncPolicy:
     automated:
       selfHeal: false  # Manual sync — backup config is sensitive
@@ -23,3 +36,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true

@@ -64,13 +64,11 @@ talos/                # Talos config (secrets gitignored, patches committed)
 ## Security Notes
 
 - Talos secrets (talos/secrets.yaml, talosconfig) are gitignored and NEVER committed
-- Grafana password: set in helm-values.yaml (homelab2026)
-- oCIS password: set in apps/ocis/base/secret.yaml (unique generated)
-- MinIO credentials: in infrastructure/restic/minio.yaml (unique generated)
+- All service passwords use placeholders in git — deploy real secrets manually via kubectl
+- Grafana, oCIS, MinIO, Restic, APITable secrets all require manual deployment
 - No external ingress — all services LAN-only via Cilium LB-IPAM
 
 ## Known Issues
 
-- SimpleFIN exporter needs a fresh setup token (old one expired/consumed)
-- APITable is degraded (gateway CrashLoopBackOff)
+- APITable needs first-time admin registration at http://192.168.1.15/login
 - Grafana 13.0.1+security-01 had auth issues — fixed by setting password via API

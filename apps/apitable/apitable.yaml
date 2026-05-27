@@ -14,8 +14,11 @@ metadata:
   namespace: apitable
 type: Opaque
 stringData:
-  MYSQL_ROOT_PASSWORD: "apitable_root_2026"
-  MYSQL_PASSWORD: "apitable@com"
+  # Deploy manually: kubectl create secret generic apitable-db-secret -n apitable \
+  #   --from-literal=MYSQL_ROOT_PASSWORD='<PASS>' --from-literal=MYSQL_PASSWORD='<PASS>' \
+  #   --from-literal=MYSQL_DATABASE=apitable --from-literal=MYSQL_USER=apitable
+  MYSQL_ROOT_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
+  MYSQL_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
   MYSQL_DATABASE: "apitable"
   MYSQL_USER: "apitable"
 ---
@@ -213,8 +216,10 @@ metadata:
   namespace: apitable
 type: Opaque
 stringData:
+  # Deploy manually: kubectl create secret generic apitable-minio-secret -n apitable \
+  #   --from-literal=MINIO_ROOT_USER=apitable --from-literal=MINIO_ROOT_PASSWORD='<PASS>'
   MINIO_ROOT_USER: "apitable"
-  MINIO_ROOT_PASSWORD: "apitable@minio2026"
+  MINIO_ROOT_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -307,7 +312,7 @@ data:
   MYSQL_DATABASE: "apitable"
   REDIS_HOST: "apitable-redis"
   REDIS_PORT: "6379"
-  REDIS_PASSWORD: "apitable_redis_2026"
+  REDIS_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
   OSS_HOST: "http://apitable-minio:9000"
   OSS_BUCKET_NAME: "apitable"
   OSS_ACCESS_KEY: "apitable"
@@ -321,11 +326,11 @@ data:
   RABBITMQ_HOST: "apitable-rabbitmq"
   RABBITMQ_PORT: "5672"
   RABBITMQ_USERNAME: "apitable"
-  RABBITMQ_PASSWORD: "apitable@com"
+  RABBITMQ_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
   SPRING_RABBITMQ_HOST: "apitable-rabbitmq"
   SPRING_RABBITMQ_PORT: "5672"
   SPRING_RABBITMQ_USERNAME: "apitable"
-  SPRING_RABBITMQ_PASSWORD: "apitable@com"
+  SPRING_RABBITMQ_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
 ---
 # ─── Backend Server (REST API) ────────────────────────────────────────────────
 apiVersion: apps/v1
