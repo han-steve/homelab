@@ -8,42 +8,103 @@ const Scene3D = dynamic(() => import("./components/Scene3D"), {
   ssr: false,
   loading: () => (
     <div className="flex-1 flex items-center justify-center">
-      <div className="text-gray-500 animate-pulse">Loading 3D scene...</div>
+      <div className="text-gray-600 animate-pulse font-mono text-sm">
+        Initializing 3D renderer...
+      </div>
     </div>
   ),
 });
 
+const TopologyView = dynamic(() => import("./components/TopologyView"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="text-gray-600 animate-pulse font-mono text-sm">
+        Loading topology...
+      </div>
+    </div>
+  ),
+});
+
+type ViewMode = "rack" | "topology";
+
 export default function Home() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [view, setView] = useState<ViewMode>("rack");
 
   return (
     <div className="flex h-screen bg-gray-950 text-white">
-      {/* 3D Scene */}
+      {/* Main view */}
       <div className="flex-1 relative">
         <Suspense
           fallback={
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-gray-500">Loading...</div>
+              <div className="text-gray-600 font-mono text-sm">Loading...</div>
             </div>
           }
         >
-          <Scene3D onSelect={setSelectedIdx} selectedIdx={selectedIdx} />
+          {view === "rack" ? (
+            <Scene3D onSelect={setSelectedIdx} selectedIdx={selectedIdx} />
+          ) : (
+            <TopologyView onSelectService={setSelectedIdx} />
+          )}
         </Suspense>
 
-        {/* Title overlay */}
-        <div className="absolute top-6 left-6 pointer-events-none">
-          <h1 className="text-2xl font-bold text-gray-200 tracking-tight">
-            Homelab
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Talos Linux · K8s v1.36 · Cilium · Longhorn
-          </p>
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 right-0 h-[52px] bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50 flex items-center px-5 z-10">
+          {/* Logo */}
+          <div className="flex items-center gap-2 mr-6">
+            <span className="text-lg">🏠</span>
+            <span className="text-sm font-bold text-white tracking-tight">
+              homelab
+            </span>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1" />
+          </div>
+
+          {/* View switcher */}
+          <div className="flex items-center bg-gray-900 rounded-lg border border-gray-800/50 p-0.5">
+            <button
+              onClick={() => setView("rack")}
+              className={
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
+                (view === "rack"
+                  ? "bg-gray-800 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-300")
+              }
+            >
+              🖥️ 3D Rack
+            </button>
+            <button
+              onClick={() => setView("topology")}
+              className={
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
+                (view === "topology"
+                  ? "bg-gray-800 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-300")
+              }
+            >
+              🔗 Topology
+            </button>
+          </div>
+
+          {/* Stack info */}
+          <div className="ml-auto flex items-center gap-4 text-xs text-gray-600 font-mono">
+            <span>Talos v1.13.2</span>
+            <span className="text-gray-800">|</span>
+            <span>K8s v1.36</span>
+            <span className="text-gray-800">|</span>
+            <span>Cilium</span>
+            <span className="text-gray-800">|</span>
+            <span>Longhorn</span>
+          </div>
         </div>
 
-        {/* Instructions */}
-        <div className="absolute bottom-6 left-6 text-xs text-gray-600 pointer-events-none">
-          Click a service for details · Drag to rotate · Scroll to zoom
-        </div>
+        {/* Footer hints */}
+        {view === "rack" && (
+          <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
+            click service · drag rotate · scroll zoom
+          </div>
+        )}
       </div>
 
       {/* Detail Panel */}
