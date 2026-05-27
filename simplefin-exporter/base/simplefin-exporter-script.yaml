@@ -92,7 +92,8 @@ data:
         # Exchange claim URL for access credentials (one-time)
         claim_url = base64.b64decode(SETUP_TOKEN + '==').decode().strip()
         print(f"Claiming access URL (one-time exchange)...")
-        req = urllib.request.Request(claim_url, data=b'', method='POST')
+        req = urllib.request.Request(claim_url, data=b'', method='POST',
+                                     headers={'User-Agent': 'simplefin-exporter/1.0'})
         with urllib.request.urlopen(req) as r:
             access_url = r.read().decode().strip()
         print("Obtained access URL successfully")
@@ -115,7 +116,10 @@ data:
         params = urllib.parse.urlencode({'start-date': str(int(time.time()) - 86400 * 7)})
         req = urllib.request.Request(
             f"{base}/accounts?{params}",
-            headers={'Authorization': f'Basic {creds}'}
+            headers={
+                'Authorization': f'Basic {creds}',
+                'User-Agent': 'simplefin-exporter/1.0',
+            }
         )
         with urllib.request.urlopen(req) as r:
             return json.loads(r.read())
