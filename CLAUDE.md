@@ -64,7 +64,7 @@ talos/                # Talos config (secrets gitignored, patches committed)
 ## Security Notes
 
 - Talos secrets (talos/secrets.yaml, talosconfig) are gitignored and NEVER committed
-- Grafana password: set in helm-values.yaml (homelab2024)
+- Grafana password: set in helm-values.yaml (homelab2026)
 - oCIS password: set in apps/ocis/base/secret.yaml (unique generated)
 - MinIO credentials: in infrastructure/restic/minio.yaml (unique generated)
 - No external ingress — all services LAN-only via Cilium LB-IPAM

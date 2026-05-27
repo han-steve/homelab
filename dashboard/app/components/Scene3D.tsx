@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
-  Text,
+  Html,
   RoundedBox,
   Environment,
   Float,
@@ -85,26 +85,21 @@ function ServiceUnit({
       </RoundedBox>
 
       {/* Service name */}
-      <Text
-        position={[-0.7, 0, 0.51]}
-        fontSize={0.1}
-        color={isSelected ? "#ffffff" : "#a0a0b0"}
-        anchorX="left"
-        font="/fonts/inter-medium.woff"
+      <Html
+        position={[0, 0, 0.51]}
+        center
+        distanceFactor={5}
+        style={{ pointerEvents: "none", whiteSpace: "nowrap" }}
       >
-        {service.icon} {service.name}
-      </Text>
-
-      {/* IP address */}
-      <Text
-        position={[0.5, 0, 0.51]}
-        fontSize={0.06}
-        color="#606070"
-        anchorX="right"
-        font="/fonts/inter-medium.woff"
-      >
-        {service.ip === "internal" ? "cluster-only" : service.ip}
-      </Text>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontFamily: "system-ui" }}>
+          <span style={{ color: isSelected ? "#ffffff" : "#a0a0b0" }}>
+            {service.icon} {service.name}
+          </span>
+          <span style={{ color: "#606070", fontSize: "10px" }}>
+            {service.ip === "internal" ? "cluster-only" : service.ip}
+          </span>
+        </div>
+      </Html>
 
       <StatusLight status={service.status} />
     </group>
@@ -148,14 +143,16 @@ function ServerRack({
       ))}
 
       {/* Rack title */}
-      <Text
+      <Html
         position={[0, services.length * 0.4 + 0.15, 0.61]}
-        fontSize={0.12}
-        color="#60a5fa"
-        font="/fonts/inter-medium.woff"
+        center
+        distanceFactor={5}
+        style={{ pointerEvents: "none", whiteSpace: "nowrap" }}
       >
-        🖥️ M2 NODE — 192.168.1.10
-      </Text>
+        <div style={{ fontSize: "14px", color: "#60a5fa", fontFamily: "system-ui", fontWeight: "bold" }}>
+          🖥️ M2 NODE — 192.168.1.10
+        </div>
+      </Html>
     </group>
   );
 }
@@ -202,7 +199,7 @@ export default function Scene3D({
 }) {
   return (
     <Canvas
-      camera={{ position: [0, 2, 5], fov: 45 }}
+      camera={{ position: [0, 2, 8], fov: 50 }}
       style={{ background: "transparent" }}
       gl={{ antialias: true, alpha: true }}
     >
