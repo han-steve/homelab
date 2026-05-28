@@ -21,7 +21,8 @@
 
 ## HIGH — 3D Dashboard Improvements
 - [x] Fix 3D view centering — camera at [0,1,10], fov 50, orbit target [0,0.5,0]
-- [ ] Fix topology button visibility at different browser sizes (responsive layout)
+- [x] Fix topology button visibility at different browser sizes (responsive layout)
+- [x] Dashboard live cluster status indicators (ArgoCD sync, pod health, node status)
 - [x] Draw GPU node (192.168.1.101) as 3D object with gamepad icon, dim/yellow planned status
 - [x] Show physical specs overlay on 3D objects when clicked (CPU, RAM, storage, IP, etc.)
 - [x] Overlay info as SciFi bubble/tooltip (Html component in 3D space) with close button
@@ -57,9 +58,9 @@
 - [ ] Move more services to vc-prod
 - [ ] Set up Tailscale MagicDNS for remote access
 - [ ] Consider Let's Encrypt certs for public domains (if desired)
-- [ ] Dashboard: add real-time metrics from Prometheus API
+- [x] Dashboard: add real-time metrics from Prometheus API (cluster status API route)
 - [ ] Dashboard: add log viewer from Loki
-- [ ] Dashboard: add ArgoCD sync status indicators
+- [x] Dashboard: add ArgoCD sync status indicators (live in top bar)
 
 ## COMPLETED
 - [x] Storage cleanup — audit & right-size PVCs
