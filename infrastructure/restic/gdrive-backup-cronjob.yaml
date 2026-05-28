@@ -35,9 +35,20 @@ spec:
         spec:
           serviceAccountName: gdrive-backup
           restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           containers:
           - name: backup
             image: bitnami/kubectl:1.36.0
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: false
             command:
             - /bin/bash
             - -c
@@ -50,9 +61,14 @@ spec:
 
               echo "=== Google Drive Backup Starting $TIMESTAMP ==="
 
-              # Install rclone
+              # Install rclone (to user-writable dir)
               echo "--- Installing rclone ---"
-              curl -sL https://rclone.org/install.sh | bash > /dev/null 2>&1
+              cd /tmp
+              curl -sLO https://downloads.rclone.org/current/rclone-current-linux-amd64.zip
+              unzip -q rclone-current-linux-amd64.zip
+              cp rclone-*/rclone /tmp/rclone
+              chmod +x /tmp/rclone
+              export PATH="/tmp:$PATH"
               export RCLONE_CONFIG=/rclone-config/rclone.conf
 
               # Verify rclone connectivity
