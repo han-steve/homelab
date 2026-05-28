@@ -90,4 +90,4 @@
 - [x] Fix ArgoCD label rotation (only mesh rotates, not label)
 - [x] Make pipes/grid non-raycastable for service clicks
 - [x] Re-enable bloom/vignette post-processing
-- [x] Commit 3D dashboard changes (84957ed)
+- [x] Commit 3D dashboard changes (84957ed)\n- [x] Fix MinIO CrashLoopBackOff (volume permissions: chown 1000:1000 /data)
