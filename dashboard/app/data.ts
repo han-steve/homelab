@@ -146,10 +146,52 @@ export const node: NodeInfo = {
   hostname: "m2",
   ip: "192.168.1.10",
   os: "Talos Linux v1.13.2",
-  cpu: "Apple M2 (8 cores)",
-  ram: "24 GB",
+  cpu: "Intel Core Ultra 7 356H (16C)",
+  ram: "32 GB DDR5",
   storage: "1TB NVMe",
   k8sVersion: "v1.36.0",
+};
+
+export interface GpuNode {
+  name: string;
+  hostname: string;
+  ip: string;
+  os: string;
+  cpu: string;
+  ram: string;
+  gpu: string;
+  storage: string;
+  nic: string;
+  status: "online" | "planned" | "offline";
+}
+
+export const gpuNode: GpuNode = {
+  name: "gpu",
+  hostname: "gpu",
+  ip: "192.168.1.101",
+  os: "Debian 12 (pending Talos)",
+  cpu: "Intel i9-9900K (8C/16T, 5.0 GHz)",
+  ram: "32 GB DDR4-3200",
+  gpu: "NVIDIA RTX 3080 Ti (12 GB)",
+  storage: "1TB NVMe",
+  nic: "Intel I219-V 1 GbE",
+  status: "planned",
+};
+
+export interface RouterInfo {
+  name: string;
+  ip: string;
+  model: string;
+  ports: string;
+  isp: string;
+}
+
+export const router: RouterInfo = {
+  name: "AT&T BGW320",
+  ip: "192.168.1.1",
+  model: "BGW320-500",
+  ports: "1x 5 GbE + 3x 1 GbE",
+  isp: "AT&T Fiber",
 };
 
 // Topology graph data for the network view
