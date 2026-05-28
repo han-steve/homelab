@@ -145,6 +145,7 @@ export default function Home() {
         <DetailPanel
           selectedIdx={selectedIdx}
           onClose={() => setSelectedIdx(null)}
+          onSelectService={setSelectedIdx}
         />
       </div>
     </div>

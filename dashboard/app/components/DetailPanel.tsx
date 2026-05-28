@@ -30,10 +30,11 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose,
+  selectedIdx, onClose, onSelectService,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
+  onSelectService?: (idx: number) => void;
 }) {
   if (selectedIdx === null) {
     return (
@@ -65,9 +66,12 @@ export default function DetailPanel({
         </div>
 
         <div className="space-y-1.5">
-          {services.map((svc) => (
-            <div key={svc.name} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors">
-              <span className="text-gray-300 flex items-center gap-2">
+          {services.map((svc, i) => (
+            <div
+              key={svc.name}
+              className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
+              onClick={() => onSelectService?.(i)}
+            >              <span className="text-gray-300 flex items-center gap-2">
                 <span>{svc.icon}</span>
                 <span className="text-xs">{svc.name}</span>
               </span>

@@ -21,7 +21,7 @@ export const services: Service[] = [
     namespace: "jellyfin",
     description: "Media server for movies, TV shows, and music",
     color: "#00a4dc",
-    url: "http://192.168.1.11:8096",
+    url: "https://jellyfin.homelab",
     category: "app",
   },
   {
@@ -33,7 +33,7 @@ export const services: Service[] = [
     namespace: "actual-budget",
     description: "Privacy-focused personal finance manager",
     color: "#5b21b6",
-    url: "https://192.168.1.12:5006",
+    url: "https://budget.homelab",
     category: "app",
   },
   {
@@ -45,7 +45,7 @@ export const services: Service[] = [
     namespace: "monitoring",
     description: "Observability dashboards and alerting",
     color: "#f46800",
-    url: "http://192.168.1.13",
+    url: "https://grafana.homelab",
     category: "monitoring",
   },
   {
@@ -57,7 +57,7 @@ export const services: Service[] = [
     namespace: "argocd",
     description: "GitOps continuous delivery for Kubernetes",
     color: "#ef7b4d",
-    url: "http://192.168.1.14",
+    url: "https://argocd.homelab",
     category: "infra",
   },
   {
@@ -69,7 +69,7 @@ export const services: Service[] = [
     namespace: "apitable",
     description: "Open-source Airtable alternative",
     color: "#7c3aed",
-    url: "http://192.168.1.15",
+    url: "https://apitable.homelab",
     category: "app",
   },
   {
@@ -81,7 +81,7 @@ export const services: Service[] = [
     namespace: "ocis",
     description: "ownCloud Infinite Scale — self-hosted cloud storage",
     color: "#0082c9",
-    url: "https://192.168.1.20:9200",
+    url: "https://ocis.homelab",
     category: "app",
   },
   {
@@ -137,7 +137,7 @@ export const services: Service[] = [
     namespace: "home-assistant",
     description: "Smart home automation with Zigbee2MQTT and MQTT",
     color: "#18bcf2",
-    url: "http://192.168.1.16:8123",
+    url: "https://ha.homelab",
     category: "app",
   },
   {
@@ -182,6 +182,7 @@ export const services: Service[] = [
     namespace: "home-assistant",
     description: "Zigbee gateway — Sonoff ZBDongle-E (EmberZNet 7.4.5)",
     color: "#ffc135",
+    url: "https://zigbee.homelab",
     category: "app",
   },
   {
