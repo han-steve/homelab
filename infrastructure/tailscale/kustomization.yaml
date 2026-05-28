@@ -3,5 +3,10 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - crds-connectors.yaml
+  - crds-dnsconfigs.yaml
+  - crds-proxyclasses.yaml
+  - crds-proxygroups.yaml
+  - crds-recorders.yaml
   - tailscale-operator.yaml
   - tailscale-secret.yaml
