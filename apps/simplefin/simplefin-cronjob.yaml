@@ -23,7 +23,7 @@ spec:
           #   Until then, this uses the upstream image which works for a single-run setup-token claim.
           containers:
             - name: simplefin-exporter
-              image: eduser25/simplefin-bridge-exporter:latest
+              image: eduser25/simplefin-bridge-exporter:latest@sha256:d5e54bab5892a3e34229a75f1f7eb27735374c228b2ff4236e0b97c6113b2872
               imagePullPolicy: IfNotPresent
               args:
                 - -setupToken

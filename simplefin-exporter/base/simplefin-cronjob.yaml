@@ -20,6 +20,12 @@ spec:
         spec:
           restartPolicy: OnFailure
           serviceAccountName: simplefin-exporter
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           containers:
           - name: simplefin-exporter
             # Uses python:3.11-slim with urllib (no pip needed — stdlib only).
@@ -27,6 +33,11 @@ spec:
             image: python:3.11-slim
             imagePullPolicy: IfNotPresent
             command: ["python3", "/etc/simplefin/exporter.py"]
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: true
             env:
             - name: PYTHONUNBUFFERED
               value: "1"
