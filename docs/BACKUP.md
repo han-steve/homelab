@@ -111,6 +111,65 @@ This gives ~1.8TB of backup space for the entire cluster.
 | monitoring | prometheus-db (100Gi PVC) | 100Gi | Prometheus historical TSDB |
 | jellyfin | jellyfin-config | 5Gi | Jellyfin metadata, transcoding config |
 | monitoring | storage-loki-0 | 20Gi | Loki log data |
+| home-assistant | home-assistant-config | 5Gi | HA config, automations, .storage |
+| home-assistant | zigbee2mqtt-data | 1Gi | Zigbee2MQTT config and device database |
+
+---
+
+## Tier 3: Google Drive Backup (Offsite)
+
+Uses restic + rclone to back up critical PVCs to Google Drive (8TB available, allocating 1TB).
+
+### Setup Steps
+
+1. **Install rclone locally** (if not already):
+   ```bash
+   brew install rclone
+   ```
+
+2. **Configure Google Drive remote**:
+   ```bash
+   rclone config
+   # Choose: n (new remote)
+   # Name: gdrive
+   # Type: 18 (Google Drive)
+   # Client ID: (leave blank for rclone's)
+   # Client Secret: (leave blank)
+   # Scope: 1 (full access)
+   # Root folder ID: (leave blank)
+   # Service account file: (leave blank)
+   # Auto config: y
+   # → Browser opens, authorize with your Google account
+   # Team drive: n
+   ```
+
+3. **Create backup folder on Google Drive**:
+   ```bash
+   rclone mkdir gdrive:homelab-backups
+   ```
+
+4. **Create K8s secrets**:
+   ```bash
+   # Rclone config
+   kubectl create secret generic rclone-config -n backup \
+     --from-file=rclone.conf=$HOME/.config/rclone/rclone.conf
+
+   # Restic password (save this somewhere safe!)
+   kubectl create secret generic restic-password -n backup \
+     --from-literal=password=$(openssl rand -base64 32)
+   ```
+
+5. **Enable the CronJob** — add to `infrastructure/restic/kustomization.yaml`:
+   ```yaml
+   resources:
+   - gdrive-backup-cronjob.yaml
+   ```
+
+6. **Test manually**:
+   ```bash
+   kubectl create job --from=cronjob/gdrive-backup test-gdrive-backup -n backup
+   kubectl logs -f job/test-gdrive-backup -n backup
+   ```
 
 ---
 
