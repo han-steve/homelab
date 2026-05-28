@@ -46,7 +46,7 @@ spec:
       initContainers:
         - name: copy-config
           image: busybox:1.37.0
-          command: ['sh', '-c', 'if [ ! -f /app/data/configuration.yaml ]; then cp /config/configuration.yaml /app/data/configuration.yaml; fi']
+          command: ['sh', '-c', 'if [ ! -s /app/data/configuration.yaml ]; then cp /config/configuration.yaml /app/data/configuration.yaml; echo "Config copied"; else echo "Config exists"; fi']
           volumeMounts:
             - name: data
               mountPath: /app/data
