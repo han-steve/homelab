@@ -1,0 +1,159 @@
+# CoreDNS deployment serving the .homelab zone
+# Exposed on 192.168.1.22 (UDP+TCP 53)
+# Use as Tailscale split DNS nameserver for domain "homelab"
+#
+# Tailscale Admin Console setup:
+#   Settings > DNS > Custom Nameservers
+#   Add nameserver: 192.168.1.22
+#   Restrict to domain: homelab
+#   (This means any device on your Tailscale network resolves *.homelab via this server)
+#
+# Router split DNS (alternative for LAN-only):
+#   Point *.homelab to 192.168.1.22 in your router's DNS settings
+#   (AT&T BGW320: Smart Home Manager > Network > DNS > Custom DNS)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-homelab-config
+  namespace: homelab-dns
+data:
+  Corefile: |
+    # Health check endpoint (required for liveness/readiness probes)
+    . {
+        health :8080
+        forward . 1.1.1.1 1.0.0.1
+        cache 300
+        errors
+        log . {
+            class error
+        }
+    }
+
+    # Homelab zone — all .homelab and .homelab.local queries answered here
+    homelab homelab.local {
+        hosts {
+            # nginx-ingress (all HTTPS-terminated services)
+            192.168.1.21 jellyfin.homelab
+            192.168.1.21 jellyfin.homelab.local
+            192.168.1.21 grafana.homelab
+            192.168.1.21 grafana.homelab.local
+            192.168.1.21 argocd.homelab
+            192.168.1.21 argocd.homelab.local
+            192.168.1.21 apitable.homelab
+            192.168.1.21 apitable.homelab.local
+            192.168.1.21 budget.homelab
+            192.168.1.21 budget.homelab.local
+            192.168.1.21 actual-budget.homelab
+            192.168.1.21 actual-budget.homelab.local
+            192.168.1.21 ocis.homelab
+            192.168.1.21 ocis.homelab.local
+            # Node (for direct Talos/kubectl access)
+            192.168.1.10 m2.homelab
+            192.168.1.10 node.homelab
+            fallthrough
+        }
+        log
+        errors
+    }
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns-homelab
+  namespace: homelab-dns
+  labels:
+    app: coredns-homelab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coredns-homelab
+  template:
+    metadata:
+      labels:
+        app: coredns-homelab
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: coredns
+          image: coredns/coredns:1.12.1
+          args: ["-conf", "/etc/coredns/Corefile"]
+          ports:
+            - containerPort: 53
+              protocol: UDP
+              name: dns-udp
+            - containerPort: 53
+              protocol: TCP
+              name: dns-tcp
+          volumeMounts:
+            - name: config
+              mountPath: /etc/coredns
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: coredns-homelab-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns-homelab
+  namespace: homelab-dns
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.1.22"
+  labels:
+    app: coredns-homelab
+spec:
+  selector:
+    app: coredns-homelab
+  type: LoadBalancer
+  loadBalancerIP: "192.168.1.22"
+  externalTrafficPolicy: Local
+  ports:
+    - name: dns-udp
+      port: 53
+      protocol: UDP
+      targetPort: 53
+    - name: dns-tcp
+      port: 53
+      protocol: TCP
+      targetPort: 53

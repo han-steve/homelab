@@ -1,0 +1,52 @@
+# nginx-ingress-controller helm values
+# Chart: ingress-nginx/ingress-nginx 4.12.1
+# Provides central TLS termination for all homelab services at 192.168.1.21
+# Wildcard cert *.homelab / *.homelab.local issued by homelab-ca ClusterIssuer
+
+controller:
+  # Pin to specific LB IP via Cilium LB-IPAM annotation
+  service:
+    annotations:
+      io.cilium/lb-ipam-ips: "192.168.1.21"
+    loadBalancerIP: "192.168.1.21"
+    externalTrafficPolicy: Local
+
+  # Use the wildcard TLS cert as the default
+  extraArgs:
+    default-ssl-certificate: "ingress-nginx/homelab-wildcard-tls"
+
+  # Enable SSL passthrough for services that handle their own TLS (oCIS, Actual Budget)
+  # Note: passthrough is opt-in per-ingress via annotation
+  config:
+    # Allow backend HTTPS with self-signed certs
+    proxy-ssl-verify: "false"
+    # Improve security headers
+    use-forwarded-headers: "true"
+    # HSTS for all responses
+    hsts: "true"
+    hsts-max-age: "31536000"
+    hsts-include-subdomains: "true"
+    # Hide nginx version
+    server-tokens: "false"
+
+  # Resource limits appropriate for single-node homelab
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  # Replicas - single node so 1 is fine
+  replicaCount: 1
+
+  # Tolerations for single-node cluster
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  admissionWebhooks:
+    enabled: true
+    failurePolicy: Fail

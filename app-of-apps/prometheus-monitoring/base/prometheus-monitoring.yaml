@@ -13,6 +13,12 @@ spec:
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+        - /stringData
   syncPolicy:
     automated:
       selfHeal: false  # Manual sync only — prevents ArgoCD disrupting running Prometheus
@@ -20,3 +26,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true

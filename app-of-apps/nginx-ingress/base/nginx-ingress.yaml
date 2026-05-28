@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-ingress
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes.github.io/ingress-nginx
+    chart: ingress-nginx
+    targetRevision: 4.12.1
+    helm:
+      valuesObject:
+        controller:
+          service:
+            annotations:
+              io.cilium/lb-ipam-ips: "192.168.1.21"
+            loadBalancerIP: "192.168.1.21"
+            externalTrafficPolicy: Local
+          extraArgs:
+            default-ssl-certificate: "ingress-nginx/homelab-wildcard-tls"
+          config:
+            proxy-ssl-verify: "false"
+            use-forwarded-headers: "true"
+            hsts: "true"
+            hsts-max-age: "31536000"
+            hsts-include-subdomains: "true"
+            server-tokens: "false"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          replicaCount: 1
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ingress-nginx
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

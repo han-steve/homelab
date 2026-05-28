@@ -1,0 +1,46 @@
+# oCIS TLS certificate
+# Issued by homelab-ca ClusterIssuer
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ocis-tls
+  namespace: ocis
+spec:
+  secretName: ocis-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: ocis.homelab
+  dnsNames:
+    - ocis.homelab
+    - ocis.homelab.local
+  ipAddresses:
+    - 192.168.1.20
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+
+---
+# budget.homelab cert (shorthand alias for actual-budget)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: budget-tls
+  namespace: actual-budget
+spec:
+  secretName: budget-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: budget.homelab
+  dnsNames:
+    - budget.homelab
+    - budget.homelab.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256

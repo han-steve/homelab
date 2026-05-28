@@ -1,0 +1,28 @@
+# Wildcard TLS certificate for *.homelab and *.homelab.local
+# Issued by homelab-ca ClusterIssuer (Homelab Root CA, ECDSA P-256)
+# Stored in ingress-nginx namespace so nginx-ingress can use it as default cert
+#
+# To trust on Mac:  bash scripts/trust-local-ca.sh
+# To trust on iPhone: AirDrop the CA cert → Settings > General > About > Certificate Trust Settings
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-wildcard-tls
+  namespace: ingress-nginx
+spec:
+  secretName: homelab-wildcard-tls
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+  commonName: "*.homelab"
+  dnsNames:
+    - "*.homelab"
+    - "*.homelab.local"
+    - "homelab"
+    - "homelab.local"
+  duration: 8760h      # 1 year
+  renewBefore: 720h    # renew 30 days before
+  privateKey:
+    algorithm: ECDSA
+    size: 256
