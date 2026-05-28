@@ -43,6 +43,15 @@ spec:
       labels:
         app: zigbee2mqtt
     spec:
+      initContainers:
+        - name: copy-config
+          image: busybox:1.37.0
+          command: ['sh', '-c', 'if [ ! -f /app/data/configuration.yaml ]; then cp /config/configuration.yaml /app/data/configuration.yaml; fi']
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: config
+              mountPath: /config
       containers:
         - name: zigbee2mqtt
           image: koenkk/zigbee2mqtt:2.10.1
@@ -55,9 +64,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /app/data
-            - name: config
-              mountPath: /app/data/configuration.yaml
-              subPath: configuration.yaml
             - name: zigbee-device
               mountPath: /dev/ttyUSB0
           securityContext:

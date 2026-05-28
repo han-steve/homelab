@@ -24,7 +24,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: generic-device-plugin
-          image: ghcr.io/squat/generic-device-plugin:v1.1.2
+          image: squat/generic-device-plugin:0.2.0
           args:
             - --device
             - |

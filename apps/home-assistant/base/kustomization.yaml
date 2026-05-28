@@ -7,5 +7,4 @@ resources:
   - mosquitto.yaml
   - zigbee2mqtt.yaml
   - home-assistant.yaml
-  - device-plugin.yaml
   - ingress.yaml
