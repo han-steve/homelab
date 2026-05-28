@@ -1,0 +1,79 @@
+---
+# Ingress for Home Assistant via nginx-ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Home Assistant uses WebSocket for frontend
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-headers: "home-assistant/ha-proxy-headers"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ha.homelab
+      secretName: ha-homelab-tls
+  rules:
+    - host: ha.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: home-assistant
+                port:
+                  number: 8123
+---
+# Ingress for Zigbee2MQTT frontend
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zigbee2mqtt
+  namespace: home-assistant
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-headers: "home-assistant/z2m-proxy-headers"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - zigbee.homelab
+      secretName: zigbee-homelab-tls
+  rules:
+    - host: zigbee.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: zigbee2mqtt
+                port:
+                  number: 8080
+---
+# WebSocket upgrade headers for Home Assistant
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ha-proxy-headers
+  namespace: home-assistant
+data:
+  Upgrade: "$http_upgrade"
+  Connection: "upgrade"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: z2m-proxy-headers
+  namespace: home-assistant
+data:
+  Upgrade: "$http_upgrade"
+  Connection: "upgrade"

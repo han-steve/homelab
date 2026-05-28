@@ -49,6 +49,10 @@ data:
             192.168.1.21 actual-budget.homelab.local
             192.168.1.21 ocis.homelab
             192.168.1.21 ocis.homelab.local
+            192.168.1.21 ha.homelab
+            192.168.1.21 ha.homelab.local
+            192.168.1.21 zigbee.homelab
+            192.168.1.21 zigbee.homelab.local
             # Node (for direct Talos/kubectl access)
             192.168.1.10 m2.homelab
             192.168.1.10 node.homelab
