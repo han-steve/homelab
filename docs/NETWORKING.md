@@ -95,6 +95,35 @@ Tailscale uses `100.64.0.0/10` (CGNAT range) for its mesh network. Your M2 node 
 
 See [infrastructure/tailscale-operator/values.yaml](../infrastructure/tailscale-operator/values.yaml) for full prerequisites and deployment steps.
 
+### DERP Relay Status (Tested 2026-05-28)
+
+**Short answer**: Yes, DERP is being used. Port forwarding UDP 41641 on the BGW320 will fix it.
+
+```
+$ tailscale ping homelab-operator-1
+pong from homelab-operator-1 (100.104.99.9) via DERP(sfo) in 12ms
+```
+
+| Connection | Relay? | Latency | Why |
+|------------|--------|---------|-----|
+| Mac → K8s operator | **DERP (sfo)** | 12ms | BGW320 blocks UDP holepunch |
+| Mac → iPhone (cellular) | Direct (IPv6) | 99ms | Phone can accept inbound UDP |
+| Mac → Phone first ping | DERP → then direct | — | NAT traversal eventually works |
+
+**Why the K8s node stays on DERP:**
+- `tailscale netcheck` shows `MappingVariesByDestIP: false` (easy NAT) — the BGW320 could support direct connections
+- But the BGW320 doesn't support UPnP/NAT-PMP for automatic port mapping
+- Without forwarding UDP 41641, the K8s pod can't receive inbound connections
+
+**Fix: Forward UDP 41641 on BGW320**
+
+1. Open http://192.168.254.254
+2. **Firewall → NAT/Gaming** → Add Custom Service
+3. Rule: UDP port 41641 → 192.168.1.10:41641
+4. Verify: `tailscale ping homelab-operator-1` should show `direct` not `relay`
+
+**Current status is fine** — DERP at 12ms is fast (San Francisco relay). Port forwarding is optional but reduces latency and relay dependency. Direct connections also survive relay outages.
+
 ---
 
 ## DNS Resolution Summary
