@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
 - longhorn-recurring-jobs.yaml
 - minio.yaml
+- gdrive-backup-rbac.yaml
+- gdrive-backup-cronjob.yaml
 # NOTE: restic-cronjob.yaml and repository-pvc.yaml are included for reference
 # but use Longhorn RecurringJobs (above) for actual snapshot/backup.
 # The restic-secret.yaml is a placeholder — create the actual secret manually:
