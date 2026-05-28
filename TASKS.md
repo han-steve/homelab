@@ -1,13 +1,13 @@
 # Homelab Task Tracker
 # This file is checked by the AI agent before stopping work.
 # Tasks are added continuously. Agent should always find something to do here.
-# Last updated: 2026-05-27
+# Last updated: 2026-05-28
 
 ## CRITICAL — Fix Now
-- [ ] Fix Grafana password: secret in cluster says PLACEHOLDER, user can't log in. Deploy real secret via kubectl.
-- [ ] Fix Actual Budget file download: GET /sync/download-user-file returns 200 OK with Content-Length: 3157696 but browser fails to process. May be a content-type/encoding issue or CORS. Need to check actual-budget pod logs.
-- [ ] Finish /etc/hosts setup for *.homelab domains (192.168.1.21)
-- [ ] Verify nginx-ingress is routing all services correctly via browser
+- [x] Fix Grafana password: deployed homelab2026, added ignoreDifferences to ArgoCD app
+- [ ] Fix Actual Budget file download: server returns 200 OK (3MB), client-side JS decryption fails. Likely encryption key mismatch.
+- [ ] Finish /etc/hosts setup for *.homelab domains (192.168.1.21) — need sudo on Mac
+- [x] Verify nginx-ingress is routing all services correctly via curl (all return 200/302)
 
 ## HIGH — Infrastructure
 - [ ] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
@@ -19,26 +19,29 @@
 - [ ] Check/increase oCIS storage space
 
 ## HIGH — 3D Dashboard Improvements
-- [ ] Fix 3D view centering — top row of apps cut off, camera/layout needs adjustment
+- [x] Fix 3D view centering — camera at [0,1,10], fov 50, orbit target [0,0.5,0]
 - [ ] Fix topology button visibility at different browser sizes (responsive layout)
-- [ ] Draw GPU node (192.168.1.101) as separate 3D object connected to M2
-- [ ] Show physical specs overlay on 3D objects when clicked (CPU, RAM, storage, IP)
-- [ ] Overlay info as SciFi bubble/tooltip on 3D object with connecting line/dot
-- [ ] Make 3D objects glow when online, dim/engrave when offline
-- [ ] Add selection and hover animations
-- [ ] Draw router (AT&T BGW320) as 3D object
-- [ ] Visualize network connections as flowing glowing pipes between objects
+- [x] Draw GPU node (192.168.1.101) as 3D object with gamepad icon, dim/yellow planned status
+- [x] Show physical specs overlay on 3D objects when clicked (CPU, RAM, storage, IP, etc.)
+- [x] Overlay info as SciFi bubble/tooltip (Html component in 3D space) with close button
+- [x] Make 3D objects glow when online (blue emissive), dim when offline/planned
+- [x] Add selection rings and hover animations (y-lift, rotation wobble)
+- [x] Draw router (AT&T BGW320) as 3D object with satellite dish icon
+- [x] Visualize network connections as flowing glowing pipes (green active, yellow dashed planned)
 - [ ] Show IP addresses, bandwidth info on network connections
-- [ ] Create 3D ArgoCD logo object (glassy texture, interactive, rotatable)
-- [ ] Place app 3D objects connected together in creative layout
+- [x] Create 3D ArgoCD logo object (rotating octahedron, non-rotating label)
+- [x] Place 10 service boxes in creative 2-row layout with category color strips
 - [ ] Add more logos and branding to 3D objects
+- [x] Icons on top face, names below boxes — visible from all camera angles
+- [x] Bloom and vignette post-processing effects
+- [x] HoloGrid shader floor and floating particles
 - [ ] Keep iterating with screenshot testing for best UX
 
 ## MEDIUM — Config & Cleanup
-- [ ] Merge .cursorrules into CLAUDE.md (verify which hardware specs are correct first)
-- [ ] Reconcile hardware specs: .cursorrules says Minisforum M2 Ultra 7 356H 32GB DDR5 vs CLAUDE.md says Apple M2 Mac Mini 24GB
-- [ ] Update data.ts with correct hardware specs
-- [ ] Delete .cursorrules after merging into CLAUDE.md
+- [x] Merge .cursorrules into CLAUDE.md with correct hardware specs
+- [x] Reconcile hardware specs: confirmed Intel Core Ultra 7 356H 32GB DDR5
+- [x] Update data.ts with correct hardware specs
+- [x] Delete .cursorrules after merging into CLAUDE.md
 
 ## MEDIUM — Security
 - [ ] Add security contexts to SimpleFIN CronJob
@@ -76,3 +79,15 @@
 - [x] Create wildcard cert *.homelab via cert-manager
 - [x] Create Ingress resources for all 6 services
 - [x] Patch kube-system CoreDNS with homelab zone
+- [x] Fix Grafana password (homelab2026)
+- [x] Merge .cursorrules into CLAUDE.md
+- [x] Update data.ts with correct hardware specs
+- [x] Create TASKS.md persistent task tracker
+- [x] Rewrite Scene3D.tsx with 3D nodes, pipes, overlays
+- [x] Fix font loading error (removed font prop)
+- [x] Fix MeshTransmissionMaterial HDR error (replaced with meshPhysicalMaterial)
+- [x] Fix service label visibility (icons on top, names below)
+- [x] Fix ArgoCD label rotation (only mesh rotates, not label)
+- [x] Make pipes/grid non-raycastable for service clicks
+- [x] Re-enable bloom/vignette post-processing
+- [x] Commit 3D dashboard changes (84957ed)
