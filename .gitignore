@@ -20,3 +20,6 @@ rclone.conf
 dashboard/node_modules/
 dashboard/.next/
 dashboard/out/
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
