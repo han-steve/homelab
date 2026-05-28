@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-gray-950 text-white">
       {/* Main view */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-w-0">
         <Suspense
           fallback={
             <div className="flex-1 flex items-center justify-center">
@@ -69,11 +69,11 @@ export default function Home() {
         </Suspense>
 
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 h-[52px] bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50 flex items-center px-5 z-10">
+        <div className="absolute top-0 left-0 right-0 h-[52px] bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50 flex items-center px-3 sm:px-5 z-10">
           {/* Logo */}
-          <div className="flex items-center gap-2 mr-6">
+          <div className="flex items-center gap-2 mr-3 sm:mr-6">
             <span className="text-lg">🏠</span>
-            <span className="text-sm font-bold text-white tracking-tight">
+            <span className="text-sm font-bold text-white tracking-tight hidden sm:inline">
               homelab
             </span>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1" />
@@ -84,51 +84,51 @@ export default function Home() {
             <button
               onClick={() => setView("rack")}
               className={
-                "px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
+                "px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
                 (view === "rack"
                   ? "bg-gray-800 text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-300")
               }
             >
-              🖥️ 3D Rack
+              🖥️ <span className="hidden sm:inline">3D Rack</span>
             </button>
             <button
               onClick={() => setView("topology")}
               className={
-                "px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
+                "px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
                 (view === "topology"
                   ? "bg-gray-800 text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-300")
               }
             >
-              🔗 Topology
+              🔗 <span className="hidden sm:inline">Topology</span>
             </button>
           </div>
 
           {/* Stack info */}
-          <div className="ml-auto flex items-center gap-4 text-xs text-gray-600 font-mono">
+          <div className="ml-auto flex items-center gap-2 sm:gap-4 text-xs text-gray-600 font-mono">
             {cluster && (
               <>
                 <span className="flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.node?.ready ? "bg-green-500" : "bg-red-500"}`} />
-                  node
+                  <span className="hidden md:inline">node</span>
                 </span>
-                <span className="text-gray-800">|</span>
+                <span className="hidden sm:inline text-gray-800">|</span>
                 <span className="flex items-center gap-1.5" title={cluster.apps.map(a => `${a.name}: ${a.sync}`).join("\n")}>
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.apps.every(a => a.sync === "Synced") ? "bg-green-500" : "bg-yellow-500"}`} />
-                  {cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced
+                  <span className="hidden sm:inline">{cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced</span>
                 </span>
-                <span className="text-gray-800">|</span>
+                <span className="hidden sm:inline text-gray-800">|</span>
                 <span className="flex items-center gap-1.5" title={cluster.unhealthyPods.map(p => `${p.namespace}/${p.name}: ${p.status}`).join("\n")}>
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500" : "bg-orange-500"}`} />
-                  {cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}
+                  <span className="hidden sm:inline">{cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}</span>
                 </span>
-                <span className="text-gray-800">|</span>
+                <span className="hidden md:inline text-gray-800">|</span>
               </>
             )}
-            <span>Talos v1.13.2</span>
-            <span className="text-gray-800">|</span>
-            <span>K8s v1.36</span>
+            <span className="hidden md:inline">Talos v1.13.2</span>
+            <span className="hidden md:inline text-gray-800">|</span>
+            <span className="hidden md:inline">K8s v1.36</span>
           </div>
         </div>
 
@@ -140,11 +140,13 @@ export default function Home() {
         )}
       </div>
 
-      {/* Detail Panel */}
-      <DetailPanel
-        selectedIdx={selectedIdx}
-        onClose={() => setSelectedIdx(null)}
-      />
+      {/* Detail Panel — hidden on mobile, slide-in on tablet+ */}
+      <div className="hidden sm:block">
+        <DetailPanel
+          selectedIdx={selectedIdx}
+          onClose={() => setSelectedIdx(null)}
+        />
+      </div>
     </div>
   );
 }

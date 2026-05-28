@@ -21,6 +21,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   storage: "#3b82f6",
 };
 
+/* ── responsive camera ─────────────────────────────── */
+function ResponsiveCamera() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    // Wider FOV on narrow viewports so the scene fits
+    cam.fov = size.width < 640 ? 70 : 50;
+    cam.updateProjectionMatrix();
+  }, [camera, size.width]);
+  return null;
+}
+
 /* ── GLSL holographic grid ─────────────────────────── */
 function HoloGrid() {
   const ref = useRef<THREE.Mesh>(null!);
@@ -509,6 +521,7 @@ export default function Scene3D({
     >
       <color attach="background" args={["#08080f"]} />
       <fog attach="fog" args={["#08080f", 14, 28]} />
+      <ResponsiveCamera />
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 8, 5]} intensity={0.6} />
       <pointLight position={[-3, 3, 2]} intensity={0.4} color="#4488ff" />
