@@ -11,6 +11,11 @@ talos/.gpu-schematic-id
 # OS
 .DS_Store
 
+# Credentials
+.env
+.env.*
+rclone.conf
+
 # Dashboard
 dashboard/node_modules/
 dashboard/.next/
