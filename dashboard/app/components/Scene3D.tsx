@@ -83,7 +83,7 @@ function Particles({ count = 200 }: { count?: number }) {
   return (
     <points ref={ref}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} count={count} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial size={0.03} color="#4488ff" transparent opacity={0.4} sizeAttenuation />
     </points>
@@ -464,13 +464,14 @@ export default function Scene3D({
   const gpuPos: [number, number, number] = [1.5, 0.5, 0];
   const routerPos: [number, number, number] = [0, 2.5, 0];
 
-  // Service positions — two rows centered below nodes
+  // Service positions — grid layout below nodes
+  const cols = 6;
   const svcPositions: [number, number, number][] = services.map((_, i) => {
-    const row = Math.floor(i / 5);
-    const col = i % 5;
-    const rowCount = row === 0 ? 5 : services.length - 5;
-    const offset = (5 - rowCount) * 0.7;
-    return [(col - 2) * 1.4 + offset, -1.2 - row * 1.1, 0] as [number, number, number];
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const rowCount = Math.min(cols, services.length - row * cols);
+    const offset = (cols - rowCount) * 0.65;
+    return [(col - (cols - 1) / 2) * 1.3 + offset, -1.2 - row * 1.1, 0] as [number, number, number];
   });
 
   // Pipe connections
@@ -478,7 +479,7 @@ export default function Scene3D({
     { start: routerPos, end: m2Pos, color: "#58a6ff", active: true },
     { start: routerPos, end: gpuPos, color: "#d29922", active: false, dashed: true },
     { start: m2Pos, end: gpuPos, color: "#d29922", active: false, dashed: true },
-    ...services.slice(0, 6).map((_, i) => ({
+    ...services.slice(0, Math.min(services.length, 12)).map((_, i) => ({
       start: m2Pos as [number, number, number],
       end: svcPositions[i],
       color: "#3fb950",
