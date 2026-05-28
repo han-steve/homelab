@@ -8,6 +8,7 @@
 - [ ] Fix Actual Budget file download: server returns 200 OK (3MB), client-side JS decryption fails. Likely encryption key mismatch.
 - [ ] Finish /etc/hosts setup for *.homelab domains (192.168.1.21) — need sudo on Mac
 - [x] Verify nginx-ingress is routing all services correctly via curl (all return 200/302)
+- [x] Fix APITable: added imageproxy deployment, REDIS_PASSWORD to secret, fixed RabbitMQ/Redis credentials in vCluster ConfigMap
 
 ## HIGH — Infrastructure
 - [ ] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
@@ -44,10 +45,10 @@
 - [x] Delete .cursorrules after merging into CLAUDE.md
 
 ## MEDIUM — Security
-- [ ] Add security contexts to SimpleFIN CronJob
+- [x] Add security contexts to SimpleFIN CronJob (runAsNonRoot, seccomp, drop ALL, readOnlyRootFilesystem)
 - [ ] Add security contexts to APITable MySQL
-- [ ] Review PodSecurity exemptions (12 namespaces too many)
-- [ ] Fix SimpleFIN using :latest image tag
+- [ ] Review PodSecurity exemptions (12 namespaces too many — currently in Talos machineconfig)
+- [x] Fix SimpleFIN using :latest image tag — pinned to sha256 digest
 - [ ] Disable SSH root login on migration bridges
 - [ ] Fix etcd metrics listening on 0.0.0.0:2381
 
@@ -90,4 +91,8 @@
 - [x] Fix ArgoCD label rotation (only mesh rotates, not label)
 - [x] Make pipes/grid non-raycastable for service clicks
 - [x] Re-enable bloom/vignette post-processing
-- [x] Commit 3D dashboard changes (84957ed)\n- [x] Fix MinIO CrashLoopBackOff (volume permissions: chown 1000:1000 /data)
+- [x] Commit 3D dashboard changes (84957ed)
+- [x] Fix MinIO CrashLoopBackOff (volume permissions: chown 1000:1000 /data)
+- [x] Fix APITable Redis/Gateway/Backend (imageproxy missing, REDIS_PASSWORD in secret, RabbitMQ credentials)
+- [x] Add SimpleFIN security contexts (pod + container level)
+- [x] Pin SimpleFIN image to sha256 digest
