@@ -1,8 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import DetailPanel from "./components/DetailPanel";
+
+interface ClusterStatus {
+  apps: { name: string; sync: string; health: string }[];
+  unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
+  node: { name: string; ready: boolean } | null;
+}
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
   ssr: false,
@@ -31,6 +37,18 @@ type ViewMode = "rack" | "topology";
 export default function Home() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [view, setView] = useState<ViewMode>("rack");
+  const [cluster, setCluster] = useState<ClusterStatus | null>(null);
+
+  useEffect(() => {
+    const fetchStatus = () =>
+      fetch("/api/cluster-status")
+        .then((r) => r.json())
+        .then(setCluster)
+        .catch(() => {});
+    fetchStatus();
+    const id = setInterval(fetchStatus, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-950 text-white">
@@ -89,13 +107,28 @@ export default function Home() {
 
           {/* Stack info */}
           <div className="ml-auto flex items-center gap-4 text-xs text-gray-600 font-mono">
+            {cluster && (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.node?.ready ? "bg-green-500" : "bg-red-500"}`} />
+                  node
+                </span>
+                <span className="text-gray-800">|</span>
+                <span className="flex items-center gap-1.5" title={cluster.apps.map(a => `${a.name}: ${a.sync}`).join("\n")}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.apps.every(a => a.sync === "Synced") ? "bg-green-500" : "bg-yellow-500"}`} />
+                  {cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced
+                </span>
+                <span className="text-gray-800">|</span>
+                <span className="flex items-center gap-1.5" title={cluster.unhealthyPods.map(p => `${p.namespace}/${p.name}: ${p.status}`).join("\n")}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500" : "bg-orange-500"}`} />
+                  {cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}
+                </span>
+                <span className="text-gray-800">|</span>
+              </>
+            )}
             <span>Talos v1.13.2</span>
             <span className="text-gray-800">|</span>
             <span>K8s v1.36</span>
-            <span className="text-gray-800">|</span>
-            <span>Cilium</span>
-            <span className="text-gray-800">|</span>
-            <span>Longhorn</span>
           </div>
         </div>
 
