@@ -6,18 +6,31 @@
 ## CRITICAL — Fix Now
 - [x] Fix Grafana password: deployed homelab2026, added ignoreDifferences to ArgoCD app
 - [ ] Fix Actual Budget file download: server returns 200 OK (3MB), client-side JS decryption fails. Likely encryption key mismatch.
-- [ ] Finish /etc/hosts setup for *.homelab domains (192.168.1.21) — need sudo on Mac
+- [x] Finish /etc/hosts setup for *.homelab domains — using /etc/resolver/homelab → 192.168.1.22
 - [x] Verify nginx-ingress is routing all services correctly via curl (all return 200/302)
 - [x] Fix APITable: added imageproxy deployment, REDIS_PASSWORD to secret, fixed RabbitMQ/Redis credentials in vCluster ConfigMap
 
 ## HIGH — Infrastructure
-- [ ] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
-- [ ] Test all *.homelab domains work through nginx-ingress (jellyfin.homelab, grafana.homelab, etc.)
+- [x] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
+- [x] Test all *.homelab domains work through nginx-ingress (jellyfin.homelab, grafana.homelab, etc.)
 - [ ] Fix Tailscale operator: CrashLoopBackOff due to invalid OAuth token. User needs to create fresh OAuth credentials.
 - [ ] Document Tailscale split DNS setup: user adds 192.168.1.22 as nameserver for "homelab" domain in Tailscale admin
 - [ ] Answer: Tailscale free plan = 100 devices, 3 users. All features included (MagicDNS, subnet routing, HTTPS certs)
 - [ ] Clean SSH public key from git history (BFG or git filter-branch)
 - [ ] Check/increase oCIS storage space
+
+## HIGH — Home Automation
+- [x] Deploy Home Assistant 2026.5.4 at 192.168.1.16:8123 (steve/homelab2026)
+- [x] Deploy Mosquitto MQTT broker (port 1883, anonymous auth)
+- [x] Deploy Zigbee2MQTT with Sonoff ZBDongle-E (EmberZNet 7.4.5, EZSP v13)
+- [x] Configure MQTT integration in HA (programmatic config entry)
+- [x] Ignore ZHA discovery (using Zigbee2MQTT instead)
+- [x] Add DNS entries for ha.homelab and zigbee.homelab
+- [ ] Pair Zigbee devices (need physical devices in pairing mode near dongle)
+- [ ] Connect LotusLantern LED strip — BLOCKED: Talos kernel has CONFIG_BT disabled, no btusb module. Options: (a) build custom Talos image with BT, (b) USB BT adapter + custom extension
+- [ ] WiFi device discovery via HA SSDP/mDNS
+- [ ] Add HA dashboard cards for paired devices
+- [ ] Evaluate ESPHome for WiFi IoT devices
 
 ## HIGH — 3D Dashboard Improvements
 - [x] Fix 3D view centering — camera at [0,1,10], fov 50, orbit target [0,0.5,0]
@@ -32,7 +45,9 @@
 - [x] Visualize network connections as flowing glowing pipes (green active, yellow dashed planned)
 - [ ] Show IP addresses, bandwidth info on network connections
 - [x] Create 3D ArgoCD logo object (rotating octahedron, non-rotating label)
-- [x] Place 10 service boxes in creative 2-row layout with category color strips
+- [x] Place services in 6-column layout with category color strips (expanded from 5)
+- [x] Added Home Assistant, Zigbee2MQTT, Mosquitto, nginx-ingress, CoreDNS, cert-manager to dashboard
+- [x] Added HA, nginx, DNS nodes to topology view
 - [ ] Add more logos and branding to 3D objects
 - [x] Icons on top face, names below boxes — visible from all camera angles
 - [x] Bloom and vignette post-processing effects
@@ -61,6 +76,18 @@
 - [x] Dashboard: add real-time metrics from Prometheus API (cluster status API route)
 - [ ] Dashboard: add log viewer from Loki
 - [x] Dashboard: add ArgoCD sync status indicators (live in top bar)
+
+## LOW — Backup
+- [ ] Set up Restic backup to Google Drive (user has 8TB, allocate 1TB)
+- [ ] Configure rclone with Google Drive OAuth
+- [ ] Create restic repository on Google Drive
+- [ ] Back up PVCs: home-assistant-config, actual-budget, grafana, etc.
+- [ ] Set up scheduled backup CronJob in K8s
+
+## LOW — 3D Models
+- [ ] Use Blender MCP to create real 3D model of Minisforum M2
+- [ ] Use Blender MCP to create real 3D model of AT&T BGW320 router
+- [ ] Use Blender MCP to create real 3D model of GPU node (i9 + RTX 3080 Ti)
 
 ## COMPLETED
 - [x] Storage cleanup — audit & right-size PVCs
@@ -97,3 +124,9 @@
 - [x] Fix APITable Redis/Gateway/Backend (imageproxy missing, REDIS_PASSWORD in secret, RabbitMQ credentials)
 - [x] Add SimpleFIN security contexts (pod + container level)
 - [x] Pin SimpleFIN image to sha256 digest
+- [x] Deploy Home Assistant stack (HA + Mosquitto + Zigbee2MQTT) to K8s
+- [x] Configure MQTT integration in Home Assistant
+- [x] Add 6 new services to dashboard (HA, Z2M, Mosquitto, nginx, DNS, cert-manager)
+- [x] Fix ArgoCD bootstrap OutOfSync (removed kustomization.yaml from app-of-apps subdirs)
+- [x] DNS setup: /etc/resolver/homelab → nameserver 192.168.1.22
+- [x] Delete unused device-plugin.yaml from git
