@@ -217,9 +217,11 @@ metadata:
 type: Opaque
 stringData:
   # Deploy manually: kubectl create secret generic apitable-minio-secret -n apitable \
-  #   --from-literal=MINIO_ROOT_USER=apitable --from-literal=MINIO_ROOT_PASSWORD='<PASS>'
+  #   --from-literal=MINIO_ROOT_USER=apitable --from-literal=MINIO_ROOT_PASSWORD='<PASS>' \
+  #   --from-literal=REDIS_PASSWORD='<PASS>'
   MINIO_ROOT_USER: "apitable"
   MINIO_ROOT_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
+  REDIS_PASSWORD: "PLACEHOLDER_DEPLOY_MANUALLY"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -666,3 +668,46 @@ spec:
   ports:
     - port: 9000
       targetPort: 9000
+---
+# ─── Image Proxy ──────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apitable-imageproxy
+  namespace: apitable
+  labels:
+    app: apitable-imageproxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apitable-imageproxy
+  template:
+    metadata:
+      labels:
+        app: apitable-imageproxy
+    spec:
+      containers:
+        - name: imageproxy
+          image: apitable/imageproxy-server:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imageproxy-server
+  namespace: apitable
+spec:
+  selector:
+    app: apitable-imageproxy
+  ports:
+    - port: 8080
+      targetPort: 8080

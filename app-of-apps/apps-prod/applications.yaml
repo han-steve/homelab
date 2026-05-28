@@ -45,6 +45,12 @@ spec:
       jsonPointers:
         - /data
         - /stringData
+    - group: ""
+      kind: ConfigMap
+      name: apitable-config
+      jsonPointers:
+        - /data/REDIS_PASSWORD
+        - /data/RABBITMQ_PASSWORD
   syncPolicy:
     automated:
       selfHeal: true
