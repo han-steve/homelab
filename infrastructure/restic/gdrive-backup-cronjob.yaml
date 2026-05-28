@@ -26,7 +26,7 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      backoffLimit: 2
+      backoffLimit: 3
       activeDeadlineSeconds: 3600
       template:
         metadata:
@@ -36,39 +36,49 @@ spec:
           serviceAccountName: gdrive-backup
           restartPolicy: OnFailure
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            fsGroup: 1000
             seccompProfile:
               type: RuntimeDefault
-          containers:
-          - name: backup
-            image: bitnami/kubectl:1.36.0
+          initContainers:
+          - name: fetch-kubectl
+            image: alpine:3.20
             securityContext:
               allowPrivilegeEscalation: false
               capabilities:
                 drop: ["ALL"]
               readOnlyRootFilesystem: false
             command:
-            - /bin/bash
+            - /bin/sh
             - -c
             - |
-              set -euo pipefail
+              apk add --no-cache curl > /dev/null 2>&1
+              curl -sLo /tools/kubectl "https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl"
+              chmod +x /tools/kubectl
+              echo "kubectl downloaded OK"
+            volumeMounts:
+            - name: tools
+              mountPath: /tools
+          containers:
+          - name: backup
+            image: rclone/rclone:1.74.2
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: false
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              export PATH="/tools:$PATH"
               TIMESTAMP=$(date +%Y-%m-%d_%H%M)
               BACKUP_DIR="/tmp/backups/$TIMESTAMP"
               GDRIVE_PATH="homelab-backups"
               mkdir -p "$BACKUP_DIR"
 
               echo "=== Google Drive Backup Starting $TIMESTAMP ==="
-
-              # Install rclone (to user-writable dir)
-              echo "--- Installing rclone ---"
-              cd /tmp
-              curl -sLO https://downloads.rclone.org/current/rclone-current-linux-amd64.zip
-              unzip -q rclone-current-linux-amd64.zip
-              cp rclone-*/rclone /tmp/rclone
-              chmod +x /tmp/rclone
-              export PATH="/tmp:$PATH"
+              echo "rclone: $(rclone version | head -1)"
+              echo "kubectl: $(kubectl version --client --short 2>/dev/null || kubectl version --client)"
               export RCLONE_CONFIG=/rclone-config/rclone.conf
 
               # Verify rclone connectivity
@@ -77,39 +87,36 @@ spec:
               }
 
               # Backup targets: namespace|label|container|path|name
-              TARGETS=(
-                "actual-budget|app=actual-budget|actual-budget|/data|actual-budget"
-                "monitoring|app.kubernetes.io/name=grafana|grafana|/var/lib/grafana|grafana"
-                "jellyfin|app=jellyfin|jellyfin|/config|jellyfin-config"
-                "home-assistant|app=home-assistant|home-assistant|/config|home-assistant"
-              )
-
               FAILED=0
-              for target in "${TARGETS[@]}"; do
-                IFS='|' read -r ns selector container path name <<< "$target"
+              backup_one() {
+                ns="$1"; selector="$2"; container="$3"; path="$4"; name="$5"
                 echo ""
                 echo "--- Backing up $name (ns=$ns) ---"
-
                 POD=$(kubectl get pods -n "$ns" -l "$selector" \
                   -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
                 if [ -z "$POD" ]; then
                   echo "WARNING: No pod for $name. Skipping."
-                  FAILED=$((FAILED + 1))
-                  continue
+                  return 1
                 fi
                 echo "Pod: $POD"
-
                 kubectl exec -n "$ns" "$POD" -c "$container" -- \
                   tar czf - -C "$(dirname "$path")" "$(basename "$path")" \
-                  > "$BACKUP_DIR/${name}.tar.gz" 2>/dev/null || {
+                  > "$BACKUP_DIR/${name}.tar.gz" 2>/dev/null
+                if [ $? -eq 0 ] && [ -s "$BACKUP_DIR/${name}.tar.gz" ]; then
+                  SIZE=$(du -sh "$BACKUP_DIR/${name}.tar.gz" | cut -f1)
+                  echo "OK: $name ($SIZE)"
+                  return 0
+                else
                   echo "WARNING: Failed to backup $name"
                   rm -f "$BACKUP_DIR/${name}.tar.gz"
-                  FAILED=$((FAILED + 1))
-                  continue
-                }
-                SIZE=$(du -sh "$BACKUP_DIR/${name}.tar.gz" | cut -f1)
-                echo "OK: $name ($SIZE)"
-              done
+                  return 1
+                fi
+              }
+
+              backup_one actual-budget app=actual-budget actual-budget /data actual-budget || FAILED=$((FAILED + 1))
+              backup_one monitoring app.kubernetes.io/name=grafana grafana /var/lib/grafana grafana || FAILED=$((FAILED + 1))
+              backup_one jellyfin app=jellyfin jellyfin /config jellyfin-config || FAILED=$((FAILED + 1))
+              backup_one home-assistant app=home-assistant home-assistant /config home-assistant || FAILED=$((FAILED + 1))
 
               echo ""
               echo "=== Uploading to Google Drive ==="
@@ -139,6 +146,9 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            - name: tools
+              mountPath: /tools
+              readOnly: true
             resources:
               requests:
                 cpu: 200m
@@ -152,3 +162,6 @@ spec:
           - name: tmp
             emptyDir:
               sizeLimit: 5Gi
+          - name: tools
+            emptyDir:
+              sizeLimit: 100Mi
