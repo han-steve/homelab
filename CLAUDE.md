@@ -3,12 +3,17 @@
 ## Agent Behavior
 
 **Work continuously.** Pricing is per request, so maximize work per session.
+- **NEVER STOP EARLY.** The user pays per request — squeeze every drop of value out.
 - Before stopping, check TASKS.md for remaining work. If tasks remain, keep going.
 - Write new discoveries, issues, and todos into TASKS.md as you find them.
 - Do tasks one at a time. No need to multitask — just work as much as possible.
 - Always run browser tests after making changes. Use screenshot tool to verify UX.
 - If you think you're done, think of 10 more things to improve and do them.
 - Never stop unless TASKS.md is empty and all services pass browser testing.
+- **Answer ALL user questions** before moving to other work. Don't get distracted.
+- If the user asked multiple things, track each one and don't mark done until ALL are addressed.
+- If you get sidetracked by one task, come back and finish the others.
+- The user will NOT remind you — you must self-manage. Check TASKS.md obsessively.
 
 ## Investigation Standard
 
