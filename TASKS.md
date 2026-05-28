@@ -14,7 +14,7 @@
 - [x] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
 - [x] Test all *.homelab domains work through nginx-ingress (jellyfin.homelab, grafana.homelab, etc.)
 - [ ] Fix Tailscale operator: CrashLoopBackOff due to invalid OAuth token. User needs to create fresh OAuth credentials.
-- [ ] Document Tailscale split DNS setup: user adds 192.168.1.22 as nameserver for "homelab" domain in Tailscale admin
+- [x] Document Tailscale split DNS setup — added to Docusaurus docs-site and docs/SPLIT-DNS.md
 - [ ] Answer: Tailscale free plan = 100 devices, 3 users. All features included (MagicDNS, subnet routing, HTTPS certs)
 - [ ] Clean SSH public key from git history (BFG or git filter-branch)
 - [ ] Check/increase oCIS storage space
@@ -78,11 +78,11 @@
 - [x] Dashboard: add ArgoCD sync status indicators (live in top bar)
 
 ## LOW — Backup
-- [ ] Set up Restic backup to Google Drive (user has 8TB, allocate 1TB)
-- [ ] Configure rclone with Google Drive OAuth
-- [ ] Create restic repository on Google Drive
-- [ ] Back up PVCs: home-assistant-config, actual-budget, grafana, etc.
-- [ ] Set up scheduled backup CronJob in K8s
+- [x] Set up Google Drive backup via rclone (4 services: actual-budget, grafana, jellyfin, HA)
+- [x] Configure rclone with Google Drive OAuth
+- [x] Set up backup CronJob (4 AM daily, 7-day retention)
+- [x] Create backup RBAC (ServiceAccount + ClusterRole for kubectl exec)
+- [x] Test E2E: 31MB uploaded to google_drive:homelab-backups/
 
 ## LOW — 3D Models
 - [ ] Use Blender MCP to create real 3D model of Minisforum M2

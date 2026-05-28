@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense } from "react";
 import DetailPanel from "./components/DetailPanel";
 
 interface ClusterStatus {
+  timestamp: string;
   apps: { name: string; sync: string; health: string }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
   node: { name: string; ready: boolean } | null;
@@ -103,6 +104,14 @@ export default function Home() {
             >
               🔗 <span className="hidden sm:inline">Topology</span>
             </button>
+            <a
+              href="http://localhost:3001"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer text-gray-500 hover:text-gray-300"
+            >
+              📚 <span className="hidden sm:inline">Docs</span>
+            </a>
           </div>
 
           {/* Stack info */}
@@ -136,6 +145,11 @@ export default function Home() {
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
             click service · drag rotate · scroll zoom
+          </div>
+        )}
+        {cluster && (
+          <div className="absolute bottom-5 right-5 text-xs text-gray-700 pointer-events-none font-mono hidden sm:block">
+            last sync: {new Date(cluster.timestamp).toLocaleTimeString()}
           </div>
         )}
       </div>
