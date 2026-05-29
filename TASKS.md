@@ -13,11 +13,11 @@
 ## HIGH — Infrastructure
 - [x] Commit and push nginx-ingress, ingress, homelab-dns infrastructure to git
 - [x] Test all *.homelab domains work through nginx-ingress (jellyfin.homelab, grafana.homelab, etc.)
-- [ ] Fix Tailscale operator: CrashLoopBackOff due to invalid OAuth token. User needs to create fresh OAuth credentials.
+- [x] Fix Tailscale operator: added namespace-scoped Role/RoleBinding — operator now Running (auth still needs real OAuth)
 - [x] Document Tailscale split DNS setup — added to Docusaurus docs-site and docs/SPLIT-DNS.md
-- [ ] Answer: Tailscale free plan = 100 devices, 3 users. All features included (MagicDNS, subnet routing, HTTPS certs)
-- [ ] Clean SSH public key from git history (BFG or git filter-branch)
-- [ ] Check/increase oCIS storage space
+- [x] Answer: Tailscale free plan = 100 devices, 3 users. All features included (MagicDNS, subnet routing, HTTPS certs)
+- [ ] Clean SSH public key from git history (BFG or git filter-branch) — requires force push, confirm with user
+- [x] Check/increase oCIS storage space — 50GB allocated, only 3MB used, no action needed
 
 ## HIGH — Home Automation
 - [x] Deploy Home Assistant 2026.5.4 at 192.168.1.16:8123 (steve/homelab2026)
