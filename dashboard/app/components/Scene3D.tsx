@@ -8,6 +8,7 @@ import {
   Html,
   RoundedBox,
   Float,
+  useGLTF,
 } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
@@ -224,6 +225,43 @@ function StatusDot({
       <sphereGeometry args={[0.06, 16, 16]} />
       <meshBasicMaterial color={color} toneMapped={false} />
     </mesh>
+  );
+}
+
+/* ── Hardware 3D model (GLB) ───────────────────────── */
+function HardwareModel({
+  url, scale = 0.08, position = [0, 0, 0], rotation = [0, 0, 0], opacity = 1
+}: {
+  url: string;
+  scale?: number;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  opacity?: number;
+}) {
+  const { scene } = useGLTF(url);
+  const cloned = useMemo(() => {
+    const c = scene.clone(true);
+    if (opacity < 1) {
+      c.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          mats.forEach((m) => {
+            (m as THREE.MeshStandardMaterial).transparent = true;
+            (m as THREE.MeshStandardMaterial).opacity = opacity;
+          });
+        }
+      });
+    }
+    return c;
+  }, [scene, opacity]);
+  return (
+    <primitive
+      object={cloned}
+      scale={scale}
+      position={position}
+      rotation={rotation}
+    />
   );
 }
 
@@ -534,7 +572,7 @@ export default function Scene3D({
       <NodeBox
         position={routerPos}
         label={router.name}
-        icon="📡"
+        icon=""
         color="#8b949e"
         status="online"
         isSelected={overlayTarget === "router"}
@@ -542,7 +580,9 @@ export default function Scene3D({
         onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "router" ? null : "router"); }}
         onPointerOver={() => setHoveredNode("router")}
         onPointerOut={() => setHoveredNode(null)}
-      />
+      >
+        <HardwareModel url="/models/att_bgw320.glb" scale={0.065} position={[0, -0.3, 0]} rotation={[0, Math.PI * 0.25, 0]} />
+      </NodeBox>
       <InfoOverlay
         position={[routerPos[0] + 1.5, routerPos[1] + 0.8, routerPos[2]]}
         title={"📡 " + router.name}
@@ -556,7 +596,7 @@ export default function Scene3D({
       <NodeBox
         position={m2Pos}
         label={"M2 · " + node.ip}
-        icon="⚡"
+        icon=""
         color="#58a6ff"
         status="online"
         isSelected={overlayTarget === "m2"}
@@ -564,7 +604,9 @@ export default function Scene3D({
         onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "m2" ? null : "m2"); }}
         onPointerOver={() => setHoveredNode("m2")}
         onPointerOut={() => setHoveredNode(null)}
-      />
+      >
+        <HardwareModel url="/models/minisforum_m2.glb" scale={0.09} position={[0, -0.15, 0]} rotation={[0, Math.PI * 0.15, 0]} />
+      </NodeBox>
       <InfoOverlay
         position={[m2Pos[0] - 1.5, m2Pos[1] + 0.8, m2Pos[2]]}
         title={"⚡ M2 Node"}
@@ -578,7 +620,7 @@ export default function Scene3D({
       <NodeBox
         position={gpuPos}
         label={"GPU · " + gpuNode.ip}
-        icon="🎮"
+        icon=""
         color="#d29922"
         status="planned"
         isSelected={overlayTarget === "gpu"}
@@ -586,7 +628,9 @@ export default function Scene3D({
         onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "gpu" ? null : "gpu"); }}
         onPointerOver={() => setHoveredNode("gpu")}
         onPointerOut={() => setHoveredNode(null)}
-      />
+      >
+        <HardwareModel url="/models/gpu_node.glb" scale={0.055} position={[0, -0.3, 0]} rotation={[0, Math.PI * 0.2, 0]} opacity={0.6} />
+      </NodeBox>
       <InfoOverlay
         position={[gpuPos[0] + 1.5, gpuPos[1] + 0.8, gpuPos[2]]}
         title={"🎮 GPU Node"}
@@ -658,3 +702,8 @@ export default function Scene3D({
     </Canvas>
   );
 }
+
+// Preload GLB models for instant display
+useGLTF.preload("/models/minisforum_m2.glb");
+useGLTF.preload("/models/att_bgw320.glb");
+useGLTF.preload("/models/gpu_node.glb");

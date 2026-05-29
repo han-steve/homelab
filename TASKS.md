@@ -83,11 +83,15 @@
 - [x] Set up backup CronJob (4 AM daily, 7-day retention)
 - [x] Create backup RBAC (ServiceAccount + ClusterRole for kubectl exec)
 - [x] Test E2E: 31MB uploaded to google_drive:homelab-backups/
+- [x] Add oCIS data backup to gdrive cronjob (both /var/lib/ocis and /etc/ocis)
+- [x] Add APITable MySQL dump backup via mysqldump + kubectl exec
+- [x] Write RESTORE.md with full cluster restore instructions (OS + ArgoCD + data restore)
 
 ## LOW — 3D Models
-- [ ] Use Blender MCP to create real 3D model of Minisforum M2
-- [ ] Use Blender MCP to create real 3D model of AT&T BGW320 router
-- [ ] Use Blender MCP to create real 3D model of GPU node (i9 + RTX 3080 Ti)
+- [x] Use Blender MCP to create real 3D model of Minisforum M2 (exported to dashboard/public/models/minisforum_m2.glb)
+- [x] Use Blender MCP to create real 3D model of AT&T BGW320 router (att_bgw320.glb)
+- [x] Use Blender MCP to create real 3D model of GPU node i9 + RTX 3080 Ti (gpu_node.glb)
+- [x] Integrate GLB models into Scene3D.tsx NodeBoxes (HardwareModel component with useGLTF)
 
 ## COMPLETED
 - [x] Storage cleanup — audit & right-size PVCs
