@@ -17,7 +17,7 @@ rules:
     verbs: ["create", "patch"]
   - apiGroups: [""]
     resources: ["services", "services/status"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+    verbs: ["get", "list", "watch", "update", "patch", "create", "delete", "deletecollection"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -25,17 +25,22 @@ rules:
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["apps"]
-    resources: ["statefulsets"]
+    resources: ["statefulsets", "deployments"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses", "ingresses/status"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+    resources: ["ingresses", "ingresses/status", "ingressclasses"]
+    verbs: ["get", "list", "watch", "update", "patch", "create", "delete", "deletecollection"]
   - apiGroups: ["tailscale.com"]
-    resources: ["*"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resources: ["connectors", "connectors/status", "proxyclasses", "proxyclasses/status",
+                "proxygroups", "proxygroups/status", "dnsconfigs", "dnsconfigs/status",
+                "recorders", "recorders/status"]
+    verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -102,3 +107,47 @@ spec:
         - name: oauth
           secret:
             secretName: tailscale-operator
+---
+# Namespace-scoped Role required for the operator to manage RBAC within the tailscale namespace
+# (needed to create roles/rolebindings for proxy pods)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tailscale-operator
+  namespace: tailscale
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "serviceaccounts", "configmaps"]
+    verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["update"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets", "deployments"]
+    verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch", "create", "update", "deletecollection"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "create", "patch", "update", "list", "watch", "deletecollection"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tailscale-operator
+  namespace: tailscale
+subjects:
+  - kind: ServiceAccount
+    name: tailscale-operator
+    namespace: tailscale
+roleRef:
+  kind: Role
+  name: tailscale-operator
+  apiGroup: rbac.authorization.k8s.io
