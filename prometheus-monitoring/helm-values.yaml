@@ -9,12 +9,23 @@ grafana:
     enabled: true
     size: 10Gi
     storageClassName: longhorn
+  # Enable default dashboards for CPU/memory/disk/network history
+  defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
 
 prometheus:
   prometheusSpec:
-    # Extended retention (default is 24h) 
-    retention: 90d
-    retentionSize: 90GB
+    # 30d retention for standard metrics (CPU, memory, disk, network)
+    # Shorter than 90d to save space — 30d is plenty for trend analysis
+    retention: 30d
+    retentionSize: 50GB
+    
+    # Scrape interval: 30s for standard system metrics (reduces cardinality vs 15s default)
+    scrapeInterval: "30s"
+    evaluationInterval: "30s"
     
     # Add persistent storage (not in default)
     storageSpec:
@@ -25,3 +36,14 @@ prometheus:
           resources:
             requests:
               storage: 100Gi
+
+# Node exporter for host-level CPU/memory/disk/network metrics
+prometheus-node-exporter:
+  enabled: true
+  hostRootFsMount:
+    enabled: true
+    mountPropagation: HostToContainer
+
+# kube-state-metrics for workload metrics
+kube-state-metrics:
+  enabled: true

@@ -91,63 +91,130 @@ function Particles({ count = 200 }: { count?: number }) {
   );
 }
 
-/* ── flowing network pipe ──────────────────────────── */
-function NetworkPipe({
-  start, end, color = "#3fb950", active = true, dashed = false
+/* ── floor-level glowing ethernet cable ─────────────── */
+function FloorCable({
+  from, to, color = "#58a6ff", active = true
 }: {
-  start: [number, number, number];
-  end: [number, number, number];
+  from: [number, number, number];
+  to: [number, number, number];
   color?: string;
   active?: boolean;
-  dashed?: boolean;
 }) {
-  const ref = useRef<THREE.Mesh>(null!);
-  const tubeRef = useRef<THREE.TubeGeometry>(null!);
+  const flowRef = useRef<THREE.Mesh>(null!);
 
-  const { curve, length } = useMemo(() => {
-    const s = new THREE.Vector3(...start);
-    const e = new THREE.Vector3(...end);
-    const mid = new THREE.Vector3().addVectors(s, e).multiplyScalar(0.5);
-    mid.y += 0.5;
-    const c = new THREE.QuadraticBezierCurve3(s, mid, e);
-    return { curve: c, length: c.getLength() };
-  }, [start, end]);
-
-  useFrame(({ clock }) => {
-    if (ref.current && active) {
-      const mat = ref.current.material as THREE.MeshBasicMaterial;
-      if (mat.map) {
-        mat.map.offset.x = -clock.getElapsedTime() * 0.3;
-      }
-    }
-  });
+  const curve = useMemo(() => {
+    const f = new THREE.Vector3(from[0], 0.03, from[2]);
+    const t = new THREE.Vector3(to[0], 0.03, to[2]);
+    const mid = new THREE.Vector3().addVectors(f, t).multiplyScalar(0.5);
+    // Small side offset so cable looks organic
+    const perp = new THREE.Vector3(t.z - f.z, 0, f.x - t.x).normalize().multiplyScalar(0.5);
+    const ctrl = mid.clone().add(perp);
+    ctrl.y = 0.03;
+    return new THREE.QuadraticBezierCurve3(f, ctrl, t);
+  }, [from, to]);
 
   const flowTex = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
+    canvas.width = 512;
     canvas.height = 4;
     const ctx = canvas.getContext("2d")!;
-    for (let x = 0; x < 256; x++) {
-      const a = Math.pow(Math.sin((x / 256) * Math.PI * 4), 2) * 0.8;
+    for (let x = 0; x < 512; x++) {
+      const a = Math.pow(Math.sin((x / 512) * Math.PI * 8), 2) * 0.9;
       ctx.fillStyle = `rgba(255,255,255,${a})`;
       ctx.fillRect(x, 0, 1, 4);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
-    tex.repeat.set(3, 1);
+    tex.repeat.set(5, 1);
     return tex;
   }, []);
 
+  useFrame(({ clock }) => {
+    if (flowRef.current && active) {
+      const mat = flowRef.current.material as THREE.MeshBasicMaterial;
+      if (mat.map) mat.map.offset.x = -clock.getElapsedTime() * 0.4;
+    }
+  });
+
   return (
-    <mesh ref={ref} raycast={() => {}}>
-      <tubeGeometry ref={tubeRef} args={[curve, 32, 0.02, 8, false]} />
-      <meshBasicMaterial
-        color={color}
-        transparent
-        opacity={active ? 0.6 : 0.15}
-        map={active ? flowTex : null}
-        toneMapped={false}
-      />
+    <group>
+      {/* Base cable dim glow */}
+      <mesh raycast={() => {}}>
+        <tubeGeometry args={[curve, 80, 0.018, 6, false]} />
+        <meshBasicMaterial color={color} transparent opacity={active ? 0.18 : 0.05} />
+      </mesh>
+      {/* Animated flow layer */}
+      {active && (
+        <mesh ref={flowRef} raycast={() => {}}>
+          <tubeGeometry args={[curve, 80, 0.018, 6, false]} />
+          <meshBasicMaterial color={color} transparent opacity={0.85} map={flowTex} toneMapped={false} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+/* ── glow ring fixed on floor ────────────────────────── */
+function GlowRing({
+  position, color, online, isSelected, isHovered
+}: {
+  position: [number, number, number];
+  color: string;
+  online: boolean;
+  isSelected: boolean;
+  isHovered: boolean;
+}) {
+  const outerRef = useRef<THREE.Mesh>(null!);
+  const fillRef = useRef<THREE.Mesh>(null!);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (outerRef.current) {
+      const base = isSelected ? 1.06 : 1.0;
+      const pulse = online ? Math.sin(t * 2.2) * 0.06 : 0;
+      outerRef.current.scale.setScalar(base + pulse);
+    }
+    if (fillRef.current) {
+      const mat = fillRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = online
+        ? (isSelected ? 0.09 : isHovered ? 0.055 : 0.03) + Math.sin(t * 2.2) * 0.015
+        : 0.008;
+    }
+  });
+
+  const outerOpacity = online ? (isSelected ? 0.95 : isHovered ? 0.65 : 0.45) : 0.12;
+
+  return (
+    <group position={position} rotation-x={-Math.PI / 2}>
+      <mesh ref={outerRef}>
+        <torusGeometry args={[1.05, 0.025, 16, 80]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={outerOpacity} />
+      </mesh>
+      <mesh>
+        <torusGeometry args={[0.68, 0.01, 16, 60]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={online ? 0.22 : 0.04} />
+      </mesh>
+      <mesh ref={fillRef}>
+        <circleGeometry args={[1.05, 64]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.03} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ── pulsing selection ring ──────────────────────────── */
+function SelectionRing({ color }: { color: string }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const s = 1 + Math.sin(clock.getElapsedTime() * 3) * 0.04;
+      ref.current.scale.setScalar(s);
+    }
+  });
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, 0.06, 0]}>
+      <torusGeometry args={[1.2, 0.03, 16, 80]} />
+      <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.9} />
     </mesh>
   );
 }
@@ -265,14 +332,19 @@ function HardwareModel({
   );
 }
 
-/* ── 3D Node Box ───────────────────────────────────── */
-function NodeBox({
-  position, label, icon, color, status, isSelected, isHovered,
-  onClick, onPointerOver, onPointerOut, children
+/* ── Hardware node on floor ─────────────────────────── */
+function HardwareNode({
+  modelUrl, modelScale, modelOffset, modelRotation,
+  position, label, sublabel, color, status,
+  isSelected, isHovered, onClick, onPointerOver, onPointerOut,
 }: {
+  modelUrl: string;
+  modelScale?: number;
+  modelOffset?: [number, number, number];
+  modelRotation?: [number, number, number];
   position: [number, number, number];
   label: string;
-  icon: string;
+  sublabel?: string;
   color: string;
   status: "online" | "planned" | "offline";
   isSelected: boolean;
@@ -280,27 +352,18 @@ function NodeBox({
   onClick: (e: ThreeEvent<MouseEvent>) => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
-  children?: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null!);
-  const glowRef = useRef<THREE.Mesh>(null!);
+  const isOnline = status === "online";
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (groupRef.current) {
-      const target = isHovered ? 0.05 : 0;
+      const targetY = position[1] + (isHovered ? 0.35 : isSelected ? 0.2 : 0);
       groupRef.current.position.y = THREE.MathUtils.lerp(
-        groupRef.current.position.y, position[1] + target, 0.1
+        groupRef.current.position.y, targetY, 0.08
       );
-      if (isSelected && glowRef.current) {
-        const s = 1 + Math.sin(clock.getElapsedTime() * 2) * 0.03;
-        glowRef.current.scale.set(s, s, s);
-      }
     }
   });
-
-  const isOnline = status === "online";
-  const emissive = isOnline ? color : "#000000";
-  const opacity = status === "planned" ? 0.4 : 1;
 
   return (
     <group
@@ -310,72 +373,84 @@ function NodeBox({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      {/* Main box */}
-      <RoundedBox args={[1.8, 1, 1.2]} radius={0.08} smoothness={4}>
-        <meshPhysicalMaterial
-          color={isOnline ? "#1a1a2e" : "#111118"}
-          metalness={0.5}
-          roughness={0.3}
-          clearcoat={0.5}
-          clearcoatRoughness={0.2}
-          emissive={emissive}
-          emissiveIntensity={isSelected ? 0.15 : isHovered ? 0.08 : 0.03}
-          transparent={!isOnline}
-          opacity={opacity}
-        />
-      </RoundedBox>
+      <HardwareModel
+        url={modelUrl}
+        scale={modelScale ?? 0.1}
+        position={modelOffset ?? [0, 0, 0]}
+        rotation={modelRotation ?? [0, 0, 0]}
+        opacity={isOnline ? 1 : 0.55}
+      />
 
-      {/* Selection glow ring */}
-      {isSelected && (
-        <mesh ref={glowRef}>
-          <torusGeometry args={[1.1, 0.02, 16, 64]} />
-          <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.6} />
+      {/* Wireframe engraved overlay for offline */}
+      {!isOnline && (
+        <mesh>
+          <boxGeometry args={[2.5, 2.5, 2.5]} />
+          <meshBasicMaterial color={color} wireframe transparent opacity={0.055} />
         </mesh>
       )}
 
-      {/* Icon */}
-      <Text
-        position={[0, 0.15, 0.61]}
-        fontSize={0.35}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {icon}
-      </Text>
+      {/* Point light when online */}
+      {isOnline && (
+        <pointLight
+          position={[0, 1.5, 0]}
+          color={color}
+          intensity={isSelected ? 5 : isHovered ? 3.5 : 1.8}
+          distance={7}
+          decay={2}
+        />
+      )}
+
+      {/* Selection ring */}
+      {isSelected && <SelectionRing color={color} />}
 
       {/* Label */}
       <Text
-        position={[0, -0.25, 0.61]}
-        fontSize={0.12}
-        color={isOnline ? "#e4e4e7" : "#666"}
+        position={[0, 2.1, 0.5]}
+        fontSize={0.17}
+        color={isOnline ? "#e4e4e7" : "#555"}
         anchorX="center"
         anchorY="middle"
+        outlineWidth={0.01}
+        outlineColor="#000000"
       >
         {label}
       </Text>
 
-      {/* Status dot */}
-      <StatusDot position={[0.75, 0.35, 0.61]} status={isOnline ? "online" : status} />
+      <Text
+        position={[0, 1.82, 0.5]}
+        fontSize={0.11}
+        color={isOnline ? "#22c55e" : "#554444"}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {isOnline ? "● ONLINE" : "○ OFFLINE"}
+      </Text>
 
-      {/* Color accent strip */}
-      <mesh position={[0, -0.49, 0]}>
-        <boxGeometry args={[1.8, 0.03, 1.2]} />
-        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={isOnline ? 0.8 : 0.2} />
-      </mesh>
-
-      {children}
+      {sublabel && (
+        <Text
+          position={[0, 1.58, 0.5]}
+          fontSize={0.09}
+          color="#555"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={3}
+        >
+          {sublabel}
+        </Text>
+      )}
     </group>
   );
 }
 
-/* ── Service App Object ────────────────────────────── */
-function ServiceObject({
-  position, service, index, isSelected, isHovered,
-  onClick, onPointerOver, onPointerOut
+/* ── Service glass sphere ─────────────────────────── */
+function ServiceSphere({
+  position, service, visible, delay = 0,
+  isSelected, isHovered, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
-  index: number;
+  visible: boolean;
+  delay?: number;
   isSelected: boolean;
   isHovered: boolean;
   onClick: () => void;
@@ -383,19 +458,18 @@ function ServiceObject({
   onPointerOut: () => void;
 }) {
   const ref = useRef<THREE.Group>(null!);
+  const catColor = CATEGORY_COLORS[service.category] || "#666";
+  const isRunning = service.status === "running";
 
   useFrame(({ clock }) => {
     if (ref.current) {
-      const hover = isHovered ? 0.08 : 0;
-      ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, position[1] + hover, 0.1);
-      if (isSelected) {
-        ref.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
-      }
+      const t = clock.getElapsedTime() + delay * 0.4;
+      ref.current.position.y = position[1] + Math.sin(t * 0.9) * 0.12;
+      const targetScale = visible ? 1 : 0;
+      const curr = ref.current.scale.x;
+      ref.current.scale.setScalar(curr + (targetScale - curr) * (visible ? 0.12 : 0.2));
     }
   });
-
-  const catColor = CATEGORY_COLORS[service.category] || "#666";
-  const isRunning = service.status === "running";
 
   return (
     <group
@@ -405,82 +479,158 @@ function ServiceObject({
       onPointerOver={(e) => { e.stopPropagation(); onPointerOver(); }}
       onPointerOut={(e) => { e.stopPropagation(); onPointerOut(); }}
     >
-      {/* Main body */}
-      <RoundedBox args={[1.1, 0.7, 0.7]} radius={0.06} smoothness={4}>
+      {/* Glass icosahedron orb */}
+      <mesh>
+        <icosahedronGeometry args={[0.38, 1]} />
         <meshPhysicalMaterial
-          color="#141420"
-          metalness={0.4}
-          roughness={0.35}
-          clearcoat={0.6}
-          emissive={service.color}
-          emissiveIntensity={isSelected ? 0.2 : isHovered ? 0.1 : 0.02}
+          color={catColor}
+          metalness={0}
+          roughness={0.08}
+          transparent
+          opacity={isRunning ? 0.65 : 0.25}
+          clearcoat={1.0}
+          clearcoatRoughness={0.05}
+          emissive={catColor}
+          emissiveIntensity={isSelected ? 0.4 : isHovered ? 0.22 : (isRunning ? 0.14 : 0.02)}
         />
-      </RoundedBox>
-
-      {/* Selection ring */}
-      {isSelected && (
+      </mesh>
+      {/* Outer glow shell on hover/select */}
+      {(isSelected || isHovered) && (
         <mesh>
-          <torusGeometry args={[0.65, 0.015, 16, 48]} />
-          <meshBasicMaterial color={service.color} toneMapped={false} transparent opacity={0.7} />
+          <icosahedronGeometry args={[0.46, 1]} />
+          <meshBasicMaterial color={catColor} transparent opacity={0.1} toneMapped={false} />
         </mesh>
       )}
-
-      {/* Category side strip */}
-      <mesh position={[-0.54, 0, 0]}>
-        <boxGeometry args={[0.03, 0.7, 0.7]} />
-        <meshBasicMaterial color={catColor} toneMapped={false} transparent opacity={0.7} />
-      </mesh>
-
-      {/* Icon on top face */}
-      <Text position={[0, 0.36, 0]} rotation-x={-Math.PI / 2} fontSize={0.22} anchorX="center" anchorY="middle">
+      {/* Icon */}
+      <Text position={[0, 0, 0.4]} fontSize={0.22} anchorX="center" anchorY="middle">
         {service.icon}
       </Text>
-
-      {/* Name below box */}
-      <Text
-        position={[0, -0.48, 0]}
-        fontSize={0.08}
-        color={isRunning ? "#d4d4d8" : "#666"}
-        anchorX="center"
-        anchorY="top"
-      >
+      {/* Name */}
+      <Text position={[0, -0.58, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.2}>
         {service.name}
       </Text>
-
       {/* Status dot */}
-      <StatusDot position={[0.42, 0.25, 0.36]} status={service.status} />
+      <StatusDot position={[0.3, 0.3, 0.25]} status={service.status} />
     </group>
   );
 }
 
-/* ── ArgoCD Glassy Logo Object ─────────────────────── */
-function ArgoCDObject({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.Mesh>(null!);
-  useFrame(({ clock }) => {
-    if (ref.current) {
-      ref.current.rotation.y = clock.getElapsedTime() * 0.3;
-    }
-  });
+/* ── Services radial display ─────────────────────────── */
+function ServicesDisplay({
+  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc,
+}: {
+  nodePos: [number, number, number];
+  visible: boolean;
+  selectedSvc: number | null;
+  hoveredSvc: number | null;
+  onSelectSvc: (i: number | null) => void;
+  onHoverSvc: (i: number) => void;
+  onUnhoverSvc: () => void;
+}) {
+  const positions = useMemo<[number, number, number][]>(() => {
+    const cols = 5;
+    return services.map((_, i) => {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const rowCount = Math.min(cols, services.length - row * cols);
+      const xOffset = (col - (rowCount - 1) / 2) * 1.3;
+      return [
+        nodePos[0] + xOffset,
+        nodePos[1] + 1.8 + row * 1.25,
+        nodePos[2] + 3.5,
+      ] as [number, number, number];
+    });
+  }, [nodePos]);
+
   return (
-    <Float speed={2} rotationIntensity={0.3} floatIntensity={0.4}>
+    <>
+      {services.map((svc, i) => (
+        <ServiceSphere
+          key={svc.name}
+          position={positions[i]}
+          service={svc}
+          visible={visible}
+          delay={i}
+          isSelected={selectedSvc === i}
+          isHovered={hoveredSvc === i}
+          onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
+          onPointerOver={() => onHoverSvc(i)}
+          onPointerOut={onUnhoverSvc}
+        />
+      ))}
+    </>
+  );
+}
+
+/* ── ArgoCD floating glass object ─────────────────── */
+function ArgoCDObject({ position }: { position: [number, number, number] }) {
+  const innerRef = useRef<THREE.Mesh>(null!);
+  const outerRef = useRef<THREE.Mesh>(null!);
+  const ringRef = useRef<THREE.Mesh>(null!);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (innerRef.current) innerRef.current.rotation.y = t * 0.45;
+    if (outerRef.current) { outerRef.current.rotation.y = -t * 0.18; outerRef.current.rotation.x = t * 0.12; }
+    if (ringRef.current) ringRef.current.rotation.z = t * 0.3;
+  });
+
+  return (
+    <Float speed={2.5} rotationIntensity={0.2} floatIntensity={0.5}>
+      <group position={position}>
+        <mesh ref={outerRef}>
+          <icosahedronGeometry args={[0.55, 1]} />
+          <meshPhysicalMaterial color="#ef7b4d" metalness={0} roughness={0} transparent opacity={0.15} clearcoat={1} clearcoatRoughness={0} emissive="#ef7b4d" emissiveIntensity={0.12} />
+        </mesh>
+        <mesh ref={innerRef}>
+          <octahedronGeometry args={[0.28, 0]} />
+          <meshPhysicalMaterial color="#ef7b4d" metalness={0.2} roughness={0.15} clearcoat={0.9} emissive="#ef7b4d" emissiveIntensity={0.55} />
+        </mesh>
+        <mesh ref={ringRef} rotation-x={Math.PI / 4}>
+          <torusGeometry args={[0.65, 0.013, 16, 64]} />
+          <meshBasicMaterial color="#ef7b4d" transparent opacity={0.65} toneMapped={false} />
+        </mesh>
+        <Text position={[0, -0.85, 0]} fontSize={0.1} color="#ef7b4d" anchorX="center">ArgoCD</Text>
+      </group>
+    </Float>
+  );
+}
+
+/* ── Cilium CNI object ───────────────────────────────── */
+function CiliumObject({ position }: { position: [number, number, number] }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => { if (ref.current) ref.current.rotation.z = clock.getElapsedTime() * 0.55; });
+  return (
+    <Float speed={1.8} floatIntensity={0.4}>
       <group position={position}>
         <mesh ref={ref}>
-          <octahedronGeometry args={[0.3, 0]} />
-          <meshPhysicalMaterial
-            color="#ef7b4d"
-            metalness={0.1}
-            roughness={0.1}
-            transparent
-            opacity={0.6}
-            clearcoat={1.0}
-            clearcoatRoughness={0.05}
-            emissive="#ef7b4d"
-            emissiveIntensity={0.3}
-          />
+          <torusKnotGeometry args={[0.24, 0.07, 64, 8, 2, 3]} />
+          <meshPhysicalMaterial color="#f7a800" metalness={0.3} roughness={0.2} clearcoat={0.8} emissive="#f7a800" emissiveIntensity={0.45} />
         </mesh>
-        <Text position={[0, -0.45, 0]} fontSize={0.07} color="#ef7b4d" anchorX="center">
-          ArgoCD
-        </Text>
+        <Text position={[0, -0.62, 0]} fontSize={0.09} color="#f7a800" anchorX="center">Cilium CNI</Text>
+      </group>
+    </Float>
+  );
+}
+
+/* ── Longhorn storage object ─────────────────────────── */
+function LonghornObject({ position }: { position: [number, number, number] }) {
+  const ref = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.rotation.y = clock.getElapsedTime() * 0.35;
+  });
+  return (
+    <Float speed={1.5} floatIntensity={0.35}>
+      <group position={position}>
+        <group ref={ref}>
+          {[0, 1, 2].map(i => (
+            <mesh key={i} position={[0, (i - 1) * 0.25, 0]}>
+              <cylinderGeometry args={[0.35 - i * 0.05, 0.35 - i * 0.05, 0.12, 32]} />
+              <meshPhysicalMaterial color="#3b82f6" metalness={0.5} roughness={0.3} clearcoat={0.6} emissive="#3b82f6" emissiveIntensity={0.3 - i * 0.08} />
+            </mesh>
+          ))}
+        </group>
+        <Text position={[0, -0.75, 0]} fontSize={0.09} color="#3b82f6" anchorX="center">Longhorn</Text>
       </group>
     </Float>
   );
@@ -494,36 +644,17 @@ export default function Scene3D({
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
 }) {
+  const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [overlayTarget, setOverlayTarget] = useState<string | null>(null);
+  const [showAllServices, setShowAllServices] = useState(false);
+  const [hoveredSvc, setHoveredSvc] = useState<number | null>(null);
 
-  // Layout positions
-  const m2Pos: [number, number, number] = [-1.5, 0.5, 0];
-  const gpuPos: [number, number, number] = [1.5, 0.5, 0];
-  const routerPos: [number, number, number] = [0, 2.5, 0];
+  // Hardware positions (on the floor)
+  const m2Pos: [number, number, number] = [-3.5, 0, 2];
+  const gpuPos: [number, number, number] = [3.5, 0, 2];
+  const routerPos: [number, number, number] = [0, 0, -4.5];
 
-  // Service positions — grid layout below nodes
-  const cols = 6;
-  const svcPositions: [number, number, number][] = services.map((_, i) => {
-    const row = Math.floor(i / cols);
-    const col = i % cols;
-    const rowCount = Math.min(cols, services.length - row * cols);
-    const offset = (cols - rowCount) * 0.65;
-    return [(col - (cols - 1) / 2) * 1.3 + offset, -1.2 - row * 1.1, 0] as [number, number, number];
-  });
-
-  // Pipe connections
-  const pipeConnections = useMemo(() => [
-    { start: routerPos, end: m2Pos, color: "#58a6ff", active: true },
-    { start: routerPos, end: gpuPos, color: "#d29922", active: false, dashed: true },
-    { start: m2Pos, end: gpuPos, color: "#d29922", active: false, dashed: true },
-    ...services.slice(0, Math.min(services.length, 12)).map((_, i) => ({
-      start: m2Pos as [number, number, number],
-      end: svcPositions[i],
-      color: "#3fb950",
-      active: true,
-    })),
-  ], []);
+  const showServices = showAllServices || selectedNode === "m2";
 
   const nodeInfoLines = [
     { label: "IP", value: node.ip },
@@ -532,18 +663,14 @@ export default function Scene3D({
     { label: "OS", value: node.os },
     { label: "K8s", value: node.k8sVersion },
     { label: "Storage", value: node.storage },
-    { label: "NICs", value: "2x 2.5 GbE" },
   ];
-
   const gpuInfoLines = [
     { label: "IP", value: gpuNode.ip },
     { label: "CPU", value: gpuNode.cpu },
     { label: "GPU", value: gpuNode.gpu },
     { label: "RAM", value: gpuNode.ram },
-    { label: "NIC", value: gpuNode.nic },
     { label: "Status", value: gpuNode.status },
   ];
-
   const routerInfoLines = [
     { label: "Model", value: router.model },
     { label: "IP", value: router.ip },
@@ -551,159 +678,197 @@ export default function Scene3D({
     { label: "ISP", value: router.isp },
   ];
 
+  // Service info overlay position
+  const cols = 5;
+  const getSvcPos = (i: number): [number, number, number] => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const rowCount = Math.min(cols, services.length - row * cols);
+    return [
+      m2Pos[0] + (col - (rowCount - 1) / 2) * 1.3,
+      m2Pos[1] + 2.2 + row * 1.3 + 0.9,
+      m2Pos[2] + 2.5,
+    ];
+  };
+
   return (
     <Canvas
-      camera={{ position: [0, 1, 10], fov: 50 }}
-      style={{ background: "#08080f" }}
-      gl={{ antialias: true }}
-      onPointerMissed={() => { onSelect(null); setOverlayTarget(null); }}
+      camera={{ position: [0, 7, 13], fov: 55 }}
+      style={{ background: "#07070e" }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+      onPointerMissed={() => { setSelectedNode(null); onSelect(null); }}
     >
-      <color attach="background" args={["#08080f"]} />
-      <fog attach="fog" args={["#08080f", 14, 28]} />
+      <color attach="background" args={["#07070e"]} />
+      <fog attach="fog" args={["#07070e", 20, 40]} />
       <ResponsiveCamera />
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 8, 5]} intensity={0.6} />
-      <pointLight position={[-3, 3, 2]} intensity={0.4} color="#4488ff" />
+
+      {/* Lighting */}
+      <ambientLight intensity={0.15} />
+      <directionalLight position={[6, 10, 6]} intensity={0.5} color="#cce0ff" />
+      <pointLight position={[0, 6, 0]} intensity={0.25} color="#3355ff" />
 
       <HoloGrid />
       <Particles />
 
+      {/* Floor cables (at ground level) */}
+      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active />
+      <FloorCable from={routerPos} to={gpuPos} color="#d29922" active={false} />
+
+      {/* Glow rings at floor level (fixed, don't hover with models) */}
+      <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
+      <GlowRing position={[m2Pos[0], 0.01, m2Pos[2]]} color="#58a6ff" online isSelected={selectedNode === "m2"} isHovered={hoveredNode === "m2"} />
+      <GlowRing position={[gpuPos[0], 0.01, gpuPos[2]]} color="#d29922" online={false} isSelected={selectedNode === "gpu"} isHovered={hoveredNode === "gpu"} />
+
       {/* Router */}
-      <NodeBox
+      <HardwareNode
+        modelUrl="/models/att_bgw320.glb"
+        modelScale={0.075}
+        modelRotation={[0, Math.PI * 0.25, 0]}
         position={routerPos}
         label={router.name}
-        icon=""
+        sublabel={router.ip}
         color="#8b949e"
         status="online"
-        isSelected={overlayTarget === "router"}
+        isSelected={selectedNode === "router"}
         isHovered={hoveredNode === "router"}
-        onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "router" ? null : "router"); }}
+        onClick={(e) => { e.stopPropagation(); setSelectedNode(selectedNode === "router" ? null : "router"); }}
         onPointerOver={() => setHoveredNode("router")}
         onPointerOut={() => setHoveredNode(null)}
-      >
-        <HardwareModel url="/models/att_bgw320.glb" scale={0.065} position={[0, -0.3, 0]} rotation={[0, Math.PI * 0.25, 0]} />
-      </NodeBox>
+      />
       <InfoOverlay
-        position={[routerPos[0] + 1.5, routerPos[1] + 0.8, routerPos[2]]}
+        position={[routerPos[0] + 2.2, routerPos[1] + 3, routerPos[2]]}
         title={"📡 " + router.name}
         lines={routerInfoLines}
         color="#8b949e"
-        visible={overlayTarget === "router"}
-        onClose={() => setOverlayTarget(null)}
+        visible={selectedNode === "router"}
+        onClose={() => setSelectedNode(null)}
       />
 
       {/* M2 Node */}
-      <NodeBox
+      <HardwareNode
+        modelUrl="/models/minisforum_m2.glb"
+        modelScale={0.14}
+        modelRotation={[0, Math.PI * 0.15, 0]}
         position={m2Pos}
         label={"M2 · " + node.ip}
-        icon=""
+        sublabel={node.cpu.split("(")[0].trim()}
         color="#58a6ff"
         status="online"
-        isSelected={overlayTarget === "m2"}
+        isSelected={selectedNode === "m2"}
         isHovered={hoveredNode === "m2"}
-        onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "m2" ? null : "m2"); }}
+        onClick={(e) => { e.stopPropagation(); setSelectedNode(selectedNode === "m2" ? null : "m2"); }}
         onPointerOver={() => setHoveredNode("m2")}
         onPointerOut={() => setHoveredNode(null)}
-      >
-        <HardwareModel url="/models/minisforum_m2.glb" scale={0.09} position={[0, -0.15, 0]} rotation={[0, Math.PI * 0.15, 0]} />
-      </NodeBox>
+      />
       <InfoOverlay
-        position={[m2Pos[0] - 1.5, m2Pos[1] + 0.8, m2Pos[2]]}
+        position={[m2Pos[0] - 2.5, m2Pos[1] + 3, m2Pos[2]]}
         title={"⚡ M2 Node"}
         lines={nodeInfoLines}
         color="#58a6ff"
-        visible={overlayTarget === "m2"}
-        onClose={() => setOverlayTarget(null)}
+        visible={selectedNode === "m2"}
+        onClose={() => setSelectedNode(null)}
       />
 
       {/* GPU Node */}
-      <NodeBox
+      <HardwareNode
+        modelUrl="/models/gpu_node.glb"
+        modelScale={0.09}
+        modelRotation={[0, Math.PI * 0.2, 0]}
         position={gpuPos}
-        label={"GPU · " + gpuNode.ip}
-        icon=""
+        label={"GPU Node · " + gpuNode.ip}
+        sublabel={gpuNode.gpu}
         color="#d29922"
         status="planned"
-        isSelected={overlayTarget === "gpu"}
+        isSelected={selectedNode === "gpu"}
         isHovered={hoveredNode === "gpu"}
-        onClick={(e) => { e.stopPropagation(); setOverlayTarget(overlayTarget === "gpu" ? null : "gpu"); }}
+        onClick={(e) => { e.stopPropagation(); setSelectedNode(selectedNode === "gpu" ? null : "gpu"); }}
         onPointerOver={() => setHoveredNode("gpu")}
         onPointerOut={() => setHoveredNode(null)}
-      >
-        <HardwareModel url="/models/gpu_node.glb" scale={0.055} position={[0, -0.3, 0]} rotation={[0, Math.PI * 0.2, 0]} opacity={0.6} />
-      </NodeBox>
+      />
       <InfoOverlay
-        position={[gpuPos[0] + 1.5, gpuPos[1] + 0.8, gpuPos[2]]}
+        position={[gpuPos[0] + 2.5, gpuPos[1] + 3, gpuPos[2]]}
         title={"🎮 GPU Node"}
         lines={gpuInfoLines}
         color="#d29922"
-        visible={overlayTarget === "gpu"}
-        onClose={() => setOverlayTarget(null)}
+        visible={selectedNode === "gpu"}
+        onClose={() => setSelectedNode(null)}
       />
 
-      {/* ArgoCD floating logo */}
-      <ArgoCDObject position={[3.5, 1.5, -1]} />
+      {/* Floating infra objects */}
+      <ArgoCDObject position={[4.5, 4.5, -1]} />
+      <CiliumObject position={[-4.5, 4, -1]} />
+      <LonghornObject position={[0, 5.5, -2]} />
 
-      {/* Network pipes */}
-      {pipeConnections.map((pipe, i) => (
-        <NetworkPipe key={i} {...pipe} />
-      ))}
+      {/* Services display (above M2 when selected or toggled) */}
+      <ServicesDisplay
+        nodePos={m2Pos}
+        visible={showServices}
+        selectedSvc={selectedIdx}
+        hoveredSvc={hoveredSvc}
+        onSelectSvc={(i) => { onSelect(i); }}
+        onHoverSvc={(i) => setHoveredSvc(i)}
+        onUnhoverSvc={() => setHoveredSvc(null)}
+      />
 
-      {/* Services */}
-      {services.map((svc, i) => (
-        <ServiceObject
-          key={svc.name}
-          position={svcPositions[i]}
-          service={svc}
-          index={i}
-          isSelected={selectedIdx === i}
-          isHovered={hoveredNode === `svc-${i}`}
-          onClick={() => { onSelect(selectedIdx === i ? null : i); setOverlayTarget(null); }}
-          onPointerOver={() => setHoveredNode(`svc-${i}`)}
-          onPointerOut={() => setHoveredNode(null)}
-        />
-      ))}
-
-      {/* Service info overlays */}
+      {/* Service info overlay */}
       {selectedIdx !== null && services[selectedIdx] && (
         <InfoOverlay
-          position={[
-            svcPositions[selectedIdx][0],
-            svcPositions[selectedIdx][1] + 0.7,
-            svcPositions[selectedIdx][2],
-          ]}
+          position={getSvcPos(selectedIdx) as [number, number, number]}
           title={services[selectedIdx].icon + " " + services[selectedIdx].name}
           lines={[
             { label: "IP", value: services[selectedIdx].ip },
             { label: "Port", value: String(services[selectedIdx].port) },
             { label: "NS", value: services[selectedIdx].namespace },
-            { label: "Cat", value: services[selectedIdx].category },
             { label: "Status", value: services[selectedIdx].status },
           ]}
           color={services[selectedIdx].color}
-          visible={true}
+          visible
           onClose={() => onSelect(null)}
         />
       )}
+
+      {/* Services toggle button */}
+      <Html fullscreen>
+        <div style={{ position: "absolute", top: 14, right: 14, zIndex: 50 }}>
+          <button
+            onClick={() => setShowAllServices((v) => !v)}
+            style={{
+              background: showAllServices ? "rgba(88,166,255,0.18)" : "rgba(10,10,20,0.75)",
+              border: `1px solid ${showAllServices ? "#58a6ff" : "#333"}`,
+              borderRadius: 8,
+              color: showAllServices ? "#58a6ff" : "#777",
+              padding: "7px 14px",
+              fontSize: 12,
+              cursor: "pointer",
+              fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
+              backdropFilter: "blur(8px)",
+              letterSpacing: 1,
+            }}
+          >
+            {showAllServices ? "◉ SERVICES ON" : "○ SERVICES OFF"}
+          </button>
+        </div>
+      </Html>
 
       <OrbitControls
         enablePan
         enableZoom
         enableRotate
-        minDistance={3}
-        maxDistance={18}
-        target={[0, 0.5, 0]}
+        minDistance={4}
+        maxDistance={24}
+        target={[0, 1.5, 0]}
         makeDefault
       />
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.9} intensity={0.5} />
-        <Vignette eskil={false} offset={0.1} darkness={0.8} />
+        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.85} intensity={0.85} />
+        <Vignette eskil={false} offset={0.1} darkness={0.78} />
       </EffectComposer>
     </Canvas>
   );
 }
 
-// Preload GLB models for instant display
+// Preload GLB models
 useGLTF.preload("/models/minisforum_m2.glb");
 useGLTF.preload("/models/att_bgw320.glb");
 useGLTF.preload("/models/gpu_node.glb");
