@@ -71,6 +71,7 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchCategory, setSearchCategory] = useState<string | null>(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; appsHealthy: number; appsTotal: number; ts: number }[]>([]);
@@ -214,10 +215,10 @@ export default function Home() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); }
+                  if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }
                   if (e.key === "Enter") {
-                    const matches = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase()));
-                    if (matches.length > 0) { setSelectedIdx(services.indexOf(matches[0])); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); }
+                    const matches = services.filter(s => (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) && (!searchCategory || s.category === searchCategory));
+                    if (matches.length > 0) { setSelectedIdx(services.indexOf(matches[0])); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }
                   }
                 }}
                 placeholder="Search services... (Enter to select)"
@@ -225,9 +226,24 @@ export default function Home() {
               />
               <span className="text-gray-700 text-xs font-mono">ESC</span>
             </div>
+            {/* Category filter chips */}
+            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-800">
+              {[null, "app", "infra", "monitoring", "storage"].map(cat => (
+                <button key={cat ?? "all"}
+                  onClick={() => setSearchCategory(cat)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors ${searchCategory === cat ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-gray-600 hover:text-gray-400 border border-transparent"}`}
+                >{cat ?? "all"}</button>
+              ))}
+              <span className="ml-auto text-[10px] font-mono text-gray-700">
+                {services.filter(s =>
+                  (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) &&
+                  (!searchCategory || s.category === searchCategory)
+                ).length} matches
+              </span>
+            </div>
             <div className="max-h-64 overflow-y-auto p-2">
               {services
-                .filter(s => !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase()))
+                .filter(s => (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) && (!searchCategory || s.category === searchCategory))
                 .slice(0, 10)
                 .map((svc, _, filtered) => {
                   const idx = services.indexOf(svc);
@@ -240,7 +256,7 @@ export default function Home() {
                     <div
                       key={svc.name}
                       className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800/60 cursor-pointer transition-colors"
-                      onClick={() => { setSelectedIdx(idx); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); }}
+                      onClick={() => { setSelectedIdx(idx); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }}
                     >
                       <span className="text-lg">{svc.icon}</span>
                       <div className="flex-1 min-w-0">
