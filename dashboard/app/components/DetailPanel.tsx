@@ -572,6 +572,23 @@ export default function DetailPanel({
                   </div>
                 </div>
               )}
+              {/* ArgoCD app health breakdown */}
+              {apps && apps.length > 0 && (() => {
+                const healthy = apps.filter(a => a.health === "Healthy").length;
+                const degraded = apps.filter(a => a.health === "Degraded").length;
+                const missing = apps.filter(a => a.health === "Missing").length;
+                const outOfSync = apps.filter(a => a.sync !== "Synced").length;
+                if (degraded === 0 && missing === 0 && outOfSync === 0) return null;
+                return (
+                  <div className="flex items-center gap-2 mt-1 text-[9px] font-mono border-t border-gray-800/40 pt-1.5">
+                    <span className="text-gray-700">ArgoCD</span>
+                    <span className="text-green-500/60">{healthy}✓</span>
+                    {degraded > 0 && <span className="text-red-400/80">{degraded} degraded</span>}
+                    {missing > 0 && <span className="text-gray-600/80">{missing} missing</span>}
+                    {outOfSync > 0 && <span className="text-yellow-500/70">{outOfSync} OutOfSync</span>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
