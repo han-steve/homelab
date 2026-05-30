@@ -1463,9 +1463,11 @@ export default function DetailPanel({
               return (
               <div
                 key={svc.name}
-                className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
+                className="relative flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer overflow-hidden"
                 onClick={() => onSelectService?.(i)}
               >
+                {/* Category accent line on left edge */}
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l" style={{ backgroundColor: CATEGORY_COLORS[svc.category] + "60" }} />
                 <span className="text-gray-300 flex items-center gap-2">
                   <span>{svc.icon}</span>
                   <span className="text-xs">{svc.name}</span>
