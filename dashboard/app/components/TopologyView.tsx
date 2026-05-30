@@ -830,15 +830,30 @@ export default function TopologyView({
                 const svc = services[node.serviceIdx];
                 if (!svc) return null;
                 const ns = svc.namespace.length > 12 ? svc.namespace.slice(0, 11) + "…" : svc.namespace;
+                const memMi = nsMemRequestsMi?.[svc.namespace] ?? 0;
+                const maxMemMi = nsMemRequestsMi ? Math.max(1, ...Object.values(nsMemRequestsMi)) : 1;
+                const memPct = memMi / maxMemMi;
+                const memColor = memPct > 0.6 ? "#a855f7" : memPct > 0.3 ? "#06b6d4" : "#4b5563";
                 return (
-                  <text
-                    textAnchor="middle"
-                    y={r + 16}
-                    fontSize={7}
-                    fill="#4b5563"
-                    fontFamily="monospace"
-                    opacity={0.8}
-                  >{ns}</text>
+                  <>
+                    <text
+                      textAnchor="middle"
+                      y={r + 16}
+                      fontSize={7}
+                      fill="#4b5563"
+                      fontFamily="monospace"
+                      opacity={0.8}
+                    >{ns}</text>
+                    {memMi > 0 && (() => {
+                      const bw = r * 1.2; const bh = 2; const bx = -bw / 2; const by = r + 21;
+                      return (
+                        <g opacity={0.7}>
+                          <rect x={bx} y={by} width={bw} height={bh} rx={1} fill="#1c2128" />
+                          <rect x={bx} y={by} width={bw * memPct} height={bh} rx={1} fill={memColor} />
+                        </g>
+                      );
+                    })()}
+                  </>
                 );
               })()}
 
