@@ -808,6 +808,37 @@ function RefreshArc({ position, progress }: { position: [number, number, number]
   );
 }
 
+/* ── Data sync particles from ArgoCD to M2 on refresh ──── */
+function SyncDataStream({ from, to, active }: { from: [number, number, number]; to: [number, number, number]; active: boolean }) {
+  const NUM = 5;
+  const groupRef = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    if (!groupRef.current || !active) return;
+    const t = clock.getElapsedTime();
+    groupRef.current.children.forEach((child, i) => {
+      const mesh = child as THREE.Mesh;
+      const phase = ((t * 0.7 + i / NUM) % 1);
+      const x = from[0] + (to[0] - from[0]) * phase;
+      const y = from[1] + (to[1] - from[1]) * phase + Math.sin(phase * Math.PI) * 0.8;
+      const z = from[2] + (to[2] - from[2]) * phase;
+      mesh.position.set(x, y, z);
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.sin(phase * Math.PI) * 0.7;
+    });
+  });
+  if (!active) return null;
+  return (
+    <group ref={groupRef}>
+      {Array.from({ length: NUM }).map((_, i) => (
+        <mesh key={i} raycast={() => {}}>
+          <sphereGeometry args={[0.06, 4, 4]} />
+          <meshBasicMaterial color="#22c55e" transparent opacity={0} toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /* ── GPU holographic scan line ──────────────────────── */
 function GpuScanLine({ position }: { position: [number, number, number] }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -1889,6 +1920,8 @@ export default function Scene3D({
       {refreshProgress !== undefined && refreshProgress > 0 && (
         <RefreshArc position={m2Pos} progress={refreshProgress} />
       )}
+      {/* Data sync particles: ArgoCD → M2 (visible right after refresh, i.e. refreshProgress < 0.15) */}
+      <SyncDataStream from={[4.5, 4.5, -1]} to={m2Pos} active={refreshProgress !== undefined && refreshProgress < 0.15} />
       {/* Floating unhealthy pod warning near M2 */}
       {unhealthyPodCount !== undefined && unhealthyPodCount > 0 && (
         <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2}>
