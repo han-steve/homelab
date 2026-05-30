@@ -358,6 +358,51 @@ export default function TopologyView({
           );
         })}
 
+        {/* Namespace group backgrounds */}
+        {(() => {
+          const nsBounds: Record<string, { minX: number; minY: number; maxX: number; maxY: number; color: string }> = {};
+          for (const node of topoNodes) {
+            if (node.serviceIdx === undefined) continue;
+            const svc = services[node.serviceIdx];
+            if (!svc) continue;
+            const ns = svc.namespace;
+            const pos = nodePos(node);
+            const r = nodeRadius(node.type, node);
+            if (!nsBounds[ns]) {
+              nsBounds[ns] = { minX: pos.x - r, minY: pos.y - r, maxX: pos.x + r, maxY: pos.y + r, color: svc.color || "#58a6ff" };
+            } else {
+              nsBounds[ns].minX = Math.min(nsBounds[ns].minX, pos.x - r);
+              nsBounds[ns].minY = Math.min(nsBounds[ns].minY, pos.y - r);
+              nsBounds[ns].maxX = Math.max(nsBounds[ns].maxX, pos.x + r);
+              nsBounds[ns].maxY = Math.max(nsBounds[ns].maxY, pos.y + r);
+            }
+          }
+          const pad = 18;
+          return Object.entries(nsBounds).map(([ns, b]) => {
+            const isUnhealthyNs = unhealthyNamespaces?.has(ns);
+            const fillColor = isUnhealthyNs ? "#ef4444" : b.color;
+            const isDimmedNs = nsFilter && ns !== nsFilter;
+            if (isDimmedNs) return null;
+            return (
+              <g key={ns} opacity={selectedNode ? 0.3 : 0.7}>
+                <rect
+                  x={b.minX - pad} y={b.minY - pad}
+                  width={b.maxX - b.minX + pad * 2} height={b.maxY - b.minY + pad * 2}
+                  rx={14} ry={14}
+                  fill={fillColor} fillOpacity={0.03}
+                  stroke={fillColor} strokeWidth={0.8} strokeOpacity={0.15}
+                  strokeDasharray={isUnhealthyNs ? "4 3" : undefined}
+                />
+                <text
+                  x={b.minX - pad + 8} y={b.minY - pad - 4}
+                  fontSize={9} fontFamily="monospace"
+                  fill={fillColor} fillOpacity={0.4}
+                >{ns}</text>
+              </g>
+            );
+          });
+        })()}
+
         {/* Nodes */}
         {topoNodes.map((node) => {
           const pos = nodePos(node);
