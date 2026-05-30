@@ -464,6 +464,24 @@ function CalloutPanel({
   );
 }
 
+/* ── GPU holographic scan line ──────────────────────── */
+function GpuScanLine({ position }: { position: [number, number, number] }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const t = clock.getElapsedTime();
+      // Sweep from -1.2 to +1.2 relative to center, bouncing
+      ref.current.position.y = position[1] + 0.8 + Math.sin(t * 0.7) * 1.0;
+    }
+  });
+  return (
+    <mesh ref={ref} position={[position[0], position[1] + 0.8, position[2]]}>
+      <planeGeometry args={[2.2, 0.025]} />
+      <meshBasicMaterial color="#d29922" transparent opacity={0.18} depthWrite={false} />
+    </mesh>
+  );
+}
+
 /* ── Pulsing point light ────────────────────────────── */
 function PulsingLight({ position, color }: { position: [number, number, number]; color: string }) {
   const ref = useRef<THREE.PointLight>(null!);
@@ -1165,6 +1183,8 @@ export default function Scene3D({
         onPointerOver={() => setHoveredNode("gpu")}
         onPointerOut={() => setHoveredNode(null)}
       />
+      {/* Holographic scan line on GPU (coming soon) */}
+      <GpuScanLine position={gpuPos} />
       <CalloutPanel
         anchorPos={[gpuPos[0], gpuPos[1] + 1.5, gpuPos[2]]}
         panelOffset={[2.8, 2.0, 0]}

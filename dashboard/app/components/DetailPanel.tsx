@@ -119,29 +119,72 @@ export default function DetailPanel({
         </div>
 
         <div className="space-y-1.5">
-          {filteredServices.map((svc) => {
-            const i = services.indexOf(svc);
-            return (
-            <div
-              key={svc.name}
-              className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
-              onClick={() => onSelectService?.(i)}
-            >              <span className="text-gray-300 flex items-center gap-2">
-                <span>{svc.icon}</span>
-                <span className="text-xs">{svc.name}</span>
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-600 text-xs font-mono">
-                  {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
+          {categoryFilter === "all" && !search ? (
+            // Namespace-grouped view
+            (() => {
+              const namespaceOrder = ["default", "media", "finance", "monitoring", "longhorn-system", "argocd", "kube-system"];
+              const grouped: Record<string, typeof filteredServices> = {};
+              filteredServices.forEach(svc => {
+                const ns = svc.namespace || "default";
+                if (!grouped[ns]) grouped[ns] = [];
+                grouped[ns].push(svc);
+              });
+              const nsKeys = [...namespaceOrder.filter(ns => grouped[ns]), ...Object.keys(grouped).filter(ns => !namespaceOrder.includes(ns))];
+              return nsKeys.map(ns => (
+                <div key={ns}>
+                  <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1">{ns}</div>
+                  {grouped[ns].map(svc => {
+                    const i = services.indexOf(svc);
+                    return (
+                      <div
+                        key={svc.name}
+                        className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
+                        onClick={() => onSelectService?.(i)}
+                      >
+                        <span className="text-gray-300 flex items-center gap-2">
+                          <span>{svc.icon}</span>
+                          <span className="text-xs">{svc.name}</span>
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-600 text-xs font-mono">
+                            {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
+                          </span>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{
+                            backgroundColor: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444",
+                            boxShadow: svc.status === "running" ? "0 0 4px #22c55e" : "none",
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
+          ) : (
+            filteredServices.map((svc) => {
+              const i = services.indexOf(svc);
+              return (
+              <div
+                key={svc.name}
+                className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
+                onClick={() => onSelectService?.(i)}
+              >              <span className="text-gray-300 flex items-center gap-2">
+                  <span>{svc.icon}</span>
+                  <span className="text-xs">{svc.name}</span>
                 </span>
-                <div className="w-1.5 h-1.5 rounded-full" style={{
-                  backgroundColor: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444",
-                  boxShadow: svc.status === "running" ? "0 0 4px #22c55e" : "none",
-                }} />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-600 text-xs font-mono">
+                    {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
+                  </span>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{
+                    backgroundColor: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444",
+                    boxShadow: svc.status === "running" ? "0 0 4px #22c55e" : "none",
+                  }} />
+                </div>
               </div>
-            </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
