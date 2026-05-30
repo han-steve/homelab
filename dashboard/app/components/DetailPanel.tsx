@@ -1793,20 +1793,28 @@ export default function DetailPanel({
             <span className="text-xs font-mono text-gray-700">{nsHelmReleases[svc.namespace].length} release{nsHelmReleases[svc.namespace].length !== 1 ? "s" : ""}</span>
           </div>
           <div className="space-y-1">
-            {nsHelmReleases[svc.namespace].map((rel, i) => (
-              <div key={i} className="text-xs font-mono">
+            {nsHelmReleases[svc.namespace].map((rel, i) => {
+              let isRecent = false;
+              if (rel.updated) {
+                try { isRecent = (Date.now() - new Date(rel.updated).getTime()) < 86400000; } catch {/* ignore */}
+              }
+              return (
+              <div key={i} className={`text-xs font-mono rounded px-1.5 py-1 border ${isRecent ? "bg-cyan-900/10 border-cyan-900/20" : "bg-gray-900/40 border-gray-800/30"}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`shrink-0 ${rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}`}>⎈</span>
-                  <span className="text-gray-500 truncate flex-1" title={rel.name}>{rel.name}</span>
+                  <div className="flex items-center gap-1.5 truncate flex-1">
+                    {isRecent && <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
+                    {!isRecent && <span className={`shrink-0 ${rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}`}>⎈</span>}
+                    <span className={`truncate ${isRecent ? "text-cyan-400/70" : "text-gray-500"}`} title={rel.name}>{rel.name}</span>
+                  </div>
                   <span className="shrink-0 text-cyan-700/60 text-[10px]">{rel.chart.replace(/^[^-]+-/, "")}</span>
                 </div>
-                {rel.updated && (
-                  <div className="text-gray-700/60 text-[10px] pl-4 mt-0.5">
-                    upgraded {relTime(new Date(rel.updated).toISOString(), now)}
-                  </div>
-                )}
+                <div className="flex items-center gap-3 text-[9px] pl-4 mt-0.5">
+                  {rel.appVersion && <span className="text-gray-700">app: {rel.appVersion}</span>}
+                  {rel.updated && <span className={isRecent ? "text-cyan-800/80" : "text-gray-800"}>↑ {relTime(new Date(rel.updated).toISOString(), now)}</span>}
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
