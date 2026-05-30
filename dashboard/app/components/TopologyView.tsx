@@ -412,6 +412,19 @@ export default function TopologyView({
                 />
               )}
 
+              {/* Pod count badge on service nodes */}
+              {isService && node.serviceIdx !== undefined && nsPodCounts && (() => {
+                const svc = services[node.serviceIdx];
+                const pods = svc ? nsPodCounts[svc.namespace] : undefined;
+                if (pods === undefined) return null;
+                return (
+                  <g transform={`translate(${-r * 0.72}, ${-r * 0.72})`}>
+                    <circle r={8} fill="#1c2128" stroke={node.color} strokeWidth={1} opacity={0.85} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={7} fill={node.color} fontFamily="monospace" fontWeight="bold">{pods}</text>
+                  </g>
+                );
+              })()}
+
               {/* Connection count badge on infrastructure nodes */}
               {(node.type === "node" || node.type === "router" || node.type === "infra") && (() => {
                 const connCount = topoLinks.filter(l => l.source === node.id || l.target === node.id).length;
