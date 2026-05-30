@@ -590,6 +590,38 @@ export default function DetailPanel({
         </>
       )}
 
+      {/* Live pod CPU for this namespace */}
+      {topCpuPods && (() => {
+        const nsPods = topCpuPods.filter(p => p.namespace === svc.namespace);
+        if (nsPods.length === 0) return null;
+        const maxM = Math.max(...nsPods.map(p => p.cpuM), 1);
+        return (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Pod CPU (live)</span>
+              <span className="text-xs font-mono text-gray-700">{nsPods.length} pod{nsPods.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="space-y-1">
+              {nsPods.map((pod, i) => {
+                const pct = (pod.cpuM / maxM) * 100;
+                const label = pod.cpuM >= 1000 ? `${(pod.cpuM/1000).toFixed(1)}c` : `${pod.cpuM}m`;
+                const color = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-gray-700 flex-1 truncate" title={pod.name}>{pod.name.split("-").slice(0, -2).join("-") || pod.name}</span>
+                    <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                    <span className="text-xs font-mono w-8 text-right shrink-0" style={{ color }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
+
       {/* kubectl command hint */}
       <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
       <div className="text-xs font-mono text-gray-700 break-all select-all cursor-text px-2 py-1.5 rounded bg-gray-900/50 border border-gray-800/50" title="Click to select all">
