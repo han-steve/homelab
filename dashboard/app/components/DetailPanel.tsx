@@ -288,18 +288,29 @@ export default function DetailPanel({
                   </span>
                 )}
               </div>
-              {critPods.slice(0, 2).map((p, i) => (
+              {critPods.slice(0, 2).map((p, i) => {
+                const lastCrashAgo = p.lastRestartAt ? (() => {
+                  const ms = Date.now() - new Date(p.lastRestartAt!).getTime();
+                  const m = Math.floor(ms / 60000);
+                  if (m < 60) return `${m}m ago`;
+                  const h = Math.floor(m / 60);
+                  if (h < 24) return `${h}h ago`;
+                  return `${Math.floor(h / 24)}d ago`;
+                })() : null;
+                return (
                 <div key={i} className="text-xs font-mono">
                   <div className="flex items-center gap-1.5">
                     <span className="text-red-400/60 text-[9px]">{p.namespace}</span>
                     <span className="text-red-400">↑</span>
                     <span className="text-red-300/80 truncate">{p.name.split("-").slice(0, 3).join("-")}</span>
+                    {lastCrashAgo && <span className="ml-auto text-[8px] text-red-600/50 shrink-0">{lastCrashAgo}</span>}
                   </div>
                   <div className="text-red-500/70 pl-4">
                     {p.status}{p.restarts > 0 ? <span className="ml-1">↺{p.restarts}</span> : null}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {restartHistory && restartHistory.length >= 3 && (() => {
                 const vals = restartHistory.map(r => r.total);
                 const maxV = Math.max(...vals, 1);
