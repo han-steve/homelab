@@ -141,12 +141,14 @@ export default function Home() {
     if (!cluster) { document.title = "homelab — loading..."; return; }
     const crashPods = cluster.unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "OOMKilled");
     const outOfSync = cluster.apps.filter(a => a.sync !== "Synced");
+    const totalRestarts = cluster.unhealthyPods.reduce((s, p) => s + (p.restarts ?? 0), 0);
     if (crashPods.length > 0) {
-      document.title = `🔴 ${crashPods.length} crashing — homelab`;
+      const restartStr = totalRestarts > 0 ? ` ↺${totalRestarts}` : "";
+      document.title = `🔴 ${crashPods.length} crashing${restartStr} — homelab`;
     } else if (outOfSync.length > 0) {
       document.title = `🟡 ${outOfSync.length} OutOfSync — homelab`;
     } else {
-      document.title = "🟢 homelab — all healthy";
+      document.title = `🟢 homelab · ${cluster.totalPods ?? "?"} pods`;
     }
   }, [cluster]);
 
