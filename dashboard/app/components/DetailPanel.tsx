@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -101,6 +101,7 @@ export default function DetailPanel({
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
   nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
   nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
+  nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -1132,6 +1133,26 @@ export default function DetailPanel({
                     upgraded {relTime(new Date(rel.updated).toISOString(), now)}
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* PVCs for this namespace */}
+      {nsPvcs && nsPvcs[svc.namespace] && nsPvcs[svc.namespace].length > 0 && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Storage</span>
+            <span className="text-xs font-mono text-gray-700">{nsPvcs[svc.namespace].length} PVC{nsPvcs[svc.namespace].length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="space-y-1">
+            {nsPvcs[svc.namespace].map((pvc, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs font-mono">
+                <span className={pvc.status === "Bound" ? "text-blue-500/60" : "text-yellow-400/70"}>⬡</span>
+                <span className="text-gray-500 truncate flex-1" title={pvc.name}>{pvc.name}</span>
+                <span className="shrink-0 text-blue-400/60">{pvc.capacity}</span>
               </div>
             ))}
           </div>

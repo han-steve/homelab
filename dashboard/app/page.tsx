@@ -28,6 +28,7 @@ interface ClusterStatus {
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
   nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
   nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
+  nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -503,6 +504,7 @@ export default function Home() {
             nsDeployments={cluster?.nsDeployments}
             nsCronJobs={cluster?.nsCronJobs}
             nsHelmReleases={cluster?.nsHelmReleases}
+            nsPvcs={cluster?.nsPvcs}
           />
         )}
       </div>
