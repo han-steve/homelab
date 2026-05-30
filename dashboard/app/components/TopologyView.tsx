@@ -441,18 +441,25 @@ export default function TopologyView({
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
               />
               {/* Animated data packets on active links — two staggered particles */}
-              {isActive && (
+              {isActive && !nsFilteredOut && (
                 <>
-                  <circle r={2.5} fill={link.color} opacity={isHighlighted ? 0.9 : 0.3} filter="url(#glow)">
-                    <animateMotion dur={dur} repeatCount="indefinite" calcMode="linear">
+                  <circle r={isHighlighted ? 3 : 2.5} fill={link.color} opacity={isHighlighted ? 0.95 : 0.3} filter="url(#glow)">
+                    <animateMotion dur={isHighlighted ? `${(parseFloat(dur) * 0.65).toFixed(1)}s` : dur} repeatCount="indefinite" calcMode="linear">
                       <mpath href={`#${pathId}`} />
                     </animateMotion>
                   </circle>
-                  <circle r={1.8} fill={link.color} opacity={isHighlighted ? 0.6 : 0.2} filter="url(#glow)">
-                    <animateMotion dur={dur} begin={`-${(parseFloat(dur) / 2).toFixed(1)}s`} repeatCount="indefinite" calcMode="linear">
+                  <circle r={isHighlighted ? 2.2 : 1.8} fill={link.color} opacity={isHighlighted ? 0.7 : 0.2} filter="url(#glow)">
+                    <animateMotion dur={isHighlighted ? `${(parseFloat(dur) * 0.65).toFixed(1)}s` : dur} begin={`-${(parseFloat(dur) / 2).toFixed(1)}s`} repeatCount="indefinite" calcMode="linear">
                       <mpath href={`#${pathId}`} />
                     </animateMotion>
                   </circle>
+                  {isHighlighted && (
+                    <circle r={1.5} fill={link.color} opacity={0.5} filter="url(#glow)">
+                      <animateMotion dur={`${(parseFloat(dur) * 0.65).toFixed(1)}s`} begin={`-${(parseFloat(dur) * 0.33).toFixed(1)}s`} repeatCount="indefinite" calcMode="linear">
+                        <mpath href={`#${pathId}`} />
+                      </animateMotion>
+                    </circle>
+                  )}
                 </>
               )}
               {/* Slow ghost particle on dashed (inactive) links */}
