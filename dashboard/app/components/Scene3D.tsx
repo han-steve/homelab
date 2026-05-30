@@ -244,6 +244,13 @@ function CpuArcGauge({ position, cpuPct }: { position: [number, number, number];
       <lineSegments ref={arcRef} geometry={arc} renderOrder={3}>
         <lineBasicMaterial color={arcColor} transparent opacity={0.8} linewidth={2} toneMapped={false} />
       </lineSegments>
+      {/* CPU % text label in center */}
+      <Text position={[0, 0, 0]} fontSize={0.32} color={arcColor} anchorX="center" anchorY="middle" toneMapped={false}>
+        {`${cpuPct}%`}
+      </Text>
+      <Text position={[0, -0.45, 0]} fontSize={0.14} color="#374151" anchorX="center" anchorY="middle" toneMapped={false}>
+        CPU
+      </Text>
     </group>
   );
 }
