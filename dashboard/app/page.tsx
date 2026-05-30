@@ -109,6 +109,7 @@ export default function Home() {
               appsSynced={cluster?.apps.filter(a => a.sync === "Synced").length}
               appsTotal={cluster?.apps.length}
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
+              refreshProgress={(30 - nextRefreshIn) / 30}
             />
           ) : (
             <TopologyView

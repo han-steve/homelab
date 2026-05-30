@@ -545,6 +545,42 @@ function CpuArcRing({ position, cpuPct, ramPct }: {
   );
 }
 
+/* ── Refresh countdown sweep arc ────────────────────── */
+function RefreshArc({ position, progress }: { position: [number, number, number]; progress: number }) {
+  const geo = useMemo(() => {
+    if (progress <= 0) return null;
+    const pct = Math.min(progress, 1) * 100;
+    const points: THREE.Vector3[] = [];
+    const end = (pct / 100) * Math.PI * 2;
+    const segments = Math.max(4, Math.floor(pct / 1.5));
+    const r = 1.85;
+    for (let i = 0; i <= segments; i++) {
+      const a = -Math.PI / 2 + (i / segments) * end;
+      points.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+    }
+    const curve = new THREE.CatmullRomCurve3(points);
+    return new THREE.TubeGeometry(curve, segments, 0.012, 6, false);
+  }, [progress]);
+
+  if (!geo) return null;
+  // Color: starts cyan, turns amber as deadline approaches
+  const color = progress > 0.75 ? "#eab308" : "#06b6d4";
+
+  return (
+    <group position={[position[0], 0.06, position[2]]}>
+      {/* Background track ring */}
+      <mesh rotation-x={-Math.PI / 2}>
+        <torusGeometry args={[1.85, 0.007, 4, 64]} />
+        <meshBasicMaterial color="#1a2030" transparent opacity={0.35} />
+      </mesh>
+      {/* Progress arc */}
+      <mesh geometry={geo} rotation-x={-Math.PI / 2}>
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.55} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ── GPU holographic scan line ──────────────────────── */
 function GpuScanLine({ position }: { position: [number, number, number] }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -1149,6 +1185,7 @@ export default function Scene3D({
   appsSynced,
   appsTotal,
   unhealthyNamespaces,
+  refreshProgress,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1156,6 +1193,7 @@ export default function Scene3D({
   appsSynced?: number;
   appsTotal?: number;
   unhealthyNamespaces?: Set<string>;
+  refreshProgress?: number; // 0 = just refreshed, 1 = about to refresh
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1263,6 +1301,10 @@ export default function Scene3D({
           cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0}
           ramPct={parseInt(nodeMetrics.memPct, 10) || 0}
         />
+      )}
+      {/* Refresh countdown sweep arc — outermost ring */}
+      {refreshProgress !== undefined && refreshProgress > 0 && (
+        <RefreshArc position={m2Pos} progress={refreshProgress} />
       )}
 
       <HoloGrid />
