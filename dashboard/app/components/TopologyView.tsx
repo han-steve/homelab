@@ -92,6 +92,27 @@ export default function TopologyView({
     setZoom(z => Math.max(0.4, Math.min(3.5, z * factor)));
   }, []);
 
+  // Keyboard shortcuts for topology view
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // H = toggle heatmap
+      if (e.key === "h" || e.key === "H") setHeatmapMode(v => !v);
+      // N = cycle namespace filter
+      if (e.key === "n" || e.key === "N") {
+        setNsFilter(cur => {
+          const idx = cur ? uniqueNamespaces.indexOf(cur) : -1;
+          const next = uniqueNamespaces[(idx + 1) % uniqueNamespaces.length];
+          return next ?? null;
+        });
+      }
+      // 0 = reset ns filter
+      if (e.key === "0") setNsFilter(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [uniqueNamespaces]);
+
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
