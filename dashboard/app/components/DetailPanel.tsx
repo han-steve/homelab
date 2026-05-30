@@ -104,9 +104,10 @@ export default function DetailPanel({
   return (
     <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
       <button onClick={onClose}
-        className="text-gray-600 hover:text-gray-300 text-xs mb-5 cursor-pointer font-mono flex items-center gap-1 transition-colors"
+        className="flex items-center gap-2 text-xs mb-5 cursor-pointer font-mono transition-all px-3 py-1.5 rounded-md border border-gray-800 hover:border-gray-600 hover:bg-gray-800/60 text-gray-500 hover:text-gray-200"
       >
-        <span>{"\u2190"}</span> back
+        <span className="text-base leading-none">{"\u2190"}</span>
+        <span>back to overview</span>
       </button>
 
       <div className="flex items-center gap-3 mb-2">

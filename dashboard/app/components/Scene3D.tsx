@@ -6,9 +6,10 @@ import {
   OrbitControls,
   Text,
   Html,
-  RoundedBox,
   Float,
   useGLTF,
+  Line,
+  Billboard,
 } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
@@ -42,7 +43,7 @@ function HoloGrid() {
     if (mat.current) mat.current.uniforms.uTime.value = clock.getElapsedTime();
   });
   return (
-    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, -2.05, 0]} raycast={() => {}}>
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} raycast={() => {}}>
       <planeGeometry args={[40, 40, 1, 1]} />
       <shaderMaterial
         ref={mat}
@@ -67,7 +68,7 @@ function HoloGrid() {
 }
 
 /* ── floating particles ────────────────────────────── */
-function Particles({ count = 200 }: { count?: number }) {
+function Particles({ count = 80 }: { count?: number }) {
   const ref = useRef<THREE.Points>(null!);
   const positions = useMemo(() => {
     const p = new Float32Array(count * 3);
@@ -219,56 +220,109 @@ function SelectionRing({ color }: { color: string }) {
   );
 }
 
-/* ── overlay tooltip (HTML in 3D) ──────────────────── */
-function InfoOverlay({
-  position, title, lines, color, visible, onClose
+/* ── Callout panel: square marker → dashed line → floating dialog ── */
+function CalloutPanel({
+  anchorPos, panelOffset, title, lines, color, visible, onClose
 }: {
-  position: [number, number, number];
+  anchorPos: [number, number, number];
+  panelOffset: [number, number, number];
   title: string;
   lines: { label: string; value: string }[];
   color: string;
   visible: boolean;
   onClose: () => void;
 }) {
+  const panelPos = useMemo<[number, number, number]>(() => [
+    anchorPos[0] + panelOffset[0],
+    anchorPos[1] + panelOffset[1],
+    anchorPos[2] + panelOffset[2],
+  ], [anchorPos, panelOffset]);
+
+  const linePoints = useMemo(() => [
+    new THREE.Vector3(...anchorPos),
+    new THREE.Vector3(...panelPos),
+  ], [anchorPos, panelPos]);
+
   if (!visible) return null;
+
   return (
-    <Html position={position} center distanceFactor={8} zIndexRange={[100, 0]}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "rgba(15,15,20,0.92)",
-          border: `1px solid ${color}40`,
-          borderRadius: 10,
-          padding: "14px 18px",
-          minWidth: 200,
-          maxWidth: 280,
-          fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-          fontSize: 11,
-          color: "#e4e4e7",
-          boxShadow: `0 0 20px ${color}20, 0 4px 20px rgba(0,0,0,0.5)`,
-          backdropFilter: "blur(8px)",
-          pointerEvents: "auto",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={{ color, fontWeight: 700, fontSize: 13 }}>{title}</span>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}
-          >
-            ✕
-          </button>
+    <group>
+      {/* Square marker at anchor (billboard – always faces camera) */}
+      <Billboard position={anchorPos}>
+        {/* Square outline (4-sided ring) */}
+        <mesh rotation-z={Math.PI / 4}>
+          <ringGeometry args={[0.07, 0.11, 4]} />
+          <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.9} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Center dot */}
+        <mesh>
+          <circleGeometry args={[0.03, 12]} />
+          <meshBasicMaterial color={color} toneMapped={false} />
+        </mesh>
+        {/* Subtle fill */}
+        <mesh>
+          <ringGeometry args={[0, 0.07, 4]} />
+          <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.08} />
+        </mesh>
+      </Billboard>
+
+      {/* Dashed connector line */}
+      <Line
+        points={linePoints}
+        color={color}
+        lineWidth={1.2}
+        transparent
+        opacity={0.55}
+        dashed
+        dashScale={3}
+        dashSize={0.18}
+        gapSize={0.08}
+      />
+
+      {/* Floating panel at end of line */}
+      <Html position={panelPos} center distanceFactor={8} zIndexRange={[100, 0]}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: "rgba(9,9,16,0.94)",
+            border: `1px solid ${color}50`,
+            borderRadius: 8,
+            padding: "12px 16px",
+            minWidth: 190,
+            maxWidth: 270,
+            fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
+            fontSize: 11,
+            color: "#e4e4e7",
+            boxShadow: `0 0 24px ${color}25, inset 0 0 0 1px ${color}18, 0 8px 32px rgba(0,0,0,0.6)`,
+            backdropFilter: "blur(12px)",
+            pointerEvents: "auto",
+            position: "relative",
+          }}
+        >
+          {/* Top accent line */}
+          <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: `linear-gradient(90deg, transparent, ${color}80, transparent)` }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+            <span style={{ color, fontWeight: 700, fontSize: 12, letterSpacing: 0.5 }}>{title}</span>
+            <button
+              onClick={onClose}
+              style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 14, padding: "0 0 0 8px", lineHeight: 1, transition: "color 0.15s" }}
+              onMouseOver={(e) => (e.currentTarget.style.color = "#ccc")}
+              onMouseOut={(e) => (e.currentTarget.style.color = "#555")}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ borderTop: `1px solid ${color}18`, paddingTop: 7 }}>
+            {lines.map((l, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "2.5px 0", gap: 12 }}>
+                <span style={{ color: "#666", textTransform: "uppercase", letterSpacing: 1, flexShrink: 0, fontSize: 10 }}>{l.label}</span>
+                <span style={{ color: "#d4d4d8", textAlign: "right", fontSize: 11 }}>{l.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ borderTop: `1px solid ${color}20`, paddingTop: 8 }}>
-          {lines.map((l, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", gap: 12 }}>
-              <span style={{ color: "#888", textTransform: "uppercase", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>{l.label}</span>
-              <span style={{ color: "#d4d4d8", textAlign: "right" }}>{l.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Html>
+      </Html>
+    </group>
   );
 }
 
@@ -373,6 +427,12 @@ function HardwareNode({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
+      {/* Invisible large click hitbox — ensures reliable raycast regardless of model geometry */}
+      <mesh>
+        <boxGeometry args={[2.2, 3.2, 2.2]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
       <HardwareModel
         url={modelUrl}
         scale={modelScale ?? 0.1}
@@ -399,6 +459,12 @@ function HardwareNode({
           decay={2}
         />
       )}
+
+      {/* Shadow / ground presence disc */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]}>
+        <circleGeometry args={[1.1, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={isOnline ? 0.07 : 0.02} depthWrite={false} toneMapped={false} />
+      </mesh>
 
       {/* Selection ring */}
       {isSelected && <SelectionRing color={color} />}
@@ -457,60 +523,74 @@ function ServiceSphere({
   onPointerOver: () => void;
   onPointerOut: () => void;
 }) {
-  const ref = useRef<THREE.Group>(null!);
+  // Outer group: holds static position + scale animation (correct hit target)
+  const outerRef = useRef<THREE.Group>(null!);
+  // Inner group: float animation only (cosmetic, doesn't affect raycasting)
+  const innerRef = useRef<THREE.Group>(null!);
   const catColor = CATEGORY_COLORS[service.category] || "#666";
   const isRunning = service.status === "running";
 
   useFrame(({ clock }) => {
-    if (ref.current) {
-      const t = clock.getElapsedTime() + delay * 0.4;
-      ref.current.position.y = position[1] + Math.sin(t * 0.9) * 0.12;
+    if (outerRef.current) {
+      // Scale in/out without changing position
       const targetScale = visible ? 1 : 0;
-      const curr = ref.current.scale.x;
-      ref.current.scale.setScalar(curr + (targetScale - curr) * (visible ? 0.12 : 0.2));
+      const curr = outerRef.current.scale.x;
+      outerRef.current.scale.setScalar(curr + (targetScale - curr) * (visible ? 0.12 : 0.22));
+    }
+    if (innerRef.current) {
+      // Float bob on inner group only — keeps hit box at static position
+      const t = clock.getElapsedTime() + delay * 0.37;
+      innerRef.current.position.y = Math.sin(t * 0.85) * 0.1;
     }
   });
 
   return (
     <group
-      ref={ref}
+      ref={outerRef}
       position={position}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={(e) => { e.stopPropagation(); onPointerOver(); }}
       onPointerOut={(e) => { e.stopPropagation(); onPointerOut(); }}
     >
-      {/* Glass icosahedron orb */}
-      <mesh>
-        <icosahedronGeometry args={[0.38, 1]} />
-        <meshPhysicalMaterial
-          color={catColor}
-          metalness={0}
-          roughness={0.08}
-          transparent
-          opacity={isRunning ? 0.65 : 0.25}
-          clearcoat={1.0}
-          clearcoatRoughness={0.05}
-          emissive={catColor}
-          emissiveIntensity={isSelected ? 0.4 : isHovered ? 0.22 : (isRunning ? 0.14 : 0.02)}
-        />
+      {/* Invisible larger hit target so clicks register reliably */}
+      <mesh raycast={undefined}>
+        <sphereGeometry args={[0.5, 6, 6]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      {/* Outer glow shell on hover/select */}
-      {(isSelected || isHovered) && (
+
+      {/* Visual content floats independently */}
+      <group ref={innerRef}>
+        {/* Glass icosahedron orb */}
         <mesh>
-          <icosahedronGeometry args={[0.46, 1]} />
-          <meshBasicMaterial color={catColor} transparent opacity={0.1} toneMapped={false} />
+          <icosahedronGeometry args={[0.36, 1]} />
+          <meshPhysicalMaterial
+            color={catColor}
+            metalness={0}
+            roughness={0.08}
+            transparent
+            opacity={isRunning ? 0.65 : 0.22}
+            clearcoat={1.0}
+            clearcoatRoughness={0.05}
+            emissive={catColor}
+            emissiveIntensity={isSelected ? 0.45 : isHovered ? 0.25 : (isRunning ? 0.15 : 0.03)}
+          />
         </mesh>
-      )}
-      {/* Icon */}
-      <Text position={[0, 0, 0.4]} fontSize={0.22} anchorX="center" anchorY="middle">
-        {service.icon}
-      </Text>
-      {/* Name */}
-      <Text position={[0, -0.58, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.2}>
-        {service.name}
-      </Text>
-      {/* Status dot */}
-      <StatusDot position={[0.3, 0.3, 0.25]} status={service.status} />
+        {/* Outer glow shell on hover/select */}
+        {(isSelected || isHovered) && (
+          <mesh>
+            <icosahedronGeometry args={[0.44, 1]} />
+            <meshBasicMaterial color={catColor} transparent opacity={0.12} toneMapped={false} />
+          </mesh>
+        )}
+        {/* Icon */}
+        <Text position={[0, 0, 0.38]} fontSize={0.21} anchorX="center" anchorY="middle">
+          {service.icon}
+        </Text>
+        {/* Name */}
+        <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
+          {service.name}
+        </Text>
+      </group>
     </group>
   );
 }
@@ -533,11 +613,12 @@ function ServicesDisplay({
       const row = Math.floor(i / cols);
       const col = i % cols;
       const rowCount = Math.min(cols, services.length - row * cols);
-      const xOffset = (col - (rowCount - 1) / 2) * 1.3;
+      const xOffset = (col - (rowCount - 1) / 2) * 1.25;
+      // Fan services directly above node (same z = correct depth, no z offset)
       return [
         nodePos[0] + xOffset,
-        nodePos[1] + 1.8 + row * 1.25,
-        nodePos[2] + 3.5,
+        nodePos[1] + 2.0 + row * 1.2,
+        nodePos[2],
       ] as [number, number, number];
     });
   }, [nodePos]);
@@ -678,23 +759,23 @@ export default function Scene3D({
     { label: "ISP", value: router.isp },
   ];
 
-  // Service info overlay position
+  // Service callout anchor position (matches ServicesDisplay layout)
   const cols = 5;
   const getSvcPos = (i: number): [number, number, number] => {
     const row = Math.floor(i / cols);
     const col = i % cols;
     const rowCount = Math.min(cols, services.length - row * cols);
     return [
-      m2Pos[0] + (col - (rowCount - 1) / 2) * 1.3,
-      m2Pos[1] + 2.2 + row * 1.3 + 0.9,
-      m2Pos[2] + 2.5,
+      m2Pos[0] + (col - (rowCount - 1) / 2) * 1.25,
+      m2Pos[1] + 2.0 + row * 1.2,
+      m2Pos[2],
     ];
   };
 
   return (
     <Canvas
       camera={{ position: [0, 7, 13], fov: 55 }}
-      style={{ background: "#07070e" }}
+      style={{ position: "absolute", inset: 0, background: "#07070e" }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       onPointerMissed={() => { setSelectedNode(null); onSelect(null); }}
     >
@@ -735,8 +816,9 @@ export default function Scene3D({
         onPointerOver={() => setHoveredNode("router")}
         onPointerOut={() => setHoveredNode(null)}
       />
-      <InfoOverlay
-        position={[routerPos[0] + 2.2, routerPos[1] + 3, routerPos[2]]}
+      <CalloutPanel
+        anchorPos={[routerPos[0], routerPos[1] + 1.5, routerPos[2]]}
+        panelOffset={[2.2, 1.8, 0]}
         title={"📡 " + router.name}
         lines={routerInfoLines}
         color="#8b949e"
@@ -760,8 +842,9 @@ export default function Scene3D({
         onPointerOver={() => setHoveredNode("m2")}
         onPointerOut={() => setHoveredNode(null)}
       />
-      <InfoOverlay
-        position={[m2Pos[0] - 2.5, m2Pos[1] + 3, m2Pos[2]]}
+      <CalloutPanel
+        anchorPos={[m2Pos[0], m2Pos[1] + 1.5, m2Pos[2]]}
+        panelOffset={[3.5, 2.2, 0]}
         title={"⚡ M2 Node"}
         lines={nodeInfoLines}
         color="#58a6ff"
@@ -785,8 +868,9 @@ export default function Scene3D({
         onPointerOver={() => setHoveredNode("gpu")}
         onPointerOut={() => setHoveredNode(null)}
       />
-      <InfoOverlay
-        position={[gpuPos[0] + 2.5, gpuPos[1] + 3, gpuPos[2]]}
+      <CalloutPanel
+        anchorPos={[gpuPos[0], gpuPos[1] + 1.5, gpuPos[2]]}
+        panelOffset={[2.8, 2.0, 0]}
         title={"🎮 GPU Node"}
         lines={gpuInfoLines}
         color="#d29922"
@@ -810,22 +894,26 @@ export default function Scene3D({
         onUnhoverSvc={() => setHoveredSvc(null)}
       />
 
-      {/* Service info overlay */}
-      {selectedIdx !== null && services[selectedIdx] && (
-        <InfoOverlay
-          position={getSvcPos(selectedIdx) as [number, number, number]}
-          title={services[selectedIdx].icon + " " + services[selectedIdx].name}
-          lines={[
-            { label: "IP", value: services[selectedIdx].ip },
-            { label: "Port", value: String(services[selectedIdx].port) },
-            { label: "NS", value: services[selectedIdx].namespace },
-            { label: "Status", value: services[selectedIdx].status },
-          ]}
-          color={services[selectedIdx].color}
-          visible
-          onClose={() => onSelect(null)}
-        />
-      )}
+      {/* Service callout panel */}
+      {selectedIdx !== null && services[selectedIdx] && (function() {
+        const svcPos = getSvcPos(selectedIdx) as [number, number, number];
+        return (
+          <CalloutPanel
+            anchorPos={svcPos}
+            panelOffset={[1.8, 0.5, 0]}
+            title={services[selectedIdx].icon + " " + services[selectedIdx].name}
+            lines={[
+              { label: "IP", value: services[selectedIdx].ip },
+              { label: "Port", value: String(services[selectedIdx].port) },
+              { label: "NS", value: services[selectedIdx].namespace },
+              { label: "Status", value: services[selectedIdx].status },
+            ]}
+            color={services[selectedIdx].color}
+            visible
+            onClose={() => onSelect(null)}
+          />
+        );
+      })()}
 
       {/* Services toggle button */}
       <Html fullscreen>
@@ -861,8 +949,8 @@ export default function Scene3D({
       />
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.85} intensity={0.85} />
-        <Vignette eskil={false} offset={0.1} darkness={0.78} />
+        <Bloom luminanceThreshold={0.35} luminanceSmoothing={0.85} intensity={0.5} />
+        <Vignette eskil={false} offset={0.1} darkness={0.7} />
       </EffectComposer>
     </Canvas>
   );
