@@ -1099,6 +1099,41 @@ function EventPulseRing() {
   );
 }
 
+/* ── Aggressive strobe ring for CrashLoopBackOff ──── */
+function CrashLoopFlashRing() {
+  const r1 = useRef<THREE.Mesh>(null!);
+  const r2 = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    // Ring 1: fast outward burst
+    if (r1.current) {
+      const phase = (t * 3.0) % 1;
+      r1.current.scale.setScalar(1 + phase * 1.2);
+      const mat = r1.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, 0.6 * (1 - phase * 1.4));
+    }
+    // Ring 2: offset burst for double-strobe
+    if (r2.current) {
+      const phase = ((t * 3.0) + 0.5) % 1;
+      r2.current.scale.setScalar(1 + phase * 1.2);
+      const mat = r2.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, 0.4 * (1 - phase * 1.4));
+    }
+  });
+  return (
+    <>
+      <mesh ref={r1} rotation={[Math.PI / 2, 0, 0]} raycast={() => {}}>
+        <torusGeometry args={[0.44, 0.014, 6, 48]} />
+        <meshBasicMaterial color="#ef4444" transparent opacity={0.6} toneMapped={false} />
+      </mesh>
+      <mesh ref={r2} rotation={[Math.PI / 2, 0, 0]} raycast={() => {}}>
+        <torusGeometry args={[0.44, 0.009, 6, 48]} />
+        <meshBasicMaterial color="#ff6666" transparent opacity={0.4} toneMapped={false} />
+      </mesh>
+    </>
+  );
+}
+
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
   isSelected, isHovered, isUnhealthy = false, hasEvents = false, nsPods, cpuM, restartCount, onClick, onPointerOver, onPointerOut,
@@ -1208,6 +1243,8 @@ function ServiceSphere({
         </Text>
         {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
         {isUnhealthy && <UnhealthyDot />}
+        {/* CrashLoop strobe ring for very high restart counts */}
+        {isUnhealthy && restartCount !== undefined && restartCount > 100 && <CrashLoopFlashRing />}
         {/* Restart count near unhealthy dot */}
         {isUnhealthy && restartCount !== undefined && restartCount > 0 && (
           <Text position={[0.42, 0.32, 0.15]} fontSize={0.06} color={restartCount > 100 ? "#ef4444" : "#f97316"} anchorX="center" anchorY="middle"
