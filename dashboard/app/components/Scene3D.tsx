@@ -1785,6 +1785,18 @@ export default function Scene3D({
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
       <FloorCable from={routerPos} to={gpuPos} color="#d29922" active speed={0.13} />
+      {/* Request path animation when service selected: WAN → Router → M2 (accelerated) */}
+      {selectedIdx !== null && (() => {
+        const svcPos = getSvcPos(selectedIdx) as [number, number, number];
+        const catColor = CATEGORY_COLORS[services[selectedIdx]?.category] || "#58a6ff";
+        return (
+          <>
+            <BeamParticles from={new THREE.Vector3(routerPos[0], 5.0, routerPos[2])} to={new THREE.Vector3(routerPos[0], 0.5, routerPos[2])} color="#58a6ff" count={3} />
+            <BeamParticles from={new THREE.Vector3(routerPos[0], 0.5, routerPos[2])} to={new THREE.Vector3(m2Pos[0], 0.5, m2Pos[2])} color="#58a6ff" count={3} />
+            <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.0, m2Pos[2])} to={new THREE.Vector3(svcPos[0], svcPos[1] - 0.4, svcPos[2])} color={catColor} count={3} />
+          </>
+        );
+      })()}
 
       {/* Internet cloud — dim floating sphere above router, with downlink particles */}
       <group position={[routerPos[0], 5.5, routerPos[2]]}>
