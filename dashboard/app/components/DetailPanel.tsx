@@ -144,6 +144,29 @@ export default function DetailPanel({
               </button>
             ))}
           </div>
+          {/* Category breakdown bar */}
+          <div className="mt-2 flex h-1 rounded-full overflow-hidden">
+            {(["app", "infra", "monitoring", "storage"] as const).map(cat => {
+              const count = services.filter(s => s.category === cat).length;
+              return (
+                <div
+                  key={cat}
+                  style={{ flex: count, backgroundColor: CATEGORY_COLORS[cat], opacity: 0.5 }}
+                  title={`${cat}: ${count}`}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-1 flex gap-2.5 flex-wrap">
+            {(["app", "infra", "monitoring", "storage"] as const).map(cat => {
+              const count = services.filter(s => s.category === cat).length;
+              return (
+                <span key={cat} className="text-xs font-mono" style={{ color: CATEGORY_COLORS[cat] + "aa" }}>
+                  {count} {cat}
+                </span>
+              );
+            })}
+          </div>
         </div>
 
         {/* Search filter */}
