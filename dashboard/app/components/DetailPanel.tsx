@@ -291,13 +291,20 @@ export default function DetailPanel({
           const memMax = memEntries[0]?.[1] || 1;
           const nsSet = new Set([...cpuEntries.map(e => e[0]), ...memEntries.map(e => e[0])]);
           const allNs = Array.from(nsSet).slice(0, 5);
+          // Compute actual CPU per namespace from live podMetrics
+          const nsCpuActual: Record<string, number> = {};
+          if (podMetrics) {
+            for (const pm of podMetrics) {
+              nsCpuActual[pm.namespace] = (nsCpuActual[pm.namespace] || 0) + pm.cpuM;
+            }
+          }
           return (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Resource Requests</h3>
                 <div className="flex items-center gap-3 text-xs font-mono text-gray-700">
-                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-500/60 rounded inline-block" />CPU</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />RAM</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-500/60 rounded inline-block" />req</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />mem</span>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -308,11 +315,16 @@ export default function DetailPanel({
                   const memPct = (memMi / memMax) * 100;
                   const cpuLabel = cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m`;
                   const memLabel = memMi >= 1024 ? `${(memMi/1024).toFixed(1)}G` : `${Math.round(memMi)}M`;
+                  // Efficiency: actual / requested
+                  const actualM = nsCpuActual[ns] || 0;
+                  const effPct = cpuM > 0 ? Math.round((actualM / cpuM) * 100) : 0;
+                  const effColor = effPct > 120 ? "#ef4444" : effPct > 70 ? "#22c55e" : effPct > 30 ? "#eab308" : "#6b7280";
                   return (
                     <div key={ns}>
                       <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
                         <span className="truncate flex-1">{ns}</span>
                         <span className="shrink-0 ml-2 flex items-center gap-2">
+                          {podMetrics && cpuM > 0 && <span style={{ color: effColor }} title={`${actualM}m actual vs ${cpuM}m requested`}>{effPct}%</span>}
                           <span className="text-blue-400">{cpuLabel}</span>
                           <span className="text-violet-400">{memLabel}</span>
                         </span>
