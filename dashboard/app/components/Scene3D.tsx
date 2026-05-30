@@ -464,6 +464,18 @@ function CalloutPanel({
   );
 }
 
+/* ── Pulsing point light ────────────────────────────── */
+function PulsingLight({ position, color }: { position: [number, number, number]; color: string }) {
+  const ref = useRef<THREE.PointLight>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const t = clock.getElapsedTime();
+      ref.current.intensity = 0.08 + Math.sin(t * 1.5) * 0.04;
+    }
+  });
+  return <pointLight ref={ref} position={[position[0], 0.3, position[2]]} intensity={0.08} color={color} distance={4} />;
+}
+
 /* ── status indicator dot ──────────────────────────── */
 function StatusDot({
   position, status
@@ -1068,6 +1080,10 @@ export default function Scene3D({
       <pointLight position={[0, 6, 0]} intensity={0.3} color="#2244ff" />
       {/* Accent from below — subtle up-light */}
       <pointLight position={[0, -0.5, 0]} intensity={0.08} color="#0066cc" />
+      {/* M2 node breathing glow */}
+      <PulsingLight position={m2Pos} color="#58a6ff" />
+      {/* Router accent */}
+      <pointLight position={[routerPos[0], 0.5, routerPos[2]]} intensity={0.06} color="#8b949e" />
 
       <HoloGrid />
       <Particles />
