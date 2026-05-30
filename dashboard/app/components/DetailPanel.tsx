@@ -1170,22 +1170,25 @@ export default function DetailPanel({
               <div className="space-y-0.5">
                 {allReleases.map((rel, i) => {
                   let updatedAgo = "";
+                  let isRecent = false;
                   if (rel.updated) {
                     try {
                       const ms = Date.now() - new Date(rel.updated).getTime();
                       const days = Math.floor(ms / 86400000);
+                      isRecent = ms < 86400000; // updated in last 24h
                       updatedAgo = days > 0 ? `${days}d` : `${Math.floor(ms/3600000)}h`;
                     } catch {/* ignore */}
                   }
                   return (
-                  <div key={i} className="flex items-center justify-between text-xs font-mono">
+                  <div key={i} className={`flex items-center justify-between text-xs font-mono rounded px-0.5 py-0.5 transition-colors ${isRecent ? "bg-cyan-900/10 border border-cyan-900/20" : ""}`}>
                     <div className="flex items-center gap-1.5 truncate flex-1">
-                      <span className={rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}>⎈</span>
-                      <span className="text-gray-600 truncate">{rel.name}</span>
+                      {isRecent && <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse shrink-0" title="Updated in last 24h" />}
+                      {!isRecent && <span className={rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}>⎈</span>}
+                      <span className={`truncate ${isRecent ? "text-cyan-400/70" : "text-gray-600"}`}>{rel.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-gray-700 text-[10px]">{rel.chart.replace(/^[^-]+-/, "")}</span>
-                      {updatedAgo && <span className="text-gray-800 text-[10px]">{updatedAgo}</span>}
+                      {updatedAgo && <span className={`text-[10px] ${isRecent ? "text-cyan-700/70" : "text-gray-800"}`}>{updatedAgo}</span>}
                     </div>
                   </div>
                   );
