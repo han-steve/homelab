@@ -455,8 +455,9 @@ export default function DetailPanel({
                         </span>
                       </div>
                       <div className="flex gap-1 h-1">
-                        <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${cpuPct}%` }} />
+                        <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden relative">
+                          <div className="h-full rounded-full bg-blue-500/60 absolute inset-y-0 left-0" style={{ width: `${cpuPct}%` }} />
+                          {actualM > 0 && <div className="h-full rounded-full bg-green-400/50 absolute inset-y-0 left-0" style={{ width: `${Math.min(100, (actualM / cpuMax) * 100)}%`, mixBlendMode: "screen" }} />}
                         </div>
                         <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-violet-500/60" style={{ width: `${memPct}%` }} />
