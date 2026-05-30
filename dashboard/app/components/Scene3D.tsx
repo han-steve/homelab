@@ -1513,6 +1513,65 @@ function ServicesDisplay({
   );
 }
 
+/* ── Namespace orbit ring visualization ─────────────── */
+function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCounts }: {
+  center: [number, number, number];
+  namespaces: string[];
+  unhealthyNamespaces?: Set<string>;
+  nsPodCounts?: Record<string, number>;
+}) {
+  const groupRef = useRef<THREE.Group>(null!);
+  const sphereRefs = useRef<THREE.Mesh[]>([]);
+  const NS_COLORS: Record<string, string> = {
+    argocd: "#ef7b4d", "kube-system": "#326ce5", longhorn: "#3b82f6",
+    monitoring: "#8b5cf6", "cert-manager": "#22c55e", "actual-budget": "#f59e0b",
+    apitable: "#06b6d4", "vc-prod": "#10b981", "vc-dev": "#64748b",
+    "vc-staging": "#f97316", istio: "#60a5fa", "kube-public": "#6b7280",
+  };
+  const count = Math.min(namespaces.length, 18);
+  const radius = 2.6;
+  const yTilt = 0.35;
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    sphereRefs.current.forEach((mesh, i) => {
+      if (!mesh) return;
+      const angle = (i / count) * Math.PI * 2 + t * (0.12 + i * 0.003);
+      mesh.position.set(
+        center[0] + Math.cos(angle) * radius,
+        center[1] + 3.0 + Math.sin(angle) * yTilt,
+        center[2] + Math.sin(angle) * radius * 0.5
+      );
+      mesh.rotation.y = t * 0.8 + i;
+    });
+  });
+
+  return (
+    <group ref={groupRef}>
+      {namespaces.slice(0, count).map((ns, i) => {
+        const isUnhealthy = unhealthyNamespaces?.has(ns);
+        const pods = nsPodCounts?.[ns] ?? 0;
+        const color = isUnhealthy ? "#ef4444" : NS_COLORS[ns] ?? "#58a6ff";
+        const scale = 0.04 + Math.min(0.08, pods / 300);
+        return (
+          <mesh key={ns} ref={el => { if (el) sphereRefs.current[i] = el; }} scale={scale}>
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshPhysicalMaterial
+              color={color}
+              emissive={color}
+              emissiveIntensity={isUnhealthy ? 1.5 : 0.7}
+              metalness={0.1}
+              roughness={0.2}
+              transparent
+              opacity={0.85}
+            />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 /* ── ArgoCD floating glass object ─────────────────── */
 function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, apps }: {
   position: [number, number, number];
@@ -2211,6 +2270,15 @@ export default function Scene3D({
         visible={selectedNode === "m2"}
         onClose={() => setSelectedNode(null)}
       />
+      {/* Namespace orbit rings when M2 node selected */}
+      {selectedNode === "m2" && nsPodCounts && Object.keys(nsPodCounts).length > 0 && (
+        <NamespaceOrbitRings
+          center={m2Pos}
+          namespaces={Object.keys(nsPodCounts).sort((a, b) => (nsPodCounts[b] ?? 0) - (nsPodCounts[a] ?? 0))}
+          unhealthyNamespaces={unhealthyNamespaces}
+          nsPodCounts={nsPodCounts}
+        />
+      )}
 
       {/* GPU Node */}
       <HardwareNode
