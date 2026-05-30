@@ -1619,6 +1619,16 @@ export default function DetailPanel({
                 <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Helm Releases</h3>
                 <span className="text-xs font-mono text-gray-700">{deployed}/{allReleases.length} deployed</span>
               </div>
+              {/* Non-deployed releases warning */}
+              {allReleases.filter(r => r.status !== "deployed").length > 0 && (
+                <div className="mb-1.5 flex flex-wrap gap-1">
+                  {allReleases.filter(r => r.status !== "deployed").map((r, i) => (
+                    <span key={i} className="text-[9px] font-mono px-1 py-0.5 rounded bg-yellow-900/20 border border-yellow-700/20 text-yellow-500/70" title={`Status: ${r.status}`}>
+                      ⎈ {r.name} <span className="text-yellow-700/60">{r.status}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="space-y-0.5">
                 {sortedReleases.map((rel, i) => {
                   let updatedAgo = "";
