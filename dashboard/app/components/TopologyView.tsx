@@ -1166,6 +1166,28 @@ export default function TopologyView({
               </div>
             );
           })()}
+          {/* Pod count mini-chart */}
+          {nsPodCounts && Object.keys(nsPodCounts).length > 0 && (() => {
+            const top5 = Object.entries(nsPodCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+            const maxP = top5[0]?.[1] ?? 1;
+            return (
+              <div className="mt-1 border-t border-gray-800/50 pt-1">
+                <div className="text-[9px] text-gray-700 mb-1">top pod ns</div>
+                {top5.map(([ns, p]) => {
+                  const isUnhealthy = unhealthyNamespaces?.has(ns);
+                  return (
+                    <div key={ns} className="flex items-center gap-1 mb-0.5">
+                      <div className="w-12 truncate text-[8px] text-gray-700" title={ns}>{ns.slice(0, 7)}</div>
+                      <div className="flex-1 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(p / maxP) * 100}%`, backgroundColor: isUnhealthy ? "#ef444450" : "#22c55e40" }} />
+                      </div>
+                      <div className="text-[8px] text-gray-800 w-5 text-right">{p}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
           <div className="text-gray-700/60">H=heatmap · N=next ns · 1-9=ns · dbl-click=reset</div>
           <button
