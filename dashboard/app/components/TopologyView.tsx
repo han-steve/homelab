@@ -276,6 +276,18 @@ export default function TopologyView({
               </span>
             </>
           )}
+          {nsHelmReleases && (() => {
+            const all = Object.values(nsHelmReleases).flat();
+            if (all.length === 0) return null;
+            const deployed = all.filter(r => r.status === "deployed").length;
+            const ok = deployed === all.length;
+            return (
+              <>
+                <span className="text-gray-700">·</span>
+                <span style={{ color: ok ? "#06b6d499" : "#eab30899" }} title={ok ? `${all.length} helm releases deployed` : `${all.length - deployed} not deployed`}>⎈ {deployed}/{all.length}</span>
+              </>
+            );
+          })()}
         </div>
         {/* Namespace health dots */}
         {uniqueNamespaces.length > 0 && (
