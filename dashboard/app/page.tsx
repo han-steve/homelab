@@ -343,6 +343,16 @@ export default function Home() {
                 <span className="hidden md:inline text-gray-600" title="Node uptime">↑ {cluster.node.uptime}</span>
               </>
             )}
+            {/* Stale data indicator */}
+            {cluster && (() => {
+              const ageMs = currentTime.getTime() - new Date(cluster.timestamp).getTime();
+              if (ageMs < 65000) return null;
+              const ageSec = Math.round(ageMs / 1000);
+              return (
+                <><span className="hidden md:inline text-gray-800">|</span>
+                <span className="hidden md:inline text-orange-500/80 animate-pulse" title={`Data is ${ageSec}s old`}>⏳{ageSec}s</span></>
+              );
+            })()}
             <span className="hidden md:inline text-gray-800">|</span>
             <span className="hidden md:inline text-gray-500 tabular-nums" title="Local time">{currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
           </div>
