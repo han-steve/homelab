@@ -226,9 +226,22 @@ export default function DetailPanel({
           ];
           return (
             <div className="mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-mono text-gray-700 uppercase tracking-wider">Cluster Health</span>
-                <span className="text-lg font-bold font-mono" style={{ color: scoreColor }}>{healthScore}%</span>
+              <div className="flex items-center gap-3 mb-1.5">
+                {/* Mini circular gauge */}
+                <svg width={40} height={40} viewBox="0 0 40 40" className="shrink-0">
+                  <circle cx={20} cy={20} r={16} fill="none" stroke="#1f2937" strokeWidth={3.5} />
+                  <circle cx={20} cy={20} r={16} fill="none" stroke={scoreColor} strokeWidth={3.5}
+                    strokeDasharray={`${2 * Math.PI * 16}`}
+                    strokeDashoffset={`${2 * Math.PI * 16 * (1 - healthScore / 100)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 20 20)"
+                    style={{ filter: `drop-shadow(0 0 3px ${scoreColor}55)` }}
+                  />
+                  <text x={20} y={21} textAnchor="middle" dominantBaseline="middle" fontSize={8} fill={scoreColor} fontFamily="monospace" fontWeight="bold">{healthScore}</text>
+                </svg>
+                <div className="flex-1">
+                  <span className="text-xs font-mono text-gray-700 uppercase tracking-wider">Cluster Health</span>
+                </div>
               </div>
               <div className="flex gap-1.5 mb-0">
                 {items.map(({ label, status, value }) => {
