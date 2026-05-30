@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -63,9 +63,20 @@ export default function DetailPanel({
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   metricsHistory?: { cpu: number; ram: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  // Map namespace → max restart count from unhealthy pods
+  const nsMaxRestarts: Record<string, number> = {};
+  if (unhealthyPods) {
+    for (const pod of unhealthyPods) {
+      if (pod.restarts > 0) {
+        nsMaxRestarts[pod.namespace] = Math.max(nsMaxRestarts[pod.namespace] || 0, pod.restarts);
+      }
+    }
+  }
 
   if (selectedIdx === null) {
     const categories = ["all", "app", "infra", "monitoring", "storage"];
@@ -223,6 +234,7 @@ export default function DetailPanel({
                   </div>
                   {grouped[ns].map(svc => {
                     const i = services.indexOf(svc);
+                    const restarts = nsMaxRestarts[svc.namespace] || 0;
                     return (
                       <div
                         key={svc.name}
@@ -234,6 +246,9 @@ export default function DetailPanel({
                           <span className="text-xs">{svc.name}</span>
                         </span>
                         <div className="flex items-center gap-1.5">
+                          {restarts > 0 && (
+                            <span className="text-xs font-mono text-yellow-600" title={`${restarts} restarts`}>↺{restarts}</span>
+                          )}
                           <span className="text-gray-600 text-xs font-mono">
                             {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
                           </span>
@@ -251,16 +266,21 @@ export default function DetailPanel({
           ) : (
             filteredServices.map((svc) => {
               const i = services.indexOf(svc);
+              const restarts = nsMaxRestarts[svc.namespace] || 0;
               return (
               <div
                 key={svc.name}
                 className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
                 onClick={() => onSelectService?.(i)}
-              >              <span className="text-gray-300 flex items-center gap-2">
+              >
+                <span className="text-gray-300 flex items-center gap-2">
                   <span>{svc.icon}</span>
                   <span className="text-xs">{svc.name}</span>
                 </span>
                 <div className="flex items-center gap-1.5">
+                  {restarts > 0 && (
+                    <span className="text-xs font-mono text-yellow-600" title={`${restarts} restarts`}>↺{restarts}</span>
+                  )}
                   <span className="text-gray-600 text-xs font-mono">
                     {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
                   </span>

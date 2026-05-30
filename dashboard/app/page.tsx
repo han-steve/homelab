@@ -274,6 +274,7 @@ export default function Home() {
           recentEvents={cluster?.recentEvents}
           metricsHistory={metricsHistory.current}
           longhornStorage={cluster?.longhornStorage}
+          unhealthyPods={cluster?.unhealthyPods}
         />
       </div>
     </div>
