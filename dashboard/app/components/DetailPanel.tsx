@@ -2511,6 +2511,28 @@ export default function DetailPanel({
 
       {/* kubectl command hints */}
       <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
+      {/* Related services in same namespace */}
+      {(() => {
+        const siblings = services.map((s, i) => ({ s, i })).filter(({ s, i }) => s.namespace === svc.namespace && i !== selectedIdx);
+        if (siblings.length === 0) return null;
+        return (
+          <div className="mb-4">
+            <div className="text-[10px] font-mono text-gray-700 uppercase tracking-wider mb-1.5">Also in {svc.namespace}</div>
+            <div className="flex flex-wrap gap-1">
+              {siblings.map(({ s, i }) => (
+                <button
+                  key={i}
+                  onClick={() => onSelectService?.(i)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-900/60 border border-gray-800/50 hover:border-gray-600/50 transition-colors text-[10px] font-mono text-gray-600 hover:text-gray-400"
+                >
+                  <span>{s.icon}</span>
+                  <span>{s.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
       {[
         `kubectl -n ${svc.namespace} get pods`,
         `kubectl -n ${svc.namespace} describe pods`,
