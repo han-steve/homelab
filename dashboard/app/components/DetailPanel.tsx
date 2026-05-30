@@ -1234,6 +1234,9 @@ export default function DetailPanel({
                         }
                         return <span className="text-green-800">{total}p</span>;
                       })()}
+                      {nsMaxRestarts[ns] > 0 && (
+                        <span className="text-[9px] font-mono" style={{ color: nsMaxRestarts[ns] > 100 ? "#ef4444" : nsMaxRestarts[ns] > 20 ? "#f97316" : "#eab30880" }} title={`Max restarts in namespace: ${nsMaxRestarts[ns]}`}>↺{nsMaxRestarts[ns]}</span>
+                      )}
                     </span>
                   </div>
                   {grouped[ns].map(svc => {
