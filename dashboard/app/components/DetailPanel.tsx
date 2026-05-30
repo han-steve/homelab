@@ -636,6 +636,28 @@ export default function DetailPanel({
                       <Sparkline data={metricsHistory.map(m => m.appsHealthy ?? 0)} color="#22c55e" height={14} />
                     </div>
                   )}
+                  {metricsHistory.length >= 3 && (() => {
+                    const scores = metricsHistory.map(h =>
+                      Math.round(
+                        (h.appsTotal ? (h.appsHealthy ?? 0) / h.appsTotal * 40 : 40) +
+                        (h.unhealthy === 0 ? 40 : Math.max(0, 40 - (h.unhealthy ?? 0) * 5)) + 20
+                      )
+                    );
+                    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+                    const min = Math.min(...scores);
+                    const scoreColor = avg >= 90 ? "#22c55e" : avg >= 70 ? "#eab308" : "#ef4444";
+                    return (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs text-gray-700 font-mono">Health score history</span>
+                          <span className="text-xs font-mono" style={{ color: scoreColor }}>
+                            avg {avg}% · min {min}%
+                          </span>
+                        </div>
+                        <Sparkline data={scores} color={scoreColor} height={16} showLabel />
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </>
