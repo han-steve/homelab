@@ -459,6 +459,16 @@ export default function TopologyView({
             const isRecentlyActive = !isUnhealthyNs && recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
             return (
               <g key={ns} opacity={selectedNode ? 0.3 : 0.7}>
+                {isUnhealthyNs && !heatmapMode && (
+                  <rect
+                    x={b.minX - pad - 2} y={b.minY - pad - 2}
+                    width={b.maxX - b.minX + pad * 2 + 4} height={b.maxY - b.minY + pad * 2 + 4}
+                    rx={16} ry={16}
+                    fill="none" stroke="#ef4444" strokeWidth={1.5} strokeOpacity={0.0}
+                  >
+                    <animate attributeName="strokeOpacity" values="0;0.5;0" dur="1.8s" repeatCount="indefinite" />
+                  </rect>
+                )}
                 {isRecentlyActive && (
                   <rect
                     x={b.minX - pad - 2} y={b.minY - pad - 2}
@@ -485,7 +495,7 @@ export default function TopologyView({
                   fill={fillColor} fillOpacity={nsFilter === ns ? 0.8 : 0.4}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
-                >{isUnhealthyNs ? "⚠ " : ""}{isRecentlyActive ? "↑ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}</text>
+                >{isUnhealthyNs ? "⚠ " : ""}{isRecentlyActive ? "↑ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}{nsMaxRestarts?.[ns] ? ` ↺${nsMaxRestarts[ns]}` : ""}</text>
               </g>
             );
           });
