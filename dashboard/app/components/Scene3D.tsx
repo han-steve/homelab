@@ -1086,6 +1086,9 @@ function ServiceSphere({
   const isRunning = service.status === "running";
   // Staggered float speed per sphere so each has a unique rhythm
   const floatSpeed = 0.8 + (idx % 7) * 0.18;
+  // CPU load intensity: 0-1 based on namespace CPU requests
+  const cpuIntensity = cpuM !== undefined ? Math.min(1, cpuM / 1000) : 0;
+  const baseEmissive = isRunning ? (isUnhealthy ? 0.35 : 0.12 + cpuIntensity * 0.22) : 0.03;
 
   useFrame(() => {
     if (outerRef.current) {
@@ -1122,7 +1125,7 @@ function ServiceSphere({
             clearcoat={1.0}
             clearcoatRoughness={0.05}
             emissive={isUnhealthy ? "#ef4444" : catColor}
-            emissiveIntensity={isSelected ? 0.45 : isHovered ? 0.25 : (isRunning ? (isUnhealthy ? 0.35 : 0.15) : 0.03)}
+            emissiveIntensity={isSelected ? 0.45 : isHovered ? 0.25 : baseEmissive}
           />
         </mesh>
         {/* Warning ring for unhealthy services */}
