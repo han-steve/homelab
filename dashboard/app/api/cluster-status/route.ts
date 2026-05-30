@@ -56,12 +56,18 @@ export async function GET() {
     const nsPodCounts: Record<string, number> = {};
     const nsCpuRequestsM: Record<string, number> = {}; // millicores per namespace
     const nsMemRequestsMi: Record<string, number> = {}; // MiB per namespace
+    // Track pod start times for uptime display
+    const podStartTimes: Record<string, string> = {}; // "namespace/name" -> ISO timestamp
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
       totalPods = (data.items ?? []).length;
       for (const item of data.items ?? []) {
         const ns = item.metadata?.namespace ?? "unknown";
+        const podName = item.metadata?.name ?? "";
         nsPodCounts[ns] = (nsPodCounts[ns] || 0) + 1;
+        // Track start time
+        const startTime = item.status?.startTime ?? item.metadata?.creationTimestamp;
+        if (startTime) podStartTimes[`${ns}/${podName}`] = startTime;
         // Aggregate resource requests
         for (const container of item.spec?.containers ?? []) {
           const cpuReq = container.resources?.requests?.cpu ?? "";
@@ -213,14 +219,23 @@ export async function GET() {
 
     // Parse pod-level metrics (kubectl top pods)
     // Output: NAMESPACE   NAME   CPU(cores)   MEMORY(bytes)
-    const parsedPodMetrics: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[] = [];
+    const parsedPodMetrics: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[] = [];
     if (podMetricsResult.status === "fulfilled" && podMetricsResult.value.stdout.trim()) {
       for (const line of podMetricsResult.value.stdout.trim().split("\n")) {
         const parts = line.trim().split(/\s+/);
         if (parts.length >= 4) {
           const cpuM = parts[2].endsWith("m") ? parseInt(parts[2]) : parseFloat(parts[2]) * 1000;
           const memMi = parts[3].endsWith("Mi") ? parseInt(parts[3]) : parts[3].endsWith("Gi") ? parseFloat(parts[3]) * 1024 : parts[3].endsWith("Ki") ? parseFloat(parts[3]) / 1024 : 0;
-          parsedPodMetrics.push({ namespace: parts[0], name: parts[1], cpu: parts[2], memory: parts[3], cpuM: isNaN(cpuM) ? 0 : cpuM, memMi: isNaN(memMi) ? 0 : memMi });
+          const key = `${parts[0]}/${parts[1]}`;
+          parsedPodMetrics.push({
+            namespace: parts[0],
+            name: parts[1],
+            cpu: parts[2],
+            memory: parts[3],
+            cpuM: isNaN(cpuM) ? 0 : cpuM,
+            memMi: isNaN(memMi) ? 0 : memMi,
+            startTime: podStartTimes[key],
+          });
         }
       }
     }

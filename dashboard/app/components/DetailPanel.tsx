@@ -69,7 +69,7 @@ export default function DetailPanel({
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
-  podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[];
+  podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
 }) {
@@ -786,11 +786,20 @@ export default function DetailPanel({
                 const memLabel = pod.memMi >= 1024 ? `${(pod.memMi/1024).toFixed(1)}G` : `${Math.round(pod.memMi)}M`;
                 const cpuColor = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
                 const shortName = pod.name.replace(/-[a-z0-9]{5}$/, "").replace(/-[a-z0-9]{10}$/, "");
+                let uptimeStr = "";
+                if (pod.startTime) {
+                  const ms = Date.now() - new Date(pod.startTime).getTime();
+                  const days = Math.floor(ms / 86400000);
+                  const hrs = Math.floor((ms % 86400000) / 3600000);
+                  const mins = Math.floor((ms % 3600000) / 60000);
+                  uptimeStr = days > 0 ? `${days}d${hrs}h` : hrs > 0 ? `${hrs}h${mins}m` : `${mins}m`;
+                }
                 return (
                   <div key={i}>
                     <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
                       <span className="truncate flex-1" title={pod.name}>{shortName}</span>
                       <span className="shrink-0 ml-1 flex items-center gap-2">
+                        {uptimeStr && <span className="text-gray-700/60">↑{uptimeStr}</span>}
                         <span style={{ color: cpuColor }}>{cpuLabel}</span>
                         <span className="text-cyan-600">{memLabel}</span>
                       </span>
