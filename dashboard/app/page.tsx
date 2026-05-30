@@ -549,6 +549,24 @@ export default function Home() {
               }
               return (
                 <>
+                  {hist.length >= 4 && (() => {
+                    const scores = hist.slice(-12).map(h => Math.round(
+                      (h.appsTotal ? (h.appsHealthy ?? 0) / h.appsTotal * 40 : 40) +
+                      (h.unhealthy === 0 ? 40 : Math.max(0, 40 - (h.unhealthy ?? 0) * 5)) + 20
+                    ));
+                    const minS = Math.min(...scores), maxS = Math.max(...scores, minS + 1);
+                    const w = 36, h = 12;
+                    const xs = scores.map((_, i) => (i / (scores.length - 1)) * w);
+                    const ys = scores.map(s => h - 2 - ((s - minS) / (maxS - minS)) * (h - 4));
+                    const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+                    const sparkColor = color;
+                    return (
+                      <svg width={w} height={h} className="hidden md:inline-block" style={{ verticalAlign: "middle", opacity: 0.6 }}>
+                        <polyline points={pts} fill="none" stroke={sparkColor} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r={1.5} fill={sparkColor} />
+                      </svg>
+                    );
+                  })()}
                   <span className="hidden md:inline font-semibold tabular-nums" style={{ color }} title="Cluster health score">
                     {score}%{trendArrow && <span style={{ color: trendColor, fontSize: "0.65rem", marginLeft: 1 }}>{trendArrow}</span>}
                   </span>
