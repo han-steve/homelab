@@ -1274,6 +1274,12 @@ export default function Scene3D({
       { label: "CPU use", value: `${nodeMetrics.cpuCores} (${nodeMetrics.cpuPct})` },
       { label: "RAM use", value: `${nodeMetrics.memoryi} (${nodeMetrics.memPct})` },
     ] : []),
+    ...(appsTotal !== undefined ? [
+      { label: "ArgoCD", value: `${appsSynced}/${appsTotal} synced` },
+    ] : []),
+    ...(longhornStorage ? [
+      { label: "Volume", value: `${longhornStorage.usedGiB}G/${longhornStorage.totalGiB}G (${longhornStorage.pct}%)` },
+    ] : []),
   ];
   const gpuInfoLines = [
     { label: "IP", value: gpuNode.ip },
