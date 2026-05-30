@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -103,6 +103,7 @@ export default function DetailPanel({
   nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
   nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
   podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
+  nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -1082,13 +1083,37 @@ export default function DetailPanel({
           <div className="space-y-1">
             {nsDeployments[svc.namespace].map((dep, i) => {
               const healthy = dep.available >= dep.desired;
-              const pct = dep.desired > 0 ? Math.round((dep.available / dep.desired) * 100) : 100;
               return (
                 <div key={i} className="flex items-center gap-2 text-xs font-mono">
                   <span className={healthy ? "text-green-500/70" : "text-red-400/80"}>●</span>
                   <span className="text-gray-500 truncate flex-1" title={dep.name}>{dep.name}</span>
                   <span className={`shrink-0 ${healthy ? "text-green-500/60" : "text-red-400/70"}`}>
                     {dep.available}/{dep.desired}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* StatefulSets for this namespace */}
+      {nsStatefulSets && nsStatefulSets[svc.namespace] && nsStatefulSets[svc.namespace].length > 0 && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">StatefulSets</span>
+            <span className="text-xs font-mono text-gray-700">{nsStatefulSets[svc.namespace].length}</span>
+          </div>
+          <div className="space-y-1">
+            {nsStatefulSets[svc.namespace].map((ss, i) => {
+              const healthy = ss.ready >= ss.desired;
+              return (
+                <div key={i} className="flex items-center gap-2 text-xs font-mono">
+                  <span className={healthy ? "text-cyan-500/70" : "text-red-400/80"}>◈</span>
+                  <span className="text-gray-500 truncate flex-1" title={ss.name}>{ss.name}</span>
+                  <span className={`shrink-0 ${healthy ? "text-cyan-500/60" : "text-red-400/70"}`}>
+                    {ss.ready}/{ss.desired}
                   </span>
                 </div>
               );
