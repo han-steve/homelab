@@ -200,29 +200,52 @@ export default function DetailPanel({
           </div>
         </div>
 
-        {/* Namespace CPU allocation mini-chart */}
-        {nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0 && (() => {
-          const entries = Object.entries(nsCpuRequestsM)
+        {/* Namespace resource allocation mini-charts (CPU + Memory) */}
+        {(nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0) && (() => {
+          const cpuEntries = Object.entries(nsCpuRequestsM)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5);
-          const maxVal = entries[0]?.[1] || 1;
+          const memEntries = nsMemRequestsMi ? Object.entries(nsMemRequestsMi)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5) : [];
+          const cpuMax = cpuEntries[0]?.[1] || 1;
+          const memMax = memEntries[0]?.[1] || 1;
+          const nsSet = new Set([...cpuEntries.map(e => e[0]), ...memEntries.map(e => e[0])]);
+          const allNs = Array.from(nsSet).slice(0, 5);
           return (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Top CPU Requests</h3>
-                <span className="text-xs font-mono text-gray-700">by namespace</span>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Resource Requests</h3>
+                <div className="flex items-center gap-3 text-xs font-mono text-gray-700">
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-500/60 rounded inline-block" />CPU</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />RAM</span>
+                </div>
               </div>
-              <div className="space-y-1">
-                {entries.map(([ns, milli]) => {
-                  const pct = (milli / maxVal) * 100;
-                  const label = milli >= 1000 ? `${(milli/1000).toFixed(1)}c` : `${milli}m`;
+              <div className="space-y-1.5">
+                {allNs.map(ns => {
+                  const cpuM = nsCpuRequestsM[ns] || 0;
+                  const memMi = (nsMemRequestsMi?.[ns]) || 0;
+                  const cpuPct = (cpuM / cpuMax) * 100;
+                  const memPct = (memMi / memMax) * 100;
+                  const cpuLabel = cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m`;
+                  const memLabel = memMi >= 1024 ? `${(memMi/1024).toFixed(1)}G` : `${Math.round(memMi)}M`;
                   return (
-                    <div key={ns} className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
-                      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${pct}%` }} />
+                    <div key={ns}>
+                      <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
+                        <span className="truncate flex-1">{ns}</span>
+                        <span className="shrink-0 ml-2 flex items-center gap-2">
+                          <span className="text-blue-400">{cpuLabel}</span>
+                          <span className="text-violet-400">{memLabel}</span>
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-gray-700 w-10 text-right shrink-0">{label}</span>
+                      <div className="flex gap-1 h-1">
+                        <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${cpuPct}%` }} />
+                        </div>
+                        <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-violet-500/60" style={{ width: `${memPct}%` }} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
