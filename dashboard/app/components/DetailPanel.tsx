@@ -1574,12 +1574,17 @@ export default function DetailPanel({
               const latestHelm = helmReleases ? [...helmReleases].sort((a, b) => (b.updated ? new Date(b.updated).getTime() : 0) - (a.updated ? new Date(a.updated).getTime() : 0))[0] : undefined;
               const helmUpdatedMs = latestHelm?.updated ? Date.now() - new Date(latestHelm.updated).getTime() : null;
               const helmUpdatedRecent = helmUpdatedMs !== null && helmUpdatedMs < 86400000;
+              const cpuM = nsCpuRequestsM?.[svc.namespace] ?? 0;
+              const maxCpuM = nsCpuRequestsM ? Math.max(1, ...Object.values(nsCpuRequestsM)) : 1;
+              const cpuPctOfMax = cpuM / maxCpuM;
               return (
               <div
                 key={svc.name}
                 className="relative flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer overflow-hidden"
                 onClick={() => onSelectService?.(i)}
               >
+                {/* CPU load background fill */}
+                {cpuM > 0 && <div className="absolute inset-y-0 left-0 rounded-md pointer-events-none" style={{ width: `${cpuPctOfMax * 100}%`, backgroundColor: cpuPctOfMax > 0.5 ? "#ef444408" : "#3b82f608", transition: "width 0.5s" }} />}
                 {/* Category accent line on left edge */}
                 <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l" style={{ backgroundColor: CATEGORY_COLORS[svc.category] + "60" }} />
                 <span className="text-gray-300 flex items-center gap-2">
