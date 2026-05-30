@@ -319,6 +319,19 @@ export default function TopologyView({
                   filter="url(#glow)"
                 />
               )}
+
+              {/* Connection count badge on infrastructure nodes */}
+              {(node.type === "node" || node.type === "router" || node.type === "infra") && (() => {
+                const connCount = topoLinks.filter(l => l.source === node.id || l.target === node.id).length;
+                if (connCount === 0) return null;
+                return (
+                  <g transform={`translate(${r * 0.7}, ${-r * 0.7})`}>
+                    <circle r={8} fill="#1c2128" stroke={node.color} strokeWidth={1} opacity={0.9} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={8} fill={node.color} fontFamily="monospace" fontWeight="bold">{connCount}</text>
+                  </g>
+                );
+              })()}
+              )}
             </g>
           );
         })}
@@ -341,35 +354,25 @@ export default function TopologyView({
       {/* Legend */}
       <div className="absolute bottom-5 left-5 bg-gray-900/90 border border-gray-800 rounded-xl p-3 text-xs backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{
-              background: "#58a6ff",
-              boxShadow: "0 0 6px #58a6ff",
-            }}
-          />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#58a6ff", boxShadow: "0 0 6px #58a6ff" }} />
           <span className="text-gray-400">K8s node (active)</span>
         </div>
         <div className="flex items-center gap-2 mb-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ background: "#d29922" }}
-          />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#d29922" }} />
           <span className="text-gray-400">Node (planned)</span>
         </div>
         <div className="flex items-center gap-2 mb-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ background: "#3fb950" }}
-          />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#3fb950" }} />
           <span className="text-gray-400">Service (healthy)</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-0.5"
-            style={{ background: "#58a6ff" }}
-          />
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-0.5" style={{ background: "#58a6ff" }} />
           <span className="text-gray-400">Network link</span>
+        </div>
+        <div className="border-t border-gray-800 pt-2 font-mono text-gray-600 space-y-0.5">
+          <div>{topoNodes.length} nodes · {topoLinks.length} links</div>
+          <div>{topoLinks.filter(l => l.style === "solid").length} active · {topoLinks.filter(l => l.style === "dashed").length} planned</div>
+          {selectedNode && <div className="text-blue-500/70">click bg to deselect</div>}
         </div>
       </div>
     </div>
