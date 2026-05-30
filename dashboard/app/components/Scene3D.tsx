@@ -486,6 +486,27 @@ function GlowRing({
   );
 }
 
+/* ── RAM pressure ring (pulses when RAM > 65%) ─────────── */
+function RamPressureRing({ position, ramPct }: { position: [number, number, number]; ramPct: number }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  const intensity = Math.max(0, (ramPct - 65) / 35); // 0 at 65%, 1 at 100%
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const mat = ref.current.material as THREE.MeshBasicMaterial;
+    mat.opacity = intensity * (0.12 + 0.12 * Math.abs(Math.sin(clock.getElapsedTime() * 1.4)));
+    const s = 1 + intensity * 0.07 * Math.sin(clock.getElapsedTime() * 2.2);
+    ref.current.scale.setScalar(s);
+  });
+  if (intensity <= 0) return null;
+  const color = ramPct > 85 ? "#ef4444" : "#a855f7";
+  return (
+    <mesh ref={ref} position={[position[0], 0.015, position[2]]} rotation-x={-Math.PI / 2}>
+      <torusGeometry args={[1.45, 0.04, 8, 64]} />
+      <meshBasicMaterial color={color} transparent opacity={0} toneMapped={false} />
+    </mesh>
+  );
+}
+
 /* ── cpu load ripple ring (expands outward on high load) ── */
 function CpuRippleRing({ position, cpuPct }: { position: [number, number, number]; cpuPct: number }) {
   const ring1 = useRef<THREE.Mesh>(null!);
@@ -2297,6 +2318,10 @@ export default function Scene3D({
       {/* Glow rings at floor level (fixed, don't hover with models) */}
       <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
       <GlowRing position={[m2Pos[0], 0.01, m2Pos[2]]} color="#58a6ff" online isSelected={selectedNode === "m2"} isHovered={hoveredNode === "m2"} />
+      {/* RAM pressure ring — pulses purple/red when RAM > 65% */}
+      {nodeMetrics && parseFloat(nodeMetrics.memPct) > 65 && (
+        <RamPressureRing position={m2Pos} ramPct={parseFloat(nodeMetrics.memPct)} />
+      )}
       {/* CPU load ripple rings — expand outward faster at higher CPU */}
       {nodeMetrics && parseFloat(nodeMetrics.cpuPct) > 10 && (
         <CpuRippleRing position={m2Pos} cpuPct={parseFloat(nodeMetrics.cpuPct)} />
