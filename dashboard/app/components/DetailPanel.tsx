@@ -405,6 +405,36 @@ export default function DetailPanel({
           </div>
         </div>
 
+        {/* Workload summary row */}
+        {(nsDeployments || nsStatefulSets || nsCronJobs) && (() => {
+          const totalDeploys = nsDeployments ? Object.values(nsDeployments).flat().length : 0;
+          const totalSS = nsStatefulSets ? Object.values(nsStatefulSets).flat().length : 0;
+          const totalCJ = nsCronJobs ? Object.values(nsCronJobs).flat().length : 0;
+          if (totalDeploys + totalSS + totalCJ === 0) return null;
+          return (
+            <div className="mb-3 flex gap-2">
+              {totalDeploys > 0 && (
+                <div className="flex-1 rounded px-2 py-1.5 bg-green-500/5 border border-green-500/15 text-center">
+                  <div className="text-lg font-bold font-mono text-green-500/80">{totalDeploys}</div>
+                  <div className="text-[9px] font-mono text-gray-600">Deploys</div>
+                </div>
+              )}
+              {totalSS > 0 && (
+                <div className="flex-1 rounded px-2 py-1.5 bg-cyan-500/5 border border-cyan-500/15 text-center">
+                  <div className="text-lg font-bold font-mono text-cyan-500/80">{totalSS}</div>
+                  <div className="text-[9px] font-mono text-gray-600">StatefulSets</div>
+                </div>
+              )}
+              {totalCJ > 0 && (
+                <div className="flex-1 rounded px-2 py-1.5 bg-purple-500/5 border border-purple-500/15 text-center">
+                  <div className="text-lg font-bold font-mono text-purple-500/80">{totalCJ}</div>
+                  <div className="text-[9px] font-mono text-gray-600">CronJobs</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Namespace resource allocation mini-charts (CPU + Memory) */}
         {(nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0) && (() => {
           const cpuEntries = Object.entries(nsCpuRequestsM)
@@ -961,7 +991,10 @@ export default function DetailPanel({
             {nsIngress[svc.namespace].map((host, i) => (
               <div key={i} className="flex items-center gap-1.5 text-xs font-mono">
                 <span className="text-indigo-500/60">↗</span>
-                <span className="text-indigo-400/80 truncate">{host}</span>
+                <a href={`https://${host}`} target="_blank" rel="noopener noreferrer"
+                  className="text-indigo-400/80 hover:text-indigo-300 truncate transition-colors"
+                  title={`Open https://${host}`}
+                >{host}</a>
               </div>
             ))}
           </div>
