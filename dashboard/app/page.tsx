@@ -414,6 +414,7 @@ export default function Home() {
               })() : undefined}
               nodePressures={cluster?.node?.pressures}
               apps={cluster?.apps}
+              certificates={cluster?.certificates}
             />
             </div>
             </div>

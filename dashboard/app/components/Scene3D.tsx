@@ -1830,6 +1830,7 @@ export default function Scene3D({
   nsMaxRestarts,
   nodePressures,
   apps,
+  certificates,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1848,6 +1849,7 @@ export default function Scene3D({
   nsMaxRestarts?: Record<string, number>;
   nodePressures?: string[];
   apps?: { name: string; sync: string; health: string }[];
+  certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -2114,6 +2116,25 @@ export default function Scene3D({
         visible={selectedNode === "router"}
         onClose={() => setSelectedNode(null)}
       />
+      {/* Certificate status indicator rings above router */}
+      {certificates && certificates.length > 0 && (() => {
+        const expiring30 = certificates.filter(c => c.daysLeft > 0 && c.daysLeft <= 30).length;
+        const expiring90 = certificates.filter(c => c.daysLeft > 30 && c.daysLeft <= 90).length;
+        const healthy = certificates.filter(c => c.daysLeft > 90 || c.daysLeft >= 9999).length;
+        const certColor = expiring30 > 0 ? "#ef4444" : expiring90 > 0 ? "#eab308" : "#22c55e";
+        return (
+          <group position={[routerPos[0] + 0.9, routerPos[1] + 2.2, routerPos[2]]} raycast={() => {}}>
+            <mesh rotation={[-Math.PI / 2, 0, Date.now() * 0.0001]}>
+              <torusGeometry args={[0.18, 0.025, 8, 32]} />
+              <meshBasicMaterial color={certColor} transparent opacity={0.7} />
+            </mesh>
+            <Text position={[0, 0.28, 0]} fontSize={0.09} color={certColor} anchorX="center"
+              // @ts-expect-error
+              toneMapped={false}
+            >{expiring30 > 0 ? `⚠${expiring30}` : `🔒${healthy}`}</Text>
+          </group>
+        );
+      })()}
 
       {/* M2 Node */}
       <HardwareNode
