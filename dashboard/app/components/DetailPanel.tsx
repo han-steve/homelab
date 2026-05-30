@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -96,6 +96,7 @@ export default function DetailPanel({
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   nodePressures?: string[];
   kubeletVersion?: string;
+  nodeUptime?: string | null;
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   nsIngress?: Record<string, string[]>;
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
@@ -223,7 +224,7 @@ export default function DetailPanel({
           <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl">{"\u26A1"}</div>
           <div>
             <h2 className="text-lg font-semibold text-gray-100 font-mono">M2 Node</h2>
-            <p className="text-xs text-green-400 font-mono">{"\u25CF"} ONLINE</p>
+            <p className="text-xs text-green-400 font-mono">{"\u25CF"} ONLINE{nodeUptime && (<span className="text-gray-500 ml-1.5 font-mono text-[10px]">· {nodeUptime}</span>)}</p>
           </div>
         </div>
 
@@ -845,18 +846,27 @@ export default function DetailPanel({
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">TLS Certs</h3>
               <span className="text-xs font-mono text-gray-700">{certificates.filter(c => c.ready).length}/{certificates.length}</span>
             </div>
-            <div className="space-y-1">
-              {certificates.map((cert, i) => {
+            <div className="space-y-1.5">
+              {[...certificates].sort((a, b) => a.daysLeft - b.daysLeft).map((cert, i) => {
                 const isExpiring = cert.daysLeft < 30;
                 const isExpired = cert.daysLeft <= 0;
-                const color = isExpired ? "#ef4444" : isExpiring ? "#eab308" : "#22c55e";
+                const isUrgent = cert.daysLeft < 14;
+                const color = isExpired ? "#ef4444" : isUrgent ? "#ef4444" : isExpiring ? "#eab308" : "#22c55e";
+                const bgColor = isExpired ? "#1c0505" : isUrgent ? "#1c0505" : isExpiring ? "#1c1400" : "#052e16";
                 const label = isExpired ? "expired" : cert.daysLeft < 9999 ? `${cert.daysLeft}d` : "—";
+                const maxDays = 90;
+                const pct = Math.min(100, Math.max(0, (cert.daysLeft / maxDays) * 100));
                 return (
-                  <div key={i} className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-gray-600 truncate flex-1" title={cert.namespace + "/" + cert.name}>{cert.name}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span style={{ color }} className="text-xs">{label}</span>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                  <div key={i} className="rounded px-2 py-1.5" style={{ backgroundColor: bgColor, border: `1px solid ${color}18` }}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[10px] font-mono text-gray-400 truncate flex-1 mr-2" title={cert.namespace + "/" + cert.name}>{cert.name}</span>
+                      <span className="text-[10px] font-mono font-bold shrink-0" style={{ color }}>{label}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color, opacity: 0.7 }} />
+                      </div>
+                      <span className="text-[9px] font-mono text-gray-700 shrink-0">{cert.namespace.slice(0, 8)}</span>
                     </div>
                   </div>
                 );

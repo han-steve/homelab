@@ -504,6 +504,7 @@ export default function Home() {
             longhornVolumes={cluster?.longhornVolumes}
             nodePressures={cluster?.node?.pressures}
             kubeletVersion={cluster?.node?.kubeletVersion}
+            nodeUptime={cluster?.node?.uptime}
             k8sServices={cluster?.k8sServices}
             nsIngress={cluster?.nsIngress}
             nsDeployments={cluster?.nsDeployments}
