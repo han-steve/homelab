@@ -270,6 +270,40 @@ function SelectionRing({ color }: { color: string }) {
   );
 }
 
+/* ── Orbit ring for selected service sphere ────────── */
+function SelectionOrbitRing({ color }: { color: string }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      ref.current.rotation.y = clock.getElapsedTime() * 1.8;
+      ref.current.rotation.z = Math.sin(clock.getElapsedTime() * 0.8) * 0.4;
+    }
+  });
+  return (
+    <mesh ref={ref}>
+      <torusGeometry args={[0.52, 0.015, 8, 64]} />
+      <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.8} />
+    </mesh>
+  );
+}
+
+/* ── Heartbeat pulse ring for online nodes ─────────── */
+function PulseRing({ color }: { color: string }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = (clock.getElapsedTime() * 0.55) % 1;
+    ref.current.scale.setScalar(1 + t * 1.6);
+    (ref.current.material as THREE.MeshBasicMaterial).opacity = (1 - t) * 0.35;
+  });
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, 0.03, 0]}>
+      <torusGeometry args={[1.0, 0.02, 8, 64]} />
+      <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.35} depthWrite={false} />
+    </mesh>
+  );
+}
+
 /* ── Callout panel: square marker → dashed line → floating dialog ── */
 function CalloutPanel({
   anchorPos, panelOffset, title, lines, color, visible, onClose
@@ -538,6 +572,8 @@ function HardwareNode({
 
       {/* Selection ring */}
       {isSelected && <SelectionRing color={color} />}
+      {/* Heartbeat pulse for online nodes */}
+      {isOnline && !isSelected && <PulseRing color={color} />}
 
       {/* Label */}
       <Text
@@ -647,6 +683,10 @@ function ServiceSphere({
         <Text position={[0, 0, 0.38]} fontSize={0.21} anchorX="center" anchorY="middle">
           {service.icon}
         </Text>
+        {/* Orbit ring for selected service */}
+        {isSelected && (
+          <SelectionOrbitRing color={catColor} />
+        )}
         {/* Name */}
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}

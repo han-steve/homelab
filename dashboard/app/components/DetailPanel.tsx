@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { services, node, type Service } from "../data";
 
 function StatusBadge({ status }: { status: Service["status"] }) {
@@ -36,7 +37,13 @@ export default function DetailPanel({
   onClose: () => void;
   onSelectService?: (idx: number) => void;
 }) {
+  const [search, setSearch] = useState("");
+
   if (selectedIdx === null) {
+    const filteredServices = search
+      ? services.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.category.includes(search.toLowerCase()))
+      : services;
+
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
         <div className="flex items-center gap-3 mb-5">
@@ -58,15 +65,34 @@ export default function DetailPanel({
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4" />
 
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-mono">Services</h3>
           <span className="text-xs font-mono text-green-400">
             {services.filter((s) => s.status === "running").length}/{services.length}
           </span>
         </div>
 
+        {/* Search filter */}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="filter services..."
+            className="w-full bg-gray-900/80 border border-gray-800 rounded-md px-3 py-1.5 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-600 focus:text-gray-200 transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-xs"
+            >✕</button>
+          )}
+        </div>
+
         <div className="space-y-1.5">
-          {services.map((svc, i) => (
+          {filteredServices.map((svc) => {
+            const i = services.indexOf(svc);
+            return (
             <div
               key={svc.name}
               className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -85,7 +111,8 @@ export default function DetailPanel({
                 }} />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
