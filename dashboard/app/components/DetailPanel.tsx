@@ -1498,6 +1498,10 @@ export default function DetailPanel({
                 return (typed.desired ?? 0) > 0 && (typed.available ?? 0) < (typed.desired ?? 0);
               }).length;
               const recentPodCount = recentPods?.filter(p => p.namespace === svc.namespace && (Date.now() - new Date(p.startTime).getTime()) < 3600000).length ?? 0;
+              const helmReleases = nsHelmReleases?.[svc.namespace];
+              const latestHelm = helmReleases ? [...helmReleases].sort((a, b) => (b.updated ? new Date(b.updated).getTime() : 0) - (a.updated ? new Date(a.updated).getTime() : 0))[0] : undefined;
+              const helmUpdatedMs = latestHelm?.updated ? Date.now() - new Date(latestHelm.updated).getTime() : null;
+              const helmUpdatedRecent = helmUpdatedMs !== null && helmUpdatedMs < 86400000;
               return (
               <div
                 key={svc.name}
@@ -1516,6 +1520,9 @@ export default function DetailPanel({
                   )}
                   {recentPodCount > 0 && (
                     <span className="text-[9px] font-mono text-cyan-600/60" title={`${recentPodCount} pod(s) started in last hour`}>↑{recentPodCount}</span>
+                  )}
+                  {helmUpdatedRecent && (
+                    <span className="text-[9px] font-mono text-cyan-400/50 animate-pulse" title={`Helm updated: ${latestHelm?.updated ? Math.floor(helmUpdatedMs! / 3600000) + 'h ago' : ''}`}>⎈↑</span>
                   )}
                   {restarts > 0 && (
                     <span className="text-xs font-mono text-yellow-600" title={`${restarts} restarts`}>↺{restarts}</span>
