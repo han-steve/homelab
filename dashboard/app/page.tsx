@@ -380,7 +380,9 @@ export default function Home() {
             <span className="text-sm font-bold text-white tracking-tight hidden sm:inline">
               homelab
             </span>
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1" />
+            <div className={`w-2 h-2 rounded-full animate-pulse ml-1 ${!cluster ? "bg-gray-600" : cluster.unhealthyPods?.some(p => p.status === "CrashLoopBackOff") ? "bg-red-500 shadow-[0_0_6px_#ef4444]" : cluster.unhealthyPods?.length ? "bg-yellow-500 shadow-[0_0_6px_#eab308]" : "bg-green-500 shadow-[0_0_6px_#22c55e]"}`}
+              title={`Last refreshed: ${nextRefreshIn}s ago · ${cluster?.totalPods ?? "?"} pods`}
+            />
           </div>
 
           {/* View switcher */}
