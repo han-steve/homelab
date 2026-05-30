@@ -438,7 +438,6 @@ function FloorCable({
     </group>
   );
 }
-
 /* ── glow ring fixed on floor ────────────────────────── */
 function GlowRing({
   position, color, online, isSelected, isHovered
@@ -2358,6 +2357,15 @@ export default function Scene3D({
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
       <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} podStatusCounts={undefined} appsSynced={appsSynced} appsTotal={appsTotal} kubeletVersion={kubeletVersion} />
+      {/* Ambient namespace count billboard near M2 */}
+      {nsPodCounts && !showServices && (
+        <Billboard position={[m2Pos[0] + 2.2, m2Pos[1] + 1.0, m2Pos[2]]}>
+          <Text fontSize={0.09} color="#374151" anchorX="center" anchorY="middle"
+            // @ts-expect-error
+            toneMapped={false}
+          >{`${Object.keys(nsPodCounts).length} ns`}</Text>
+        </Billboard>
+      )}
       {/* Subtle upward data particles: M2 → infra objects */}
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(4.5, 4.2, -1)} color="#f0883e" count={2} />
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-4.5, 3.7, -1)} color="#f0c020" count={2} />
