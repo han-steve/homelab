@@ -61,7 +61,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   storage: "#3b82f6",
 };
 
-function Sparkline({ data, color, height = 20 }: { data: number[]; color: string; height?: number }) {
+function Sparkline({ data, color, height = 20, showLabel = false }: { data: number[]; color: string; height?: number; showLabel?: boolean }) {
   if (data.length < 2) return null;
   const w = 120, h = height;
   const max = Math.max(...data, 1);
@@ -72,6 +72,7 @@ function Sparkline({ data, color, height = 20 }: { data: number[]; color: string
   const areaD = d + ` L${xs[xs.length-1].toFixed(1)},${h} L${xs[0].toFixed(1)},${h} Z`;
   const peakIdx = data.indexOf(max);
   const latestVal = data[data.length - 1];
+  const labelStr = latestVal >= 1000 ? `${(latestVal/1000).toFixed(1)}k` : latestVal >= 100 ? `${Math.round(latestVal)}` : `${latestVal % 1 === 0 ? latestVal : latestVal.toFixed(1)}`;
   return (
     <svg width={w} height={h} className="block" style={{ overflow: "visible" }}>
       <defs>
@@ -88,6 +89,10 @@ function Sparkline({ data, color, height = 20 }: { data: number[]; color: string
       )}
       {/* Latest value dot */}
       <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={2} fill={color} opacity={0.9} />
+      {/* Current value label */}
+      {showLabel && (
+        <text x={xs[xs.length - 1] + 5} y={ys[ys.length - 1] + 1} fontSize={8} fill={color} fillOpacity={0.7} fontFamily="monospace" dominantBaseline="middle">{labelStr}</text>
+      )}
     </svg>
   );
 }
@@ -548,7 +553,7 @@ export default function DetailPanel({
                           · peak {Math.max(...metricsHistory.map(m => m.cpu))}%
                         </span>
                       </div>
-                      <Sparkline data={metricsHistory.map(m => m.cpu)} color="#58a6ff" height={18} />
+                      <Sparkline data={metricsHistory.map(m => m.cpu)} color="#58a6ff" height={18} showLabel />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-0.5">
@@ -558,7 +563,7 @@ export default function DetailPanel({
                           · peak {Math.max(...metricsHistory.map(m => m.ram))}%
                         </span>
                       </div>
-                      <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} />
+                      <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} showLabel />
                     </div>
                   </div>
                   )}
