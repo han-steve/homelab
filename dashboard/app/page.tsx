@@ -259,7 +259,6 @@ export default function Home() {
                     <span className="text-xs">cert exp</span>
                   </div>
                 )}
-                )}
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <div className="relative" data-apps-dropdown="1">
                   <button
