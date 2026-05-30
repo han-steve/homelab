@@ -1584,15 +1584,20 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, ap
   const innerRef = useRef<THREE.Mesh>(null!);
   const outerRef = useRef<THREE.Mesh>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
+  const syncWarnRef = useRef<THREE.Mesh>(null!);
+
+  const isOutOfSync = appsTotal !== undefined && appsSynced !== undefined && appsSynced < appsTotal;
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (innerRef.current) innerRef.current.rotation.y = t * 0.45;
     if (outerRef.current) { outerRef.current.rotation.y = -t * 0.18; outerRef.current.rotation.x = t * 0.12; }
     if (ringRef.current) ringRef.current.rotation.z = t * 0.3;
+    if (syncWarnRef.current && isOutOfSync) {
+      const mat = syncWarnRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.25 + 0.5 * Math.abs(Math.sin(t * 1.8));
+    }
   });
-
-  const isOutOfSync = appsTotal !== undefined && appsSynced !== undefined && appsSynced < appsTotal;
   const argoColor = isOutOfSync ? "#eab308" : "#ef7b4d";
 
   return (
@@ -1619,6 +1624,13 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, ap
           <Text position={[0, 0.82, 0]} fontSize={0.11} color={isOutOfSync ? "#eab308" : "#22c55e"} anchorX="center" toneMapped={false}>
             {appsSynced}/{appsTotal}
           </Text>
+        )}
+        {/* Out-of-sync warning pulse ring */}
+        {isOutOfSync && (
+          <mesh ref={syncWarnRef} rotation-x={-Math.PI / 2}>
+            <torusGeometry args={[0.75, 0.025, 8, 48]} />
+            <meshBasicMaterial color="#eab308" transparent opacity={0.0} toneMapped={false} />
+          </mesh>
         )}
         {isSelected && (
           <Html position={[0.9, 0.4, 0]} style={{ pointerEvents: "none" }}>
