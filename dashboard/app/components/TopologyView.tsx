@@ -752,13 +752,24 @@ export default function TopologyView({
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#3fb950" }} />
           <span className="text-gray-400">Service (healthy)</span>
         </div>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#ef4444" }} />
+          <span className="text-gray-400">Service (unhealthy)</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1.5">
           <div className="w-6 h-0.5" style={{ background: "#58a6ff" }} />
           <span className="text-gray-400">Network link</span>
+        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <svg width="20" height="12" viewBox="0 0 20 12">
+            <rect x="1" y="1" width="18" height="10" rx="3" fill="none" stroke="#58a6ff" strokeWidth="1" strokeDasharray="2,2" opacity="0.5" />
+          </svg>
+          <span className="text-gray-400">Namespace group</span>
         </div>
         <div className="border-t border-gray-800 pt-2 font-mono text-gray-600 space-y-0.5">
           <div>{topoNodes.length} nodes · {topoLinks.length} links</div>
           <div>{topoLinks.filter(l => l.style === "solid").length} active · {topoLinks.filter(l => l.style === "dashed").length} planned</div>
+          <div>{uniqueNamespaces.length} namespaces shown</div>
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
         </div>
       </div>
