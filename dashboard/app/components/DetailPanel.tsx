@@ -1230,14 +1230,21 @@ export default function DetailPanel({
             <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Images</span>
             <span className="text-xs font-mono text-gray-700">{nsImages[svc.namespace].length}</span>
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {nsImages[svc.namespace].map((img, i) => {
-              const [repo, tag] = img.includes(":") ? img.split(":") : [img, "latest"];
+              const parts = img.includes(":") ? img.split(":") : [img, "latest"];
+              const tag = parts[parts.length - 1];
+              const repo = parts[0];
+              const name = repo.split("/").pop() ?? repo;
+              const isLatest = tag === "latest";
+              const isSha = tag.startsWith("sha256:");
+              const isSemver = /^v?\d+\.\d+/.test(tag);
+              const tagColor = isLatest ? "#eab308" : isSha ? "#6b7280" : isSemver ? "#22c55e" : "#60a5fa";
               return (
-                <div key={i} className="flex items-center gap-1.5 text-xs font-mono">
-                  <span className="text-gray-700">📦</span>
-                  <span className="text-gray-600 truncate flex-1" title={img}>{repo.split("/").pop()}</span>
-                  <span className="shrink-0 text-gray-700/60 truncate max-w-20" title={tag}>{tag.slice(0, 12)}{tag.length > 12 ? "…" : ""}</span>
+                <div key={i} className="flex items-center gap-1.5 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/40">
+                  <span className="text-gray-600 shrink-0">⬡</span>
+                  <span className="text-gray-400 font-mono text-[10px] truncate flex-1" title={img}>{name}</span>
+                  <span className="shrink-0 font-mono text-[9px] px-1 rounded" style={{ color: tagColor, background: tagColor + "15" }}>{isSha ? "sha" : tag.slice(0, 14)}{(!isSha && tag.length > 14) ? "…" : ""}</span>
                 </div>
               );
             })}
