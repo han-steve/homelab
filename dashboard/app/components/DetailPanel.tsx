@@ -773,6 +773,8 @@ export default function DetailPanel({
         `kubectl -n ${svc.namespace} get pods`,
         `kubectl -n ${svc.namespace} describe pods`,
         `kubectl -n ${svc.namespace} logs -f --tail=50`,
+        `kubectl top pods -n ${svc.namespace}`,
+        `kubectl -n ${svc.namespace} get events --sort-by=.lastTimestamp`,
       ].map(cmd => (
         <div key={cmd} className="group flex items-center justify-between text-xs font-mono text-gray-700 mb-1 px-2 py-1 rounded bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-colors">
           <span className="truncate select-all cursor-text">{cmd}</span>
