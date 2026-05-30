@@ -662,6 +662,25 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Events ticker at bottom when there are recent events */}
+        {cluster?.recentEvents && cluster.recentEvents.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gray-950/70 border-t border-gray-800/30 overflow-hidden pointer-events-none flex items-center">
+            <span className="text-[9px] font-mono text-yellow-600/60 px-2 shrink-0">EVENTS</span>
+            <div className="overflow-hidden flex-1" style={{ maskImage: "linear-gradient(90deg, transparent, black 5%, black 95%, transparent)" }}>
+              <div className="whitespace-nowrap text-[9px] font-mono text-gray-700" style={{ animation: `scroll-ticker ${Math.max(20, cluster.recentEvents.length * 6)}s linear infinite` }}>
+                {[...cluster.recentEvents, ...cluster.recentEvents].map((ev, i) => (
+                  <span key={i} className="mr-8">
+                    <span className={ev.type === "Warning" ? "text-yellow-600/70" : "text-gray-600"}>
+                      {ev.type === "Warning" ? "⚠ " : "· "}{ev.namespace}/{ev.name} — {ev.reason}
+                    </span>
+                    {ev.message && <span className="text-gray-800"> · {ev.message.slice(0, 60)}{ev.message.length > 60 ? "…" : ""}</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer hints */}
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
