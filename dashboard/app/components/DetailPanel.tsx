@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices, nsIngress, nsDeployments, nsCronJobs,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -95,6 +95,7 @@ export default function DetailPanel({
   nsImages?: Record<string, string[]>;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   nodePressures?: string[];
+  kubeletVersion?: string;
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   nsIngress?: Record<string, string[]>;
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
@@ -186,7 +187,7 @@ export default function DetailPanel({
           <InfoRow label="CPU" value={node.cpu} />
           <InfoRow label="RAM" value={node.ram} />
           <InfoRow label="Storage" value={node.storage} />
-          <InfoRow label="K8s" value={node.k8sVersion} />
+          <InfoRow label="K8s" value={kubeletVersion || node.k8sVersion} />
           {/* Node pressure conditions */}
           {nodePressures && nodePressures.length > 0 && (
             <div className="flex flex-wrap gap-1">
