@@ -1725,7 +1725,7 @@ export default function Scene3D({
   unhealthyPodCount?: number;
   nodeUptime?: string;
   nsMaxRestarts?: Record<string, number>;
-  nodePressures?: { memory: boolean; disk: boolean; pid: boolean };
+  nodePressures?: string[];
   apps?: { name: string; sync: string; health: string }[];
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
@@ -2178,11 +2178,11 @@ export default function Scene3D({
           {nodeUptime && (
             <div style={{ color: "#2a2a38", fontSize: 9 }}>↑ {nodeUptime}</div>
           )}
-          {nodePressures && (nodePressures.memory || nodePressures.disk || nodePressures.pid) && (
+          {nodePressures && nodePressures.length > 0 && (
             <div style={{ display: "flex", gap: 4, marginTop: 3 }}>
-              {nodePressures.memory && <span style={{ fontSize: 8, color: "#ef444470", background: "#ef444415", padding: "0 4px", borderRadius: 3, border: "1px solid #ef444430" }}>MEM⚠</span>}
-              {nodePressures.disk && <span style={{ fontSize: 8, color: "#f9741670", background: "#f9741615", padding: "0 4px", borderRadius: 3, border: "1px solid #f9741630" }}>DISK⚠</span>}
-              {nodePressures.pid && <span style={{ fontSize: 8, color: "#eab30870", background: "#eab30815", padding: "0 4px", borderRadius: 3, border: "1px solid #eab30830" }}>PID⚠</span>}
+              {nodePressures.includes("MemoryPressure") && <span style={{ fontSize: 8, color: "#ef444470", background: "#ef444415", padding: "0 4px", borderRadius: 3, border: "1px solid #ef444430" }}>MEM⚠</span>}
+              {nodePressures.includes("DiskPressure") && <span style={{ fontSize: 8, color: "#f9741670", background: "#f9741615", padding: "0 4px", borderRadius: 3, border: "1px solid #f9741630" }}>DISK⚠</span>}
+              {nodePressures.includes("PIDPressure") && <span style={{ fontSize: 8, color: "#eab30870", background: "#eab30815", padding: "0 4px", borderRadius: 3, border: "1px solid #eab30830" }}>PID⚠</span>}
             </div>
           )}
         </div>
