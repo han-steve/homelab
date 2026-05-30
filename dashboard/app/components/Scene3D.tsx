@@ -1460,7 +1460,7 @@ export default function Scene3D({
 
       <HoloGrid />
       <Particles />
-      <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color="#22d3ee" period={10} />
+      <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} period={10} />
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
