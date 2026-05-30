@@ -47,6 +47,7 @@ export default function Home() {
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
 
   useEffect(() => {
@@ -70,7 +71,10 @@ export default function Home() {
     fetchStatus();
     const id = setInterval(fetchStatus, 30000);
     // Countdown timer
-    const countdown = setInterval(() => setNextRefreshIn(v => Math.max(0, v - 1)), 1000);
+    const countdown = setInterval(() => {
+      setNextRefreshIn(v => Math.max(0, v - 1));
+      setCurrentTime(new Date());
+    }, 1000);
     return () => { clearInterval(id); clearInterval(countdown); };
   }, []);
 
@@ -231,6 +235,8 @@ export default function Home() {
                 <span className="hidden md:inline text-gray-600" title="Node uptime">↑ {cluster.node.uptime}</span>
               </>
             )}
+            <span className="hidden md:inline text-gray-800">|</span>
+            <span className="hidden md:inline text-gray-500 tabular-nums" title="Local time">{currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
           </div>
         </div>
 
