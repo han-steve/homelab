@@ -26,6 +26,7 @@ interface ClusterStatus {
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   nsIngress?: Record<string, string[]>;
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
+  nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -495,6 +496,7 @@ export default function Home() {
             k8sServices={cluster?.k8sServices}
             nsIngress={cluster?.nsIngress}
             nsDeployments={cluster?.nsDeployments}
+            nsCronJobs={cluster?.nsCronJobs}
           />
         )}
       </div>

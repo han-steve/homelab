@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices, nsIngress, nsDeployments,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices, nsIngress, nsDeployments, nsCronJobs,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -98,6 +98,7 @@ export default function DetailPanel({
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   nsIngress?: Record<string, string[]>;
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
+  nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -1022,6 +1023,31 @@ export default function DetailPanel({
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+
+      {/* CronJobs for this namespace */}
+      {nsCronJobs && nsCronJobs[svc.namespace] && nsCronJobs[svc.namespace].length > 0 && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">CronJobs</span>
+            <span className="text-xs font-mono text-gray-700">{nsCronJobs[svc.namespace].length}</span>
+          </div>
+          <div className="space-y-1">
+            {nsCronJobs[svc.namespace].map((cj, i) => (
+              <div key={i} className="text-xs font-mono bg-gray-900/50 border border-gray-800/50 rounded px-2 py-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`shrink-0 ${cj.active > 0 ? "text-cyan-400/70" : "text-gray-600"}`}>●</span>
+                  <span className="text-gray-500 truncate flex-1" title={cj.name}>{cj.name}</span>
+                  <span className="shrink-0 text-gray-700 font-mono">{cj.schedule}</span>
+                </div>
+                {cj.lastSchedule && (
+                  <div className="text-gray-700 mt-0.5 pl-4">last: {relTime(cj.lastSchedule, now)}</div>
+                )}
+              </div>
+            ))}
           </div>
         </>
       )}

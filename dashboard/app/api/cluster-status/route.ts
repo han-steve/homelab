@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -46,6 +46,8 @@ export async function GET() {
       execAsync(`kubectl get ingressroutes.traefik.io -A -o json 2>/dev/null`),
       // Deployments for desired vs available replicas
       execAsync(`kubectl get deployments -A -o json 2>/dev/null`),
+      // CronJobs for last schedule time and status
+      execAsync(`kubectl get cronjobs -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -338,6 +340,7 @@ export async function GET() {
       k8sServices,
       nsIngress,
       nsDeployments,
+      nsCronJobs,
       certificates,
     });
   } catch {    // Parse Traefik IngressRoutes: namespace → [hostname]
@@ -370,6 +373,24 @@ export async function GET() {
           const ready = dep.status?.readyReplicas ?? 0;
           if (!nsDeployments[ns]) nsDeployments[ns] = [];
           nsDeployments[ns].push({ name: dep.metadata?.name ?? "", desired, available, ready });
+        }
+      } catch {}
+    }    // Parse CronJobs: namespace → [{name, schedule, lastSchedule, active, lastSuccess}]
+    const nsCronJobs: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]> = {};
+    if (cronResult.status === "fulfilled" && cronResult.value.stdout.trim()) {
+      try {
+        const cronData = JSON.parse(cronResult.value.stdout);
+        for (const cj of cronData.items ?? []) {
+          const ns = cj.metadata?.namespace ?? "";
+          const lastSchedule = cj.status?.lastScheduleTime ?? undefined;
+          const active = (cj.status?.active ?? []).length;
+          if (!nsCronJobs[ns]) nsCronJobs[ns] = [];
+          nsCronJobs[ns].push({
+            name: cj.metadata?.name ?? "",
+            schedule: cj.spec?.schedule ?? "",
+            lastSchedule,
+            active,
+          });
         }
       } catch {}
     }
