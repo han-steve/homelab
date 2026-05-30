@@ -111,6 +111,7 @@ export default function DetailPanel({
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showUnhealthyOnly, setShowUnhealthyOnly] = useState(false);
+  const [nsFilter, setNsFilter] = useState<string | null>(null);
   const now = useNow();
 
   // Map namespace → max restart count from unhealthy pods
@@ -130,7 +131,8 @@ export default function DetailPanel({
       const matchCat = categoryFilter === "all" || s.category === categoryFilter;
       const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.category.includes(search.toLowerCase());
       const matchHealth = !showUnhealthyOnly || unhealthyNsSet.has(s.namespace) || nsMaxRestarts[s.namespace] > 0;
-      return matchCat && matchSearch && matchHealth;
+      const matchNs = !nsFilter || s.namespace === nsFilter;
+      return matchCat && matchSearch && matchHealth && matchNs;
     });
 
     return (
@@ -145,9 +147,15 @@ export default function DetailPanel({
                 <span className="text-xs font-semibold font-mono text-red-400 uppercase tracking-wider">Critical Alert</span>
               </div>
               {critPods.slice(0, 2).map((p, i) => (
-                <div key={i} className="text-xs font-mono text-red-300/80">
-                  {p.name.split("-").slice(0, 3).join("-")}: <span className="text-red-400">{p.status}</span>
-                  {p.restarts > 0 && <span className="text-red-500/70"> ↺{p.restarts}</span>}
+                <div key={i} className="text-xs font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-red-400/60 text-[9px]">{p.namespace}</span>
+                    <span className="text-red-400">↑</span>
+                    <span className="text-red-300/80 truncate">{p.name.split("-").slice(0, 3).join("-")}</span>
+                  </div>
+                  <div className="text-red-500/70 pl-4">
+                    {p.status}{p.restarts > 0 ? <span className="ml-1">↺{p.restarts}</span> : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -767,14 +775,16 @@ export default function DetailPanel({
                   const hasCrit = issues.some(p => p.status === "CrashLoopBackOff");
                   const barColor = hasCrit ? "#ef4444" : issues.length > 0 ? "#f97316" : "#22c55e";
                   return (
-                    <div key={ns} className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate" title={ns}>
+                    <div key={ns} className="flex items-center gap-2 cursor-pointer rounded hover:bg-gray-800/30 px-0.5 py-0.5 transition-colors group"
+                      onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
+                      title={`Click to filter: ${ns}`}>
+                      <span className={`text-xs font-mono w-24 shrink-0 truncate transition-colors ${nsFilter === ns ? "text-blue-400" : "text-gray-700 group-hover:text-gray-500"}`} title={ns}>
                         {ns.startsWith("vc-") ? <span className="text-purple-700/70">⊕ </span> : null}{ns}
                       </span>
                       <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor, opacity: 0.6 }} />
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: nsFilter === ns ? "#60a5fa" : barColor, opacity: 0.6 }} />
                       </div>
-                      <span className="text-xs font-mono w-8 text-right shrink-0 text-gray-700">{count}p</span>
+                      <span className={`text-xs font-mono w-8 text-right shrink-0 ${nsFilter === ns ? "text-blue-400" : "text-gray-700"}`}>{count}p</span>
                       {hasCrit && <span className="text-xs text-red-500/70 shrink-0">⚠</span>}
                     </div>
                   );
@@ -811,6 +821,18 @@ export default function DetailPanel({
             )}
           >⚠</button>
         </div>
+        {/* Namespace filter chip */}
+        {nsFilter && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-xs font-mono text-gray-700">ns:</span>
+            <button
+              onClick={() => setNsFilter(null)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-mono hover:bg-blue-500/25 transition-colors"
+            >
+              {nsFilter} <span className="ml-0.5 text-blue-500/60">✕</span>
+            </button>
+          </div>
+        )}
 
         {/* Category tabs */}
         <div className="flex gap-1 mb-3 flex-wrap">
