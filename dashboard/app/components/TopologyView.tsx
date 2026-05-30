@@ -143,6 +143,23 @@ export default function TopologyView({
     if (!mouseMoved.current) setSelectedNode(null);
   };
 
+  const handleSvgDoubleClick = useCallback(() => {
+    // Animate back to default zoom/pan
+    const start = { zoom, panX: pan.x, panY: pan.y };
+    const target = { zoom: 1, panX: 0, panY: 0 };
+    const duration = 350;
+    const startTime = performance.now();
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const animate = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const e = easeOut(t);
+      setZoom(start.zoom + (target.zoom - start.zoom) * e);
+      setPan({ x: start.panX + (target.panX - start.panX) * e, y: start.panY + (target.panY - start.panY) * e });
+      if (t < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [zoom, pan]);
+
   const nodePos = useCallback(
     (n: TopoNode) => ({
       x: 60 + n.x * (dims.w - 120),
@@ -329,6 +346,7 @@ export default function TopologyView({
         className="w-full h-full"
         style={{ cursor: isPanning.current ? "grabbing" : "grab" }}
         onClick={handleSvgClick}
+        onDoubleClick={handleSvgDoubleClick}
         onMouseDown={handleSvgMouseDown}
         onMouseMove={handleSvgMouseMove}
         onMouseUp={handleSvgMouseUp}
