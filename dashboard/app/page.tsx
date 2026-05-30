@@ -290,6 +290,13 @@ export default function Home() {
               nsCpuRequestsM={cluster?.nsCpuRequestsM}
               unhealthyPodCount={cluster?.unhealthyPods.length}
               nodeUptime={cluster?.node?.uptime}
+              nsMaxRestarts={cluster ? (() => {
+                const m: Record<string, number> = {};
+                for (const p of cluster.unhealthyPods) {
+                  if ((p.restarts ?? 0) > 0) m[p.namespace] = Math.max(m[p.namespace] ?? 0, p.restarts ?? 0);
+                }
+                return m;
+              })() : undefined}
             />
           ) : (
             <TopologyView

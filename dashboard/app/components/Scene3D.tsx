@@ -1101,7 +1101,7 @@ function EventPulseRing() {
 
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
-  isSelected, isHovered, isUnhealthy = false, hasEvents = false, nsPods, cpuM, onClick, onPointerOver, onPointerOut,
+  isSelected, isHovered, isUnhealthy = false, hasEvents = false, nsPods, cpuM, restartCount, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
@@ -1114,6 +1114,7 @@ function ServiceSphere({
   hasEvents?: boolean;
   nsPods?: number;
   cpuM?: number;
+  restartCount?: number;
   onClick: () => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -1228,6 +1229,7 @@ function ServiceSphere({
               </div>
               <div style={{ color: "#444", fontSize: 9 }}>{service.namespace} · {service.category}</div>
               {nsPods !== undefined && <div style={{ color: "#555", marginTop: 3 }}>{nsPods} pod{nsPods !== 1 ? "s" : ""}{cpuM !== undefined ? ` · ${cpuM >= 1000 ? (cpuM/1000).toFixed(1) + "c" : cpuM + "m"} CPU` : ""}</div>}
+              {restartCount !== undefined && restartCount > 0 && <div style={{ color: restartCount > 100 ? "#ef4444" : restartCount > 20 ? "#f97316" : "#eab308", marginTop: 3, fontSize: 9 }}>↺ {restartCount} restart{restartCount !== 1 ? "s" : ""}</div>}
               {service.url && <div style={{ color: "#333", marginTop: 3, fontSize: 9 }}>↗ {service.url.replace("https://", "")}</div>}
             </div>
           </Html>
@@ -1264,7 +1266,7 @@ function BeamParticles({ from, to, color, count = 4 }: { from: THREE.Vector3; to
 
 /* ── Services radial display ─────────────────────────── */
 function ServicesDisplay({
-  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents, nsPodCounts, nsCpuUsage,
+  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents, nsPodCounts, nsCpuUsage, nsMaxRestarts,
 }: {
   nodePos: [number, number, number];
   visible: boolean;
@@ -1277,6 +1279,7 @@ function ServicesDisplay({
   recentEvents?: { namespace: string }[];
   nsPodCounts?: Record<string, number>;
   nsCpuUsage?: Record<string, number>;
+  nsMaxRestarts?: Record<string, number>;
 }) {
   const positions = useMemo<[number, number, number][]>(() => {
     const cols = 5;
@@ -1331,6 +1334,7 @@ function ServicesDisplay({
               hasEvents={!!recentEvents?.some(e => e.namespace === svc.namespace)}
               nsPods={nsPodCounts?.[svc.namespace]}
               cpuM={nsCpuUsage?.[svc.namespace]}
+              restartCount={nsMaxRestarts?.[svc.namespace]}
               onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
               onPointerOver={() => onHoverSvc(i)}
               onPointerOut={onUnhoverSvc}
@@ -1673,6 +1677,7 @@ export default function Scene3D({
   nsCpuRequestsM,
   unhealthyPodCount,
   nodeUptime,
+  nsMaxRestarts,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1688,6 +1693,7 @@ export default function Scene3D({
   nsCpuRequestsM?: Record<string, number>;
   unhealthyPodCount?: number;
   nodeUptime?: string;
+  nsMaxRestarts?: Record<string, number>;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -2034,6 +2040,7 @@ export default function Scene3D({
         recentEvents={recentEvents}
         nsPodCounts={nsPodCounts}
         nsCpuUsage={nsCpuRequestsM}
+        nsMaxRestarts={nsMaxRestarts}
       />
 
       {/* Service callout panel */}
