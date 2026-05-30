@@ -1208,6 +1208,13 @@ function ServiceSphere({
         </Text>
         {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
         {isUnhealthy && <UnhealthyDot />}
+        {/* Restart count near unhealthy dot */}
+        {isUnhealthy && restartCount !== undefined && restartCount > 0 && (
+          <Text position={[0.42, 0.32, 0.15]} fontSize={0.06} color={restartCount > 100 ? "#ef4444" : "#f97316"} anchorX="center" anchorY="middle"
+            // @ts-expect-error
+            toneMapped={false}
+          >↺{restartCount}</Text>
+        )}
         {/* Pod count badge — visible when pods > 1 and not selected */}
         {nsPods !== undefined && nsPods > 1 && !isSelected && (
           <Text position={[0.30, 0.36, 0.22]} fontSize={0.052} color={nsPods > 10 ? "#f97316" : "#4a6a5a"} anchorX="center" anchorY="middle"
