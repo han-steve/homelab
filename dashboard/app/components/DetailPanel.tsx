@@ -175,6 +175,7 @@ export default function DetailPanel({
   const [podLogsLoading, setPodLogsLoading] = useState(false);
   const [podLogsFilter, setPodLogsFilter] = useState("");
   const [showAllEvergreen, setShowAllEvergreen] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<"all" | "pod" | "helm">("all");
   const now = useNow();
 
   // Fetch pod logs when podLogsPod changes
@@ -2072,18 +2073,24 @@ export default function DetailPanel({
               if (items.length === 0) return null;
               // Sort newest first, cap at 8
               items.sort((a, b) => b.ts - a.ts);
-              const recent = items.slice(0, 8);
+              const filtered = activityFilter === "all" ? items : items.filter(i => i.kind === activityFilter);
+              const recent = filtered.slice(0, 8);
               return (
                 <>
                   <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent my-3" />
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Activity</h3>
-                    <span className="text-xs font-mono text-gray-700">{items.length} events</span>
+                    <div className="flex items-center gap-1">
+                      {(["all", "pod", "helm"] as const).map(f => (
+                        <button key={f} onClick={() => setActivityFilter(f)}
+                          className="text-[9px] font-mono px-1 rounded transition-colors"
+                          style={{ color: activityFilter === f ? "#60a5fa" : "#4b5563", backgroundColor: activityFilter === f ? "#1e3a5f40" : "transparent" }}
+                        >{f === "all" ? `all ${items.length}` : f === "pod" ? `↑${items.filter(i => i.kind === "pod").length}` : `⎈${items.filter(i => i.kind === "helm").length}`}</button>
+                      ))}
+                    </div>
                   </div>
                   <div className="relative pl-4 space-y-1.5 border-l border-gray-800/50 ml-1">
                     {recent.map((item, i) => {
-                      const isPod = item.kind === "pod";
-                      const isHelm = item.kind === "helm";
                       const isPod = item.kind === "pod";
                       const isHelm = item.kind === "helm";
                       const podRestarts = isPod ? (item as { restarts?: number }).restarts : undefined;
