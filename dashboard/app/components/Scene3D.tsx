@@ -171,6 +171,37 @@ function DataPacket({ curve, color, speed = 0.2, reverse = false, offset = 0 }: 
   );
 }
 
+/* ── radar scan ring emanating from origin ───────────── */
+function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
+  origin: [number, number, number];
+  color?: string;
+  period?: number;
+}) {
+  const ringsRef = useRef<(THREE.Mesh | null)[]>([null, null, null]);
+  const N = 3;
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    for (let i = 0; i < N; i++) {
+      const mesh = ringsRef.current[i];
+      if (!mesh) continue;
+      const phase = ((t / period) + i / N) % 1;
+      const radius = phase * 12;
+      mesh.scale.set(radius, radius, radius);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, (1 - phase) * 0.18);
+    }
+  });
+  return (
+    <group position={origin}>
+      {Array.from({ length: N }).map((_, i) => (
+        <mesh key={i} ref={el => { ringsRef.current[i] = el; }} rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} raycast={() => {}}>
+          <ringGeometry args={[0.9, 1, 64]} />
+          <meshBasicMaterial color={color} transparent opacity={0} toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
   from, to, color = "#58a6ff", active = true, speed = 0.18, bidir = false
@@ -1429,6 +1460,7 @@ export default function Scene3D({
 
       <HoloGrid />
       <Particles />
+      <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color="#22d3ee" period={10} />
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
