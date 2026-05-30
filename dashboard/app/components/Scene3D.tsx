@@ -1628,6 +1628,28 @@ export default function Scene3D({
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
       <FloorCable from={routerPos} to={gpuPos} color="#d29922" active speed={0.13} />
 
+      {/* Internet cloud — dim floating sphere above router, with downlink particles */}
+      <group position={[routerPos[0], 5.5, routerPos[2]]}>
+        <Float speed={0.5} floatIntensity={0.15}>
+          <mesh raycast={() => {}}>
+            <sphereGeometry args={[0.45, 16, 16]} />
+            <meshBasicMaterial color="#30363d" transparent opacity={0.18} toneMapped={false} />
+          </mesh>
+          <mesh raycast={() => {}}>
+            <sphereGeometry args={[0.55, 16, 16]} />
+            <meshBasicMaterial color="#58a6ff" transparent opacity={0.04} toneMapped={false} />
+          </mesh>
+          <Text position={[0, -0.65, 0]} fontSize={0.08} color="#444" anchorX="center">🌐 WAN</Text>
+        </Float>
+      </group>
+      {/* Downlink particles: internet → router */}
+      <BeamParticles
+        from={new THREE.Vector3(routerPos[0], 5.2, routerPos[2])}
+        to={new THREE.Vector3(routerPos[0], 0.4, routerPos[2])}
+        color="#58a6ff"
+        count={5}
+      />
+
       {/* Glow rings at floor level (fixed, don't hover with models) */}
       <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
       <GlowRing position={[m2Pos[0], 0.01, m2Pos[2]]} color="#58a6ff" online isSelected={selectedNode === "m2"} isHovered={hoveredNode === "m2"} />
