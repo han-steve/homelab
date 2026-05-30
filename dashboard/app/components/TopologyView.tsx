@@ -7,6 +7,7 @@ interface TooltipState {
   x: number;
   y: number;
   text: string;
+  nodeId: string | null;
   visible: boolean;
 }
 
@@ -20,6 +21,7 @@ export default function TopologyView({
     x: 0,
     y: 0,
     text: "",
+    nodeId: null,
     visible: false,
   });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -228,6 +230,7 @@ export default function TopologyView({
                   x: e.clientX + 14,
                   y: e.clientY - 10,
                   text: node.tooltip,
+                  nodeId: node.id,
                   visible: true,
                 })
               }
@@ -337,18 +340,20 @@ export default function TopologyView({
       </svg>
 
       {/* Tooltip */}
-      {tooltip.visible && (
-        <div
-          className="fixed z-50 pointer-events-none bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-xl"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          {tooltip.text}
-        </div>
-      )}
+      {tooltip.visible && (() => {
+        const tNode = tooltip.nodeId ? topoNodes.find(n => n.id === tooltip.nodeId) : null;
+        const connCount = tooltip.nodeId ? topoLinks.filter(l => l.source === tooltip.nodeId || l.target === tooltip.nodeId).length : 0;
+        return (
+          <div
+            className="fixed z-50 pointer-events-none bg-gray-900/95 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-xl font-mono"
+            style={{ left: tooltip.x, top: tooltip.y, backdropFilter: "blur(8px)", minWidth: 160 }}
+          >
+            {tNode && <div className="font-bold text-sm mb-1" style={{ color: tNode.color }}>{tNode.icon} {tNode.label}</div>}
+            <div className="text-gray-400">{tooltip.text}</div>
+            {connCount > 0 && <div className="text-gray-600 mt-1">{connCount} connection{connCount !== 1 ? "s" : ""}</div>}
+          </div>
+        );
+      })()}
 
       {/* Legend */}
       <div className="absolute bottom-5 left-5 bg-gray-900/90 border border-gray-800 rounded-xl p-3 text-xs backdrop-blur-sm">
