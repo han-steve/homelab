@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult, helmResult, pvcResult, ssResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult, helmResult, pvcResult, ssResult, dsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -54,6 +54,8 @@ export async function GET() {
       execAsync(`kubectl get pvc -A -o json 2>/dev/null`),
       // StatefulSets per namespace
       execAsync(`kubectl get statefulsets -A -o json 2>/dev/null`),
+      // DaemonSets per namespace
+      execAsync(`kubectl get daemonsets -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -333,34 +335,8 @@ export async function GET() {
         }
       } catch {}
     }
-      timestamp: new Date().toISOString(),
-      apps,
-      unhealthyPods: unhealthyPods.slice(0, 20),
-      totalPods,
-      podStatusCounts,
-      nsPodCounts,
-      nsCpuRequestsM,
-      nsMemRequestsMi,
-      totalCpuRequestsM: Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0),
-      totalMemRequestsMi: Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0),
-      nsImages: nsImagesArr,
-      topCpuPods,
-      podMetrics: parsedPodMetrics,
-      node: nodeInfo,
-      nodeMetrics,
-      recentEvents,
-      longhornStorage,
-      longhornVolumes,
-      k8sServices,
-      nsIngress,
-      nsDeployments,
-      nsCronJobs,
-      nsHelmReleases,
-      nsPvcs,
-      nsStatefulSets,
-      certificates,
-    });
-  } catch {    // Parse Traefik IngressRoutes: namespace → [hostname]
+
+    // Parse Traefik IngressRoutes: namespace → [hostname]
     const nsIngress: Record<string, string[]> = {};
     if (ingressResult.status === "fulfilled" && ingressResult.value.stdout.trim()) {
       try {
@@ -368,7 +344,6 @@ export async function GET() {
         for (const route of ingData.items ?? []) {
           const ns = route.metadata?.namespace ?? "";
           for (const rule of route.spec?.routes ?? []) {
-            // Extract host from match string like "Host(`example.homelab.local`)"
             const match = rule.match as string ?? "";
             const hostMatch = match.match(/Host\(`([^`]+)`\)/i);
             if (hostMatch) {
@@ -378,7 +353,9 @@ export async function GET() {
           }
         }
       } catch {}
-    }    // Parse Deployments: namespace → [{name, desired, available, ready}]
+    }
+
+    // Parse Deployments: namespace → [{name, desired, available, ready}]
     const nsDeployments: Record<string, { name: string; desired: number; available: number; ready: number }[]> = {};
     if (deployResult.status === "fulfilled" && deployResult.value.stdout.trim()) {
       try {
@@ -392,7 +369,9 @@ export async function GET() {
           nsDeployments[ns].push({ name: dep.metadata?.name ?? "", desired, available, ready });
         }
       } catch {}
-    }    // Parse CronJobs: namespace → [{name, schedule, lastSchedule, active, lastSuccess}]
+    }
+
+    // Parse CronJobs: namespace → [{name, schedule, lastSchedule, active}]
     const nsCronJobs: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]> = {};
     if (cronResult.status === "fulfilled" && cronResult.value.stdout.trim()) {
       try {
@@ -410,7 +389,9 @@ export async function GET() {
           });
         }
       } catch {}
-    }    // Parse Helm releases: namespace → [{name, chart, appVersion, status, updated}]
+    }
+
+    // Parse Helm releases: namespace → [{name, chart, appVersion, status, updated}]
     const nsHelmReleases: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]> = {};
     if (helmResult.status === "fulfilled" && helmResult.value.stdout.trim()) {
       try {
@@ -464,6 +445,45 @@ export async function GET() {
       } catch {}
     }
 
+    // Parse DaemonSets: total count
+    let totalDaemonSets = 0;
+    if (dsResult.status === "fulfilled" && dsResult.value.stdout.trim()) {
+      try {
+        const dsData = JSON.parse(dsResult.value.stdout);
+        totalDaemonSets = (dsData.items ?? []).length;
+      } catch {}
+    }
+
+    return Response.json({
+      timestamp: new Date().toISOString(),
+      apps,
+      unhealthyPods: unhealthyPods.slice(0, 20),
+      totalPods,
+      podStatusCounts,
+      nsPodCounts,
+      nsCpuRequestsM,
+      nsMemRequestsMi,
+      totalCpuRequestsM: Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0),
+      totalMemRequestsMi: Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0),
+      nsImages: nsImagesArr,
+      topCpuPods,
+      podMetrics: parsedPodMetrics,
+      node: nodeInfo,
+      nodeMetrics,
+      recentEvents,
+      longhornStorage,
+      longhornVolumes,
+      k8sServices,
+      nsIngress,
+      nsDeployments,
+      nsCronJobs,
+      nsHelmReleases,
+      nsPvcs,
+      nsStatefulSets,
+      totalDaemonSets,
+      certificates,
+    });
+  } catch {
     return Response.json(
       { error: "Failed to fetch cluster status" },
       { status: 500 }

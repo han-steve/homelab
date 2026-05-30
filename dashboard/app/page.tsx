@@ -31,6 +31,7 @@ interface ClusterStatus {
   nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
   nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
   nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
+  totalDaemonSets?: number;
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -511,6 +512,7 @@ export default function Home() {
             nsPvcs={cluster?.nsPvcs}
             podStatusCounts={cluster?.podStatusCounts}
             nsStatefulSets={cluster?.nsStatefulSets}
+            totalDaemonSets={cluster?.totalDaemonSets}
           />
         )}
       </div>

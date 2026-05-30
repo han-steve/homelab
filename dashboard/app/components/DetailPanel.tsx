@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -104,6 +104,7 @@ export default function DetailPanel({
   nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
   podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
   nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
+  totalDaemonSets?: number;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -431,7 +432,8 @@ export default function DetailPanel({
           const totalDeploys = nsDeployments ? Object.values(nsDeployments).flat().length : 0;
           const totalSS = nsStatefulSets ? Object.values(nsStatefulSets).flat().length : 0;
           const totalCJ = nsCronJobs ? Object.values(nsCronJobs).flat().length : 0;
-          if (totalDeploys + totalSS + totalCJ === 0) return null;
+          const totalDS = totalDaemonSets ?? 0;
+          if (totalDeploys + totalSS + totalCJ + totalDS === 0) return null;
           return (
             <div className="mb-3 flex gap-2">
               {totalDeploys > 0 && (
@@ -450,6 +452,12 @@ export default function DetailPanel({
                 <div className="flex-1 rounded px-2 py-1.5 bg-purple-500/5 border border-purple-500/15 text-center">
                   <div className="text-lg font-bold font-mono text-purple-500/80">{totalCJ}</div>
                   <div className="text-[9px] font-mono text-gray-600">CronJobs</div>
+                </div>
+              )}
+              {totalDS > 0 && (
+                <div className="flex-1 rounded px-2 py-1.5 bg-orange-500/5 border border-orange-500/15 text-center">
+                  <div className="text-lg font-bold font-mono text-orange-500/80">{totalDS}</div>
+                  <div className="text-[9px] font-mono text-gray-600">DaemonSets</div>
                 </div>
               )}
             </div>
