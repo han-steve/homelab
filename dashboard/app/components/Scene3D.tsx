@@ -1224,7 +1224,14 @@ export default function Scene3D({
       {/* Accent from below — subtle up-light */}
       <pointLight position={[0, -0.5, 0]} intensity={0.08} color="#0066cc" />
       {/* M2 node breathing glow */}
-      <PulsingLight position={m2Pos} color="#58a6ff" />
+      {/* PulsingLight color reflects CPU load */}
+      <PulsingLight position={m2Pos} color={
+        nodeMetrics ? (
+          (parseInt(nodeMetrics.cpuPct, 10) || 0) > 80 ? "#ef4444" :
+          (parseInt(nodeMetrics.cpuPct, 10) || 0) > 50 ? "#eab308" :
+          "#58a6ff"
+        ) : "#58a6ff"
+      } />
       {/* Router accent */}
       <pointLight position={[routerPos[0], 0.5, routerPos[2]]} intensity={0.06} color="#8b949e" />
       {/* CPU/RAM arc ring around M2 */}
