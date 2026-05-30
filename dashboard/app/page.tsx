@@ -10,6 +10,7 @@ interface ClusterStatus {
   apps: { name: string; sync: string; health: string; syncedAt?: string | null }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
   totalPods?: number;
+  podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
   nsPodCounts?: Record<string, number>;
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
@@ -507,6 +508,7 @@ export default function Home() {
             nsCronJobs={cluster?.nsCronJobs}
             nsHelmReleases={cluster?.nsHelmReleases}
             nsPvcs={cluster?.nsPvcs}
+            podStatusCounts={cluster?.podStatusCounts}
           />
         )}
       </div>

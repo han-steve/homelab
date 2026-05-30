@@ -71,6 +71,7 @@ export async function GET() {
     const unhealthyPods: PodStatus[] = [];
     let totalPods = 0;
     const nsPodCounts: Record<string, number> = {};
+    const podStatusCounts = { running: 0, pending: 0, failed: 0, unknown: 0 };
     const nsCpuRequestsM: Record<string, number> = {}; // millicores per namespace
     const nsMemRequestsMi: Record<string, number> = {}; // MiB per namespace
     // Track pod start times for uptime display
@@ -84,6 +85,12 @@ export async function GET() {
         const ns = item.metadata?.namespace ?? "unknown";
         const podName = item.metadata?.name ?? "";
         nsPodCounts[ns] = (nsPodCounts[ns] || 0) + 1;
+        // Count by phase
+        const phase = item.status?.phase as string ?? "Unknown";
+        if (phase === "Running") podStatusCounts.running++;
+        else if (phase === "Pending") podStatusCounts.pending++;
+        else if (phase === "Failed") podStatusCounts.failed++;
+        else podStatusCounts.unknown++;
         // Track start time
         const startTime = item.status?.startTime ?? item.metadata?.creationTimestamp;
         if (startTime) podStartTimes[`${ns}/${podName}`] = startTime;
@@ -110,7 +117,7 @@ export async function GET() {
           }
         }
         const cs = item.status?.containerStatuses?.[0];
-        const phase = item.status?.phase;
+        const podPhase = item.status?.phase;
         const ready = cs?.ready ?? false;
         const restarts = cs?.restartCount ?? 0;
         const waiting = cs?.state?.waiting?.reason;
@@ -120,7 +127,7 @@ export async function GET() {
             namespace: item.metadata?.namespace ?? "",
             name: item.metadata?.name ?? "",
             ready: ready ? "true" : "false",
-            status: waiting ?? phase ?? "Unknown",
+            status: waiting ?? podPhase ?? "Unknown",
             restarts,
           });
         }
@@ -328,6 +335,7 @@ export async function GET() {
       apps,
       unhealthyPods: unhealthyPods.slice(0, 20),
       totalPods,
+      podStatusCounts,
       nsPodCounts,
       nsCpuRequestsM,
       nsMemRequestsMi,

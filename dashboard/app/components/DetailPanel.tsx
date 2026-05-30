@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -102,6 +102,7 @@ export default function DetailPanel({
   nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
   nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
   nsPvcs?: Record<string, { name: string; status: string; capacity: string; storageClass: string }[]>;
+  podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -172,6 +173,26 @@ export default function DetailPanel({
                   );
                 })}
               </div>
+              {podStatusCounts && (podStatusCounts.pending > 0 || podStatusCounts.failed > 0) && (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono">
+                  <span className="text-green-500/70">{podStatusCounts.running} run</span>
+                  {podStatusCounts.pending > 0 && <span className="text-yellow-400/80">{podStatusCounts.pending} pend</span>}
+                  {podStatusCounts.failed > 0 && <span className="text-red-400/80">{podStatusCounts.failed} fail</span>}
+                  {podStatusCounts.unknown > 0 && <span className="text-gray-500/70">{podStatusCounts.unknown} unk</span>}
+                  <div className="flex-1 h-1 rounded-full overflow-hidden bg-gray-800/60 ml-1">
+                    {(() => {
+                      const total = podStatusCounts.running + podStatusCounts.pending + podStatusCounts.failed + podStatusCounts.unknown;
+                      return total > 0 ? (
+                        <div className="h-full flex">
+                          <div className="bg-green-500/60" style={{ width: `${(podStatusCounts.running/total)*100}%` }} />
+                          <div className="bg-yellow-400/70" style={{ width: `${(podStatusCounts.pending/total)*100}%` }} />
+                          <div className="bg-red-500/70" style={{ width: `${(podStatusCounts.failed/total)*100}%` }} />
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
