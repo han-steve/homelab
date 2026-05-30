@@ -1983,9 +1983,21 @@ export default function DetailPanel({
                       {dep.available}/{dep.desired}
                     </span>
                   </div>
-                  <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-                  </div>
+                  {/* Replica dot strip */}
+                  {dep.desired > 0 && dep.desired <= 12 && (
+                    <div className="ml-4 mt-0.5 flex gap-0.5">
+                      {Array.from({ length: dep.desired }).map((_, ri) => (
+                        <div key={ri} className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: ri < dep.available ? (healthy ? "#22c55e88" : "#f97316aa") : "#1f2937" }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {(dep.desired === 0 || dep.desired > 12) && (
+                    <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -2015,9 +2027,21 @@ export default function DetailPanel({
                       {ss.ready}/{ss.desired}
                     </span>
                   </div>
-                  <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-                  </div>
+                  {/* Replica dot strip for small sets */}
+                  {ss.desired > 0 && ss.desired <= 12 && (
+                    <div className="ml-4 mt-0.5 flex gap-0.5">
+                      {Array.from({ length: ss.desired }).map((_, ri) => (
+                        <div key={ri} className="w-1.5 h-1.5 rounded"
+                          style={{ backgroundColor: ri < ss.ready ? (healthy ? "#06b6d488" : "#f97316aa") : "#1f2937" }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {(ss.desired === 0 || ss.desired > 12) && (
+                    <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                    </div>
+                  )}
                 </div>
               );
             })}
