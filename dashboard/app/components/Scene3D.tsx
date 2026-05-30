@@ -368,7 +368,7 @@ function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
 
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
-  from, to, color = "#58a6ff", active = true, speed = 0.18, bidir = false
+  from, to, color = "#58a6ff", active = true, speed = 0.18, bidir = false, packetCount = 1
 }: {
   from: [number, number, number];
   to: [number, number, number];
@@ -376,6 +376,7 @@ function FloorCable({
   active?: boolean;
   speed?: number;
   bidir?: boolean;
+  packetCount?: number;
 }) {
   const flowRef = useRef<THREE.Mesh>(null!);
 
@@ -428,8 +429,12 @@ function FloorCable({
         </mesh>
       )}
       {/* Data packet: a tiny glowing sphere that travels the cable */}
-      {active && <DataPacket curve={curve} color={color} speed={speed} />}
-      {active && bidir && <DataPacket curve={curve} color={color} speed={speed * 0.8} reverse offset={0.5} />}
+      {active && Array.from({ length: packetCount }, (_, pi) => (
+        <DataPacket key={pi} curve={curve} color={color} speed={speed * (0.9 + pi * 0.15)} offset={pi / Math.max(1, packetCount)} />
+      ))}
+      {active && bidir && Array.from({ length: Math.max(1, Math.floor(packetCount / 2)) }, (_, pi) => (
+        <DataPacket key={"r" + pi} curve={curve} color={color} speed={speed * 0.8} reverse offset={pi / Math.max(1, packetCount) + 0.5} />
+      ))}
     </group>
   );
 }
@@ -1811,7 +1816,8 @@ export default function Scene3D({
       )}
 
       {/* Floor cables (at ground level) */}
-      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
+      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir
+        packetCount={totalPods ? Math.min(4, Math.max(1, Math.floor(totalPods / 25))) : 2} />
       <FloorCable from={routerPos} to={gpuPos} color="#d29922" active speed={0.13} />
       {/* Request path animation when service selected: WAN → Router → M2 (accelerated) */}
       {selectedIdx !== null && (() => {
