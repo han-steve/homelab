@@ -163,7 +163,7 @@ export default function Home() {
         if (crashPods.length === 0 && outOfSync.length === 0) return null;
         return (
           <div className={`fixed top-0.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-1.5 rounded-b-lg text-xs font-mono pointer-events-none ${crashPods.length > 0 ? "bg-red-950/90 border-x border-b border-red-700/50 text-red-300" : "bg-yellow-950/90 border-x border-b border-yellow-700/50 text-yellow-300"}`}>
-            {crashPods.length > 0 && <span>⚠ {crashPods.length} pod{crashPods.length !== 1 ? "s" : ""} crashing: {crashPods.slice(0, 2).map(p => p.name.split("-")[0]).join(", ")}{crashPods.length > 2 ? "…" : ""}</span>}
+            {crashPods.length > 0 && <span>⚠ {crashPods.length} pod{crashPods.length !== 1 ? "s" : ""} crashing · {crashPods.slice(0, 2).map(p => `${p.name.split("-")[0]}${p.restarts > 0 ? ` ↺${p.restarts}` : ""}`).join(", ")}{crashPods.length > 2 ? ` +${crashPods.length - 2} more` : ""}</span>}
             {outOfSync.length > 0 && <span className="text-yellow-400">⚡ {outOfSync.length} app{outOfSync.length !== 1 ? "s" : ""} OutOfSync: {outOfSync.slice(0, 2).map(a => a.name).join(", ")}{outOfSync.length > 2 ? "…" : ""}</span>}
           </div>
         );
