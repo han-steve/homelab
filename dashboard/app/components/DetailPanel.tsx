@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { services, node, type Service } from "../data";
 
+const CATEGORY_COLORS: Record<string, string> = {
+  app: "#7c3aed",
+  infra: "#f0883e",
+  monitoring: "#06b6d4",
+  storage: "#3b82f6",
+};
+
 function Sparkline({ data, color, height = 20 }: { data: number[]; color: string; height?: number }) {
   if (data.length < 2) return null;
   const w = 120, h = height;
@@ -108,11 +115,35 @@ export default function DetailPanel({
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4" />
 
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-mono">Services</h3>
-          <span className="text-xs font-mono text-green-400">
-            {services.filter((s) => s.status === "running").length}/{services.length}
-          </span>
+        {/* Quick service health grid */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-mono">Services</h3>
+            <span className="text-xs font-mono text-green-400">
+              {services.filter((s) => s.status === "running").length}/{services.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-8 gap-1">
+            {services.map((svc, i) => (
+              <button
+                key={svc.name}
+                title={svc.name}
+                onClick={() => onSelectService?.(i)}
+                className="group relative flex items-center justify-center rounded text-base transition-all hover:scale-110"
+                style={{
+                  width: 28, height: 28,
+                  background: svc.status === "running" ? CATEGORY_COLORS[svc.category] + "20" : "#1a1a2e",
+                  border: "1px solid " + (svc.status === "running" ? CATEGORY_COLORS[svc.category] + "40" : "#333"),
+                }}
+              >
+                <span className="text-sm leading-none">{svc.icon}</span>
+                <span
+                  className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full"
+                  style={{ background: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444" }}
+                />
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search filter */}
