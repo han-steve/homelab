@@ -1585,9 +1585,18 @@ export default function DetailPanel({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-gray-100">{svc.name}</h2>
-          <div className="flex items-center mt-1">
+          <div className="flex items-center mt-1 flex-wrap gap-0.5">
             <StatusBadge status={svc.status} />
             <CategoryBadge category={svc.category} />
+            {nsDeployments?.[svc.namespace] && nsDeployments[svc.namespace].length > 0 && (
+              <span className="text-[9px] font-mono px-1 py-0 rounded bg-blue-900/20 text-blue-700/60 border border-blue-800/20">{nsDeployments[svc.namespace].length}dep</span>
+            )}
+            {nsStatefulSets?.[svc.namespace] && nsStatefulSets[svc.namespace].length > 0 && (
+              <span className="text-[9px] font-mono px-1 py-0 rounded bg-violet-900/20 text-violet-700/60 border border-violet-800/20">{nsStatefulSets[svc.namespace].length}sts</span>
+            )}
+            {nsCronJobs?.[svc.namespace] && nsCronJobs[svc.namespace].length > 0 && (
+              <span className="text-[9px] font-mono px-1 py-0 rounded bg-cyan-900/20 text-cyan-700/60 border border-cyan-800/20">{nsCronJobs[svc.namespace].length}cj</span>
+            )}
           </div>
         </div>
       </div>
