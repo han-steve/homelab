@@ -922,11 +922,12 @@ export default function DetailPanel({
                   const borderClass = isCrit ? "border-red-800/60" : isWarn ? "border-orange-800/50" : isActive ? "border-blue-600/50" : "border-gray-800/40";
                   const shortNs = ns.replace(/^kube-/, "k-").replace(/^longhorn-/, "lh-").replace(/^ingress-/, "ing-").replace(/^external-/, "ext-").replace(/^home-/, "hm-").replace(/^homelab-/, "hl-").replace(/^cert-/, "ct-").replace(/^actual-/, "ac-").replace(/^vc-/, "vc:");
                   const evCount = (recentEvents ?? []).filter(e => e.namespace === ns).length;
+                  const hasLatestImg = nsImages?.[ns]?.some(img => typeof img === "string" && (img.endsWith(":latest") || img.includes(":latest@")));
                   return (
                     <button key={ns}
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
                       className={`relative flex flex-col gap-0 px-1.5 py-0.5 rounded bg-gray-900/60 border ${borderClass} text-left transition-colors hover:bg-gray-800/60 cursor-pointer overflow-hidden`}
-                      title={`${ns} · ${pods} pods${isCrit ? " · CRITICAL" : isWarn ? " · WARNING" : ""}${evCount > 0 ? ` · ${evCount} events` : ""}`}
+                      title={`${ns} · ${pods} pods${isCrit ? " · CRITICAL" : isWarn ? " · WARNING" : ""}${evCount > 0 ? ` · ${evCount} events` : ""}${hasLatestImg ? " · :latest image!" : ""}`}
                     >
                       <div className="flex items-center gap-1 w-full">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0 flex-none" style={{ backgroundColor: dotColor, boxShadow: isCrit ? `0 0 4px ${dotColor}` : "none" }} />
@@ -946,6 +947,7 @@ export default function DetailPanel({
                         </div>;
                       })()}
                       {hasEvents && evCount > 0 && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-orange-400/60 animate-pulse" />}
+                      {hasLatestImg && !hasEvents && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-yellow-500/50" title=":latest image tag" />}
                     </button>
                   );
                 })}
