@@ -900,6 +900,34 @@ function PulsingLight({ position, color }: { position: [number, number, number];
   return <pointLight ref={ref} position={[position[0], 0.3, position[2]]} intensity={0.08} color={color} distance={4} />;
 }
 
+/* ── Floating load orb ───────────────────────────── */
+function FloatingLoadOrb({ position, cpuPct }: { position: [number, number, number]; cpuPct: number }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  const lightRef = useRef<THREE.PointLight>(null!);
+  const color = cpuPct > 80 ? "#ef4444" : cpuPct > 50 ? "#eab308" : cpuPct > 25 ? "#22c55e" : "#06b6d4";
+  const scale = 0.05 + (cpuPct / 100) * 0.12;
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (ref.current) {
+      ref.current.position.y = position[1] + 2.5 + Math.sin(t * 0.8) * 0.15;
+      (ref.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + Math.sin(t * 1.2) * 0.15;
+    }
+    if (lightRef.current) {
+      lightRef.current.position.y = position[1] + 2.5 + Math.sin(t * 0.8) * 0.15;
+      lightRef.current.intensity = (0.04 + (cpuPct / 100) * 0.08) * (1 + Math.sin(t * 1.2) * 0.3);
+    }
+  });
+  return (
+    <group>
+      <mesh ref={ref} position={[position[0], position[1] + 2.5, position[2]]}>
+        <sphereGeometry args={[scale, 12, 8]} />
+        <meshBasicMaterial color={color} transparent opacity={0.4} depthWrite={false} />
+      </mesh>
+      <pointLight ref={lightRef} position={[position[0], position[1] + 2.5, position[2]]} color={color} intensity={0.05} distance={3} />
+    </group>
+  );
+}
+
 /* ── status indicator dot ──────────────────────────── */
 function StatusDot({
   position, status
@@ -2101,7 +2129,10 @@ export default function Scene3D({
         const ramToShow = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
         const storagePct = longhornStorage ? longhornStorage.pct : undefined;
         return cpuToShow > 0 ? (
-          <CpuArcRing position={m2Pos} cpuPct={cpuToShow} ramPct={ramToShow} storagePct={storagePct} />
+          <>
+            <CpuArcRing position={m2Pos} cpuPct={cpuToShow} ramPct={ramToShow} storagePct={storagePct} />
+            <FloatingLoadOrb position={m2Pos} cpuPct={cpuToShow} />
+          </>
         ) : null;
       })()}
       {/* Refresh countdown sweep arc — outermost ring */}
