@@ -2084,6 +2084,29 @@ export default function Scene3D({
             <span>{showAllServices ? `SERVICES  ${services.length}` : "SERVICES"}</span>
           </button>
         </div>
+        {/* Bottom-left mini HUD */}
+        <div style={{
+          position: "absolute", bottom: 16, left: 16, zIndex: 50,
+          display: "flex", gap: 12, alignItems: "center",
+          fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
+          fontSize: 10, color: "#3a3a4a", pointerEvents: "none",
+        }}>
+          {totalPods !== undefined && (
+            <span style={{ color: (unhealthyPodCount ?? 0) > 0 ? "#f9731640" : "#22c55e30" }}>
+              {totalPods} pods{(unhealthyPodCount ?? 0) > 0 ? ` · ⚠${unhealthyPodCount}` : ""}
+            </span>
+          )}
+          {appsSynced !== undefined && appsTotal !== undefined && (
+            <span style={{ color: appsSynced < appsTotal ? "#eab30840" : "#22c55e30" }}>
+              {appsSynced}/{appsTotal} apps
+            </span>
+          )}
+          {longhornStorage && (
+            <span style={{ color: longhornStorage.pct > 80 ? "#ef444440" : "#a855f740" }}>
+              {longhornStorage.pct.toFixed(0)}% storage
+            </span>
+          )}
+        </div>
       </Html>
 
       <OrbitControls
