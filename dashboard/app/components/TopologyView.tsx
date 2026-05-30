@@ -52,6 +52,7 @@ export default function TopologyView({
   const [searchQuery, setSearchQuery] = useState("");
   const [nsFilter, setNsFilter] = useState<string | null>(null);
   const [heatmapMode, setHeatmapMode] = useState(false);
+  const [linkTooltip, setLinkTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // Unique namespaces from service nodes
   const uniqueNamespaces = Array.from(new Set(
@@ -442,6 +443,27 @@ export default function TopologyView({
                 strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
                 opacity={nsFilteredOut ? 0.04 : (selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45)}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
+              />
+              {/* Invisible wider hit area for tooltip hover */}
+              <path
+                d={`M${s.x},${s.y} Q${cx},${cy} ${t.x},${t.y}`}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={14}
+                style={{ cursor: "crosshair" }}
+                onMouseEnter={(e) => {
+                  const sLabel = topoNodes.find(n => n.id === link.source)?.label ?? link.source;
+                  const tLabel = topoNodes.find(n => n.id === link.target)?.label ?? link.target;
+                  const connType = link.style === "solid" ? "active" : "planned";
+                  const text = `${sLabel} → ${tLabel}${link.label ? ` [${link.label}]` : ""} · ${connType}`;
+                  const rect = svgRef.current?.getBoundingClientRect();
+                  setLinkTooltip({ x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) - 14, text });
+                }}
+                onMouseMove={(e) => {
+                  const rect = svgRef.current?.getBoundingClientRect();
+                  setLinkTooltip(prev => prev ? { ...prev, x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) - 14 } : prev);
+                }}
+                onMouseLeave={() => setLinkTooltip(null)}
               />
               {/* Animated data packets on active links — two staggered particles */}
               {isActive && !nsFilteredOut && (
@@ -949,6 +971,16 @@ export default function TopologyView({
           </div>
         );
       })()}
+
+      {/* Link hover tooltip */}
+      {linkTooltip && (
+        <div
+          className="fixed z-50 pointer-events-none bg-gray-900/95 border border-gray-700/60 rounded px-2 py-1 text-[10px] text-gray-300 shadow-xl font-mono whitespace-nowrap"
+          style={{ left: linkTooltip.x + 12, top: linkTooltip.y, backdropFilter: "blur(8px)" }}
+        >
+          {linkTooltip.text}
+        </div>
+      )}
 
       {/* Zoom controls */}
       <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
