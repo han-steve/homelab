@@ -1826,6 +1826,7 @@ export default function DetailPanel({
             {nsDeployments[svc.namespace].map((dep, i) => {
               const healthy = dep.available >= dep.desired;
               const pct = dep.desired > 0 ? Math.round((dep.available / dep.desired) * 100) : 100;
+              const barColor = healthy ? "#22c55e50" : pct > 50 ? "#eab30870" : "#ef444470";
               return (
                 <div key={i} className="text-xs font-mono">
                   <div className="flex items-center gap-2">
@@ -1835,11 +1836,9 @@ export default function DetailPanel({
                       {dep.available}/{dep.desired}
                     </span>
                   </div>
-                  {!healthy && (
-                    <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-red-500/60 transition-all" style={{ width: `${pct}%` }} />
-                    </div>
-                  )}
+                  <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                  </div>
                 </div>
               );
             })}
