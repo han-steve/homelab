@@ -780,9 +780,26 @@ function HardwareNode({
 }
 
 /* ── Service glass sphere ─────────────────────────── */
+/* ── Pulsing red indicator for unhealthy pods ─────────── */
+function UnhealthyDot() {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const mat = ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.7 + Math.sin(clock.getElapsedTime() * 4) * 0.3;
+    }
+  });
+  return (
+    <mesh ref={ref} position={[0.28, 0.28, 0.2]} raycast={() => {}}>
+      <sphereGeometry args={[0.07, 8, 8]} />
+      <meshBasicMaterial color="#ef4444" transparent opacity={0.9} toneMapped={false} />
+    </mesh>
+  );
+}
+
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
-  isSelected, isHovered, onClick, onPointerOver, onPointerOut,
+  isSelected, isHovered, isUnhealthy = false, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
@@ -791,6 +808,7 @@ function ServiceSphere({
   idx?: number;
   isSelected: boolean;
   isHovered: boolean;
+  isUnhealthy?: boolean;
   onClick: () => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -864,6 +882,8 @@ function ServiceSphere({
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}
         </Text>
+        {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
+        {isUnhealthy && <UnhealthyDot />}
       </Float>
     </group>
   );
@@ -871,7 +891,7 @@ function ServiceSphere({
 
 /* ── Services radial display ─────────────────────────── */
 function ServicesDisplay({
-  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc,
+  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces,
 }: {
   nodePos: [number, number, number];
   visible: boolean;
@@ -880,6 +900,7 @@ function ServicesDisplay({
   onSelectSvc: (i: number | null) => void;
   onHoverSvc: (i: number) => void;
   onUnhoverSvc: () => void;
+  unhealthyNamespaces?: Set<string>;
 }) {
   const positions = useMemo<[number, number, number][]>(() => {
     const cols = 5;
@@ -926,6 +947,7 @@ function ServicesDisplay({
               idx={i}
               isSelected={selectedSvc === i}
               isHovered={hoveredSvc === i}
+              isUnhealthy={!!unhealthyNamespaces?.has(svc.namespace)}
               onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
               onPointerOver={() => onHoverSvc(i)}
               onPointerOut={onUnhoverSvc}
@@ -1104,12 +1126,14 @@ export default function Scene3D({
   nodeMetrics,
   appsSynced,
   appsTotal,
+  unhealthyNamespaces,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   appsSynced?: number;
   appsTotal?: number;
+  unhealthyNamespaces?: Set<string>;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1333,6 +1357,7 @@ export default function Scene3D({
         onSelectSvc={(i) => { onSelect(i); }}
         onHoverSvc={(i) => setHoveredSvc(i)}
         onUnhoverSvc={() => setHoveredSvc(null)}
+        unhealthyNamespaces={unhealthyNamespaces}
       />
 
       {/* Service callout panel */}
