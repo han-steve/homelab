@@ -14,6 +14,7 @@ interface ClusterStatus {
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
@@ -283,6 +284,7 @@ export default function Home() {
           metricsHistory={metricsHistory.current}
           longhornStorage={cluster?.longhornStorage}
           unhealthyPods={cluster?.unhealthyPods}
+          certificates={cluster?.certificates}
         />
       </div>
     </div>

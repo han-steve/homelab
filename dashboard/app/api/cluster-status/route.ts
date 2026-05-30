@@ -19,7 +19,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -33,6 +33,8 @@ export async function GET() {
       execAsync(`kubectl get events -A --field-selector=type=Warning --sort-by='.lastTimestamp' -o json 2>/dev/null`),
       // Longhorn storage nodes (disk usage)
       execAsync(`kubectl get nodes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
+      // Certificate expiration from cert-manager
+      execAsync(`kubectl get certificates -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -166,6 +168,30 @@ export async function GET() {
       } catch {}
     }
 
+    // Parse certificate expiration from cert-manager
+    interface CertInfo { name: string; namespace: string; daysLeft: number; ready: boolean; }
+    const certificates: CertInfo[] = [];
+    if (certsResult.status === "fulfilled" && certsResult.value.stdout.trim()) {
+      try {
+        const certData = JSON.parse(certsResult.value.stdout);
+        for (const cert of certData.items ?? []) {
+          const expiry = cert.status?.notAfter;
+          const ready = cert.status?.conditions?.some((c: { type: string; status: string }) => c.type === "Ready" && c.status === "True") ?? false;
+          let daysLeft = 9999;
+          if (expiry) {
+            const ms = new Date(expiry).getTime() - Date.now();
+            daysLeft = Math.floor(ms / (1000 * 60 * 60 * 24));
+          }
+          certificates.push({
+            name: cert.metadata?.name ?? "",
+            namespace: cert.metadata?.namespace ?? "",
+            daysLeft,
+            ready,
+          });
+        }
+      } catch {}
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -176,6 +202,7 @@ export async function GET() {
       nodeMetrics,
       recentEvents,
       longhornStorage,
+      certificates,
     });
   } catch {
     return Response.json(

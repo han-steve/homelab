@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -64,6 +64,7 @@ export default function DetailPanel({
   metricsHistory?: { cpu: number; ram: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
+  certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -320,6 +321,34 @@ export default function DetailPanel({
           <p>GitOps: ArgoCD v3.4.2</p>
           <p>LB: 192.168.1.11-30</p>
         </div>
+
+        {/* Certificate expiry section */}
+        {certificates && certificates.length > 0 && (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">TLS Certs</h3>
+              <span className="text-xs font-mono text-gray-700">{certificates.filter(c => c.ready).length}/{certificates.length}</span>
+            </div>
+            <div className="space-y-1">
+              {certificates.map((cert, i) => {
+                const isExpiring = cert.daysLeft < 30;
+                const isExpired = cert.daysLeft <= 0;
+                const color = isExpired ? "#ef4444" : isExpiring ? "#eab308" : "#22c55e";
+                const label = isExpired ? "expired" : cert.daysLeft < 9999 ? `${cert.daysLeft}d` : "—";
+                return (
+                  <div key={i} className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-gray-600 truncate flex-1" title={cert.namespace + "/" + cert.name}>{cert.name}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span style={{ color }} className="text-xs">{label}</span>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {recentEvents && recentEvents.length > 0 && (
           <>
