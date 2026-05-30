@@ -2005,8 +2005,25 @@ export default function DetailPanel({
               return <div className="text-xs font-mono text-green-500/70">● All pods healthy</div>;
             }
             const maxRestarts = Math.max(...nsIssues.map(p => p.restarts), 1);
+            // Estimate restart velocity from restartHistory if available
+            const restartVelocity = (() => {
+              if (!restartHistory || restartHistory.length < 2) return null;
+              const last = restartHistory[restartHistory.length - 1];
+              const prev = restartHistory[restartHistory.length - 2];
+              const delta = last.total - prev.total;
+              const dtMs = last.ts - prev.ts;
+              if (delta <= 0 || dtMs <= 0) return null;
+              const perHr = Math.round((delta / dtMs) * 3600000);
+              return perHr > 0 ? perHr : null;
+            })();
             return (
               <div className="space-y-1.5">
+                {restartVelocity != null && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-orange-400/70 mb-0.5">
+                    <span className="w-1 h-1 rounded-full bg-orange-400 animate-pulse" />
+                    <span>~{restartVelocity} restart{restartVelocity !== 1 ? "s" : ""}/hr</span>
+                  </div>
+                )}
                 {nsIssues.map((pod, i) => {
                   const isCrash = pod.status === "CrashLoopBackOff";
                   const isOOM = pod.status === "OOMKilled";
