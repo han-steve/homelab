@@ -776,10 +776,12 @@ export default function DetailPanel({
           </div>
           <div className="mt-1 flex gap-2.5 flex-wrap">
             {(["app", "infra", "monitoring", "storage"] as const).map(cat => {
-              const count = services.filter(s => s.category === cat).length;
+              const catSvcs = services.filter(s => s.category === cat);
+              const unhealthyNs = catSvcs.filter(s => unhealthyPods?.some(p => p.namespace === s.namespace));
+              const count = catSvcs.length;
               return (
                 <span key={cat} className="text-xs font-mono" style={{ color: CATEGORY_COLORS[cat] + "aa" }}>
-                  {count} {cat}
+                  {count} {cat}{unhealthyNs.length > 0 && <span className="text-red-500/60 ml-0.5">⚠{unhealthyNs.length}</span>}
                 </span>
               );
             })}
