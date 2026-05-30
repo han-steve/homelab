@@ -1663,6 +1663,22 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, ap
             <meshBasicMaterial color="#eab308" transparent opacity={0.0} toneMapped={false} />
           </mesh>
         )}
+        {/* Degraded app floating counter badge */}
+        {apps && apps.some(a => a.health === "Degraded") && (() => {
+          const degraded = apps.filter(a => a.health === "Degraded").length;
+          return (
+            <Billboard position={[-0.72, 0.85, 0]}>
+              <mesh>
+                <circleGeometry args={[0.22, 16]} />
+                <meshBasicMaterial color="#ef4444" transparent opacity={0.85} toneMapped={false} />
+              </mesh>
+              <Text position={[0, 0, 0.01]} fontSize={0.16} color="#fff" anchorX="center" anchorY="middle"
+                // @ts-expect-error
+                toneMapped={false}
+              >{degraded}</Text>
+            </Billboard>
+          );
+        })()}
         {isSelected && (
           <Html position={[0.9, 0.4, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
