@@ -1969,6 +1969,11 @@ export default function Scene3D({
         const svcPos = getSvcPos(selectedIdx) as [number, number, number];
         const svc = services[selectedIdx];
         const urlDisplay = svc.url ? svc.url.replace("https://", "") : (svc.ip !== "internal" ? svc.ip + ":" + svc.port : "cluster-internal");
+        const pods = nsPodCounts?.[svc.namespace];
+        const cpuM = nsCpuRequestsM?.[svc.namespace];
+        const extraLines: { label: string; value: string }[] = [];
+        if (pods !== undefined) extraLines.push({ label: "Pods", value: String(pods) });
+        if (cpuM !== undefined) extraLines.push({ label: "CPU req", value: cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m` });
         return (
           <CalloutPanel
             anchorPos={svcPos}
@@ -1978,6 +1983,7 @@ export default function Scene3D({
               { label: "Status", value: svc.status },
               { label: "NS", value: svc.namespace },
               { label: "Access", value: urlDisplay },
+              ...extraLines,
               { label: "Category", value: svc.category },
             ]}
             color={svc.color}
