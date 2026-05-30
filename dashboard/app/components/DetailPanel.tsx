@@ -448,6 +448,36 @@ export default function DetailPanel({
             </div>
           );
         })()}
+        {/* Top 3 CPU consumers compact row */}
+        {nsCpuRequestsM && (() => {
+          const NS_COLORS_TOP: Record<string, string> = {
+            argocd: "#ef7b4d", "kube-system": "#326ce5", longhorn: "#3b82f6",
+            monitoring: "#8b5cf6", "cert-manager": "#22c55e", "actual-budget": "#f59e0b",
+            apitable: "#06b6d4", "vc-prod": "#10b981",
+          };
+          const top3 = Object.entries(nsCpuRequestsM).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+          if (top3.length === 0) return null;
+          const maxCpuTop = top3[0][1];
+          return (
+            <div className="mb-3 flex gap-1">
+              <span className="text-[8px] font-mono text-gray-700 self-center shrink-0 mr-0.5">top cpu</span>
+              {top3.map(([ns, cpuM]) => {
+                const pct = Math.round((cpuM / maxCpuTop) * 100);
+                const color = NS_COLORS_TOP[ns] ?? "#58a6ff";
+                const shortNs = ns.replace(/^kube-/, "k-").replace(/^longhorn-/, "lh-").replace(/^cert-/, "ct-").replace(/^actual-/, "ac-");
+                return (
+                  <div key={ns} className="flex-1 rounded px-1.5 py-1 bg-gray-900/50 border border-gray-800/30 relative overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 rounded-l" style={{ width: `${pct}%`, backgroundColor: color + "1a" }} />
+                    <div className="relative flex items-center justify-between gap-1">
+                      <span className="text-[8px] font-mono truncate" style={{ color: color + "cc" }}>{shortNs}</span>
+                      <span className="text-[8px] font-mono text-gray-600 shrink-0">{(cpuM / 1000).toFixed(1)}c</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         <div className="mb-4 grid grid-cols-4 gap-1">
           {[
             { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab", ns: "argocd" },
