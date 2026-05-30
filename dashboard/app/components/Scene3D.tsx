@@ -1158,6 +1158,10 @@ function ServiceSphere({
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}
         </Text>
+        {/* Namespace tag (tiny, below name) */}
+        <Text position={[0, -0.66, 0]} fontSize={0.048} color="#3a3a4a" anchorX="center" anchorY="top" maxWidth={1.2}>
+          {service.namespace}
+        </Text>
         {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
         {isUnhealthy && <UnhealthyDot />}
         {/* Hover tooltip */}
