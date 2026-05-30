@@ -1343,11 +1343,35 @@ export default function DetailPanel({
               const fresh = recentPods.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 7 * 24 * 3600000);
               if (fresh.length === 0) return null;
               const recentFresh = fresh.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 3600000).length;
+              // 7-day histogram
+              const days = Array.from({ length: 7 }, (_, i) => {
+                const dayStart = new Date(now);
+                dayStart.setHours(0, 0, 0, 0);
+                dayStart.setDate(dayStart.getDate() - (6 - i));
+                const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+                const count = fresh.filter(p => { const t = new Date(p.startTime).getTime(); return t >= dayStart.getTime() && t < dayEnd.getTime(); }).length;
+                const label = dayStart.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 1);
+                return { count, label };
+              });
+              const maxDay = Math.max(1, ...days.map(d => d.count));
               return (
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Starts</h3>
-                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in 7d{recentFresh > 0 ? ` · ${recentFresh} &lt;1h` : ""}</span>
+                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in 7d{recentFresh > 0 ? ` · ${recentFresh} <1h` : ""}</span>
+                  </div>
+                  {/* 7-day mini bar chart */}
+                  <div className="flex items-end gap-0.5 h-6 mb-2">
+                    {days.map((d, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`${d.label}: ${d.count}`}>
+                        <div className="w-full rounded-sm" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? 2 : 0, backgroundColor: i === 6 ? "#22c55e80" : "#22c55e30", }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-0.5 mb-2">
+                    {days.map((d, i) => (
+                      <div key={i} className="flex-1 text-center text-[8px] font-mono text-gray-800">{d.label}</div>
+                    ))}
                   </div>
                   <div className="space-y-1">
                     {fresh.slice(0, 6).map((pod, i) => (
