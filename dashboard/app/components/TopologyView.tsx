@@ -16,11 +16,15 @@ export default function TopologyView({
   nodeMetrics,
   nsPodCounts,
   unhealthyNamespaces,
+  apps,
+  longhornStorage,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
   unhealthyNamespaces?: Set<string>;
+  apps?: { name: string; sync: string; health: string }[];
+  longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -126,6 +130,14 @@ export default function TopologyView({
 
   const getNodeColor = (node: TopoNode) => {
     if (node.id === "m2" && m2DynamicColor) return m2DynamicColor;
+    if (node.id === "argocd" && apps) {
+      const outOfSync = apps.some(a => a.sync !== "Synced");
+      if (outOfSync) return "#eab308";
+    }
+    if (node.id === "longhorn" && longhornStorage) {
+      if (longhornStorage.pct > 80) return "#ef4444";
+      if (longhornStorage.pct > 60) return "#eab308";
+    }
     return node.color;
   };
 

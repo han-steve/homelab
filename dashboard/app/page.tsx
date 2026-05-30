@@ -137,6 +137,8 @@ export default function Home() {
               nodeMetrics={cluster?.nodeMetrics}
               nsPodCounts={cluster?.nsPodCounts}
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
+              apps={cluster?.apps}
+              longhornStorage={cluster?.longhornStorage}
             />
           )}
         </Suspense>
