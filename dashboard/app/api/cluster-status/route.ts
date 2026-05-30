@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -44,6 +44,8 @@ export async function GET() {
       execAsync(`kubectl get svc -A -o json 2>/dev/null`),
       // Traefik IngressRoutes (hostnames)
       execAsync(`kubectl get ingressroutes.traefik.io -A -o json 2>/dev/null`),
+      // Deployments for desired vs available replicas
+      execAsync(`kubectl get deployments -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -335,6 +337,7 @@ export async function GET() {
       longhornVolumes,
       k8sServices,
       nsIngress,
+      nsDeployments,
       certificates,
     });
   } catch {    // Parse Traefik IngressRoutes: namespace → [hostname]
@@ -353,6 +356,20 @@ export async function GET() {
               if (!nsIngress[ns].includes(hostMatch[1])) nsIngress[ns].push(hostMatch[1]);
             }
           }
+        }
+      } catch {}
+    }    // Parse Deployments: namespace → [{name, desired, available, ready}]
+    const nsDeployments: Record<string, { name: string; desired: number; available: number; ready: number }[]> = {};
+    if (deployResult.status === "fulfilled" && deployResult.value.stdout.trim()) {
+      try {
+        const depData = JSON.parse(deployResult.value.stdout);
+        for (const dep of depData.items ?? []) {
+          const ns = dep.metadata?.namespace ?? "";
+          const desired = dep.spec?.replicas ?? 0;
+          const available = dep.status?.availableReplicas ?? 0;
+          const ready = dep.status?.readyReplicas ?? 0;
+          if (!nsDeployments[ns]) nsDeployments[ns] = [];
+          nsDeployments[ns].push({ name: dep.metadata?.name ?? "", desired, available, ready });
         }
       } catch {}
     }

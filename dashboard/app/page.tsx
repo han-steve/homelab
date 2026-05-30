@@ -25,6 +25,7 @@ interface ClusterStatus {
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   nsIngress?: Record<string, string[]>;
+  nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -493,6 +494,7 @@ export default function Home() {
             nodePressures={cluster?.node?.pressures}
             k8sServices={cluster?.k8sServices}
             nsIngress={cluster?.nsIngress}
+            nsDeployments={cluster?.nsDeployments}
           />
         )}
       </div>
