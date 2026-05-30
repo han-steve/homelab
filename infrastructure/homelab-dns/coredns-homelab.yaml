@@ -34,28 +34,42 @@ data:
     # Homelab zone — all .homelab and .homelab.local queries answered here
     homelab homelab.local {
         hosts {
-            # nginx-ingress (all HTTPS-terminated services)
+            # nginx-ingress LB (all HTTPS-terminated services → 192.168.1.21)
+            # Media
             192.168.1.21 jellyfin.homelab
             192.168.1.21 jellyfin.homelab.local
+            # Monitoring
             192.168.1.21 grafana.homelab
             192.168.1.21 grafana.homelab.local
+            192.168.1.21 prometheus.homelab
+            192.168.1.21 prom.homelab
+            192.168.1.21 alertmanager.homelab
+            # GitOps
             192.168.1.21 argocd.homelab
             192.168.1.21 argocd.homelab.local
+            # Storage
+            192.168.1.21 longhorn.homelab
+            192.168.1.21 minio.homelab
+            192.168.1.21 ocis.homelab
+            192.168.1.21 ocis.homelab.local
+            # Apps
             192.168.1.21 apitable.homelab
             192.168.1.21 apitable.homelab.local
             192.168.1.21 budget.homelab
             192.168.1.21 budget.homelab.local
             192.168.1.21 actual-budget.homelab
             192.168.1.21 actual-budget.homelab.local
-            192.168.1.21 ocis.homelab
-            192.168.1.21 ocis.homelab.local
+            # Home automation
             192.168.1.21 ha.homelab
             192.168.1.21 ha.homelab.local
             192.168.1.21 zigbee.homelab
             192.168.1.21 zigbee.homelab.local
-            # Node (for direct Talos/kubectl access)
+            # Nodes
             192.168.1.10 m2.homelab
             192.168.1.10 node.homelab
+            192.168.1.101 gpu.homelab
+            # Router
+            192.168.1.1 router.homelab
             fallthrough
         }
         log

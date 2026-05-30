@@ -77,7 +77,7 @@ export default function DetailPanel({
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="text-gray-600 text-xs font-mono">
-                  {svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
+                  {svc.url ? svc.url.replace("https://", "").split(".")[0] : svc.ip.includes("homelab") ? svc.ip.split(".")[0] : svc.ip === "internal" ? "int" : svc.ip.split(".").pop()}
                 </span>
                 <div className="w-1.5 h-1.5 rounded-full" style={{
                   backgroundColor: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444",
@@ -132,11 +132,15 @@ export default function DetailPanel({
       <div className="space-y-2.5 text-sm">
         <InfoRow label="Namespace" value={svc.namespace} />
         <InfoRow label="Endpoint" value={
-          svc.ip === "internal"
-            ? svc.name.toLowerCase() + "." + svc.namespace + ".svc:" + svc.port
-            : svc.ip + ":" + svc.port
+          svc.url
+            ? svc.url.replace("https://", "")
+            : svc.ip === "internal" || svc.ip.includes(".")
+              ? svc.ip.includes("homelab")
+                ? svc.ip + ":" + svc.port
+                : svc.name.toLowerCase() + "." + svc.namespace + ".svc:" + svc.port
+              : svc.ip + ":" + svc.port
         } accent />
-        <InfoRow label="Access" value={svc.ip === "internal" ? "Cluster-only" : "LAN LoadBalancer"} />
+        <InfoRow label="Access" value={svc.url ? "LAN (" + svc.url.replace("https://", "") + ")" : "Cluster-only"} />
         <InfoRow label="Category" value={svc.category} />
       </div>
 

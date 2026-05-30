@@ -377,11 +377,13 @@ function HardwareModel({
     return c;
   }, [scene, opacity]);
   return (
+    // raycast disabled — parent group's explicit hitbox handles all pointer events
     <primitive
       object={cloned}
       scale={scale}
       position={position}
       rotation={rotation}
+      raycast={() => {}}
     />
   );
 }
@@ -424,8 +426,8 @@ function HardwareNode({
       ref={groupRef}
       position={position}
       onClick={onClick}
-      onPointerOver={onPointerOver}
-      onPointerOut={onPointerOut}
+      onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onPointerOver(); }}
+      onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = "default"; onPointerOut(); }}
     >
       {/* Invisible large click hitbox — ensures reliable raycast regardless of model geometry */}
       <mesh>
@@ -523,24 +525,16 @@ function ServiceSphere({
   onPointerOver: () => void;
   onPointerOut: () => void;
 }) {
-  // Outer group: holds static position + scale animation (correct hit target)
+  // Single group: scale animation. Float wraps BOTH hit sphere + visual so they stay in sync.
   const outerRef = useRef<THREE.Group>(null!);
-  // Inner group: float animation only (cosmetic, doesn't affect raycasting)
-  const innerRef = useRef<THREE.Group>(null!);
   const catColor = CATEGORY_COLORS[service.category] || "#666";
   const isRunning = service.status === "running";
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (outerRef.current) {
-      // Scale in/out without changing position
       const targetScale = visible ? 1 : 0;
       const curr = outerRef.current.scale.x;
       outerRef.current.scale.setScalar(curr + (targetScale - curr) * (visible ? 0.12 : 0.22));
-    }
-    if (innerRef.current) {
-      // Float bob on inner group only — keeps hit box at static position
-      const t = clock.getElapsedTime() + delay * 0.37;
-      innerRef.current.position.y = Math.sin(t * 0.85) * 0.1;
     }
   });
 
@@ -548,18 +542,17 @@ function ServiceSphere({
     <group
       ref={outerRef}
       position={position}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      onPointerOver={(e) => { e.stopPropagation(); onPointerOver(); }}
-      onPointerOut={(e) => { e.stopPropagation(); onPointerOut(); }}
+      onClick={(e) => { e.stopPropagation(); if (outerRef.current && outerRef.current.scale.x > 0.1) onClick(); }}
+      onPointerOver={(e) => { e.stopPropagation(); if (outerRef.current && outerRef.current.scale.x > 0.1) { document.body.style.cursor = "pointer"; onPointerOver(); } }}
+      onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = "default"; onPointerOut(); }}
     >
-      {/* Invisible larger hit target so clicks register reliably */}
-      <mesh raycast={undefined}>
-        <sphereGeometry args={[0.5, 6, 6]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-
-      {/* Visual content floats independently */}
-      <group ref={innerRef}>
+      {/* Float wraps hit sphere + visual together — hover area always matches visual position */}
+      <Float speed={1.1} floatIntensity={0.08} rotationIntensity={0}>
+        {/* Invisible hit sphere — same position as visual */}
+        <mesh>
+          <sphereGeometry args={[0.48, 8, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
         {/* Glass icosahedron orb */}
         <mesh>
           <icosahedronGeometry args={[0.36, 1]} />
@@ -590,7 +583,7 @@ function ServiceSphere({
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}
         </Text>
-      </group>
+      </Float>
     </group>
   );
 }
@@ -735,7 +728,8 @@ export default function Scene3D({
   const gpuPos: [number, number, number] = [3.5, 0, 2];
   const routerPos: [number, number, number] = [0, 0, -4.5];
 
-  const showServices = showAllServices || selectedNode === "m2";
+  // Services are ONLY shown via the toggle button — node click just shows info callout
+  const showServices = showAllServices;
 
   const nodeInfoLines = [
     { label: "IP", value: node.ip },

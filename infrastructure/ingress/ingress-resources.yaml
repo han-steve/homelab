@@ -6,12 +6,16 @@
 # Exception: direct IP access still works for all services
 #
 # Service map:
-#   jellyfin.homelab      → jellyfin/jellyfin:8096         (HTTP backend)
-#   grafana.homelab       → monitoring/prometheus-grafana:80 (HTTP backend)
-#   argocd.homelab        → argocd/argocd-server:80         (HTTP backend, --insecure)
-#   apitable.homelab      → apitable/apitable-gateway:80    (HTTP backend)
-#   budget.homelab        → actual-budget/actual-budget:5006 (HTTPS backend)
-#   ocis.homelab          → ocis/ocis:9200                  (HTTPS backend)
+#   jellyfin.homelab      → jellyfin/jellyfin:8096             (HTTP backend)
+#   grafana.homelab       → monitoring/prometheus-grafana:80   (HTTP backend)
+#   prometheus.homelab    → monitoring/prometheus-kube-prometheus-prometheus:9090
+#   alertmanager.homelab  → monitoring/prometheus-kube-prometheus-alertmanager:9093
+#   longhorn.homelab      → longhorn-system/longhorn-frontend:80
+#   minio.homelab         → backup/minio:9001                  (MinIO console)
+#   argocd.homelab        → argocd/argocd-server:80            (HTTP backend, --insecure)
+#   apitable.homelab      → apitable/apitable-gateway:80       (HTTP backend)
+#   budget.homelab        → actual-budget/actual-budget:5006   (HTTPS backend)
+#   ocis.homelab          → ocis/ocis:9200                     (HTTPS backend)
 
 ---
 # Jellyfin — Media Server
@@ -263,3 +267,126 @@ spec:
                 name: ocis
                 port:
                   number: 9200
+
+---
+# Prometheus — Metrics & Alerting
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    # Basic auth recommended for production — skip for homelab
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - prometheus.homelab
+        - prom.homelab
+      secretName: prometheus-tls
+  rules:
+    - host: prometheus.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-kube-prometheus-prometheus
+                port:
+                  number: 9090
+    - host: prom.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-kube-prometheus-prometheus
+                port:
+                  number: 9090
+
+---
+# Alertmanager
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - alertmanager.homelab
+      secretName: alertmanager-tls
+  rules:
+    - host: alertmanager.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-kube-prometheus-alertmanager
+                port:
+                  number: 9093
+
+---
+# Longhorn — Distributed Block Storage UI
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - longhorn.homelab
+      secretName: longhorn-tls
+  rules:
+    - host: longhorn.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: longhorn-frontend
+                port:
+                  number: 80
+
+---
+# MinIO — Object Storage Console
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio
+  namespace: backup
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - minio.homelab
+      secretName: minio-tls
+  rules:
+    - host: minio.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9001

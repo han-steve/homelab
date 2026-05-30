@@ -18,6 +18,9 @@ grafana:
 
 prometheus:
   prometheusSpec:
+    # Enable admin API for TSDB snapshots (backup)
+    enableAdminAPI: true
+    
     # 30d retention for standard metrics (CPU, memory, disk, network)
     # Shorter than 90d to save space — 30d is plenty for trend analysis
     retention: 30d
