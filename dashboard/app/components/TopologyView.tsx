@@ -445,7 +445,7 @@ export default function TopologyView({
                   width={b.maxX - b.minX + pad * 2} height={b.maxY - b.minY + pad * 2}
                   rx={14} ry={14}
                   fill={fillColor} fillOpacity={0.03}
-                  stroke={fillColor} strokeWidth={0.8} strokeOpacity={0.15}
+                  stroke={fillColor} strokeWidth={0.8} strokeOpacity={isUnhealthyNs ? 0.4 : 0.15}
                   strokeDasharray={isUnhealthyNs ? "4 3" : undefined}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
@@ -456,7 +456,7 @@ export default function TopologyView({
                   fill={fillColor} fillOpacity={nsFilter === ns ? 0.8 : 0.4}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
-                >{ns}{nsFilter === ns ? " ✕" : ""}</text>
+                >{isUnhealthyNs ? "⚠ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}</text>
               </g>
             );
           });
