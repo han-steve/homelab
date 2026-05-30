@@ -12,6 +12,7 @@ interface ClusterStatus {
   nsPodCounts?: Record<string, number>;
   node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
 }
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
@@ -243,6 +244,7 @@ export default function Home() {
           onSelectService={setSelectedIdx}
           nodeMetrics={cluster?.nodeMetrics}
           nsPodCounts={cluster?.nsPodCounts}
+          recentEvents={cluster?.recentEvents}
         />
       </div>
     </div>

@@ -19,7 +19,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -29,6 +29,8 @@ export async function GET() {
       execAsync(`kubectl get nodes -o json 2>/dev/null`),
       // Node CPU/RAM from kubectl top (needs metrics-server or custom metrics)
       execAsync(`kubectl top nodes --no-headers 2>/dev/null`),
+      // Recent warning events across all namespaces
+      execAsync(`kubectl get events -A --field-selector=type=Warning --sort-by='.lastTimestamp' -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -108,6 +110,33 @@ export async function GET() {
       }
     }
 
+    // Parse recent warning events
+    interface K8sEvent { namespace: string; name: string; reason: string; message: string; count: number; age: string; }
+    const recentEvents: K8sEvent[] = [];
+    if (eventsResult.status === "fulfilled" && eventsResult.value.stdout.trim()) {
+      try {
+        const evData = JSON.parse(eventsResult.value.stdout);
+        const items = (evData.items ?? []).slice(-10).reverse(); // most recent first
+        for (const ev of items) {
+          const last = ev.lastTimestamp ?? ev.eventTime;
+          let age = "";
+          if (last) {
+            const ms = Date.now() - new Date(last).getTime();
+            const mins = Math.floor(ms / 60000);
+            age = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h`;
+          }
+          recentEvents.push({
+            namespace: ev.metadata?.namespace ?? "",
+            name: ev.involvedObject?.name ?? "",
+            reason: ev.reason ?? "",
+            message: (ev.message ?? "").slice(0, 80),
+            count: ev.count ?? 1,
+            age,
+          });
+        }
+      } catch {}
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -116,6 +145,7 @@ export async function GET() {
       nsPodCounts,
       node: nodeInfo,
       nodeMetrics,
+      recentEvents,
     });
   } catch {
     return Response.json(

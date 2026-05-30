@@ -31,13 +31,14 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
   onSelectService?: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -198,6 +199,28 @@ export default function DetailPanel({
           <p>GitOps: ArgoCD v3.4.2</p>
           <p>LB: 192.168.1.11-30</p>
         </div>
+
+        {recentEvents && recentEvents.length > 0 && (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
+              <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {recentEvents.slice(0, 5).map((ev, i) => (
+                <div key={i} className="text-xs font-mono bg-orange-500/5 border border-orange-500/15 rounded px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <span className="text-orange-400/80 truncate flex-1">{ev.reason}</span>
+                    <span className="text-gray-700 shrink-0">{ev.age}</span>
+                  </div>
+                  <div className="text-gray-600 truncate">{ev.name}</div>
+                  <div className="text-gray-700 truncate mt-0.5">{ev.message}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }
