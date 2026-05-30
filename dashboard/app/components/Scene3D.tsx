@@ -1361,12 +1361,13 @@ function ServicesDisplay({
 }
 
 /* ── ArgoCD floating glass object ─────────────────── */
-function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: {
+function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, apps }: {
   position: [number, number, number];
   isSelected?: boolean;
   onClick?: () => void;
   appsSynced?: number;
   appsTotal?: number;
+  apps?: { name: string; sync: string; health: string }[];
 }) {
   const innerRef = useRef<THREE.Mesh>(null!);
   const outerRef = useRef<THREE.Mesh>(null!);
@@ -1417,13 +1418,27 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: 
               fontFamily: "monospace",
               fontSize: 11,
               color: "#ccc",
-              width: 180,
+              width: 200,
               whiteSpace: "nowrap",
             }}>
               <div style={{ color: "#ef7b4d", marginBottom: 5, fontWeight: 600 }}>ArgoCD v3.4.2</div>
-              <div style={{ color: "#888", marginBottom: 3 }}>GitOps controller</div>
-              <div>Apps: {appsTotal ?? 14} total · {appsSynced ?? 13}/{appsTotal ?? 14} synced</div>
-              <div style={{ marginTop: 5 }}>
+              <div style={{ color: "#888", marginBottom: 5 }}>Apps: {appsSynced}/{appsTotal ?? 14} synced</div>
+              {apps && apps.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", marginBottom: 5 }}>
+                  {apps.slice(0, 12).map(app => {
+                    const synced = app.sync === "Synced";
+                    const healthy = app.health === "Healthy";
+                    const dotColor = !synced ? "#eab308" : !healthy ? "#f97316" : "#22c55e";
+                    return (
+                      <div key={app.name} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "#666" }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dotColor, flexShrink: 0, display: "inline-block" }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{app.name.replace(/^homelab-/, "").slice(0, 14)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ marginTop: 3, pointerEvents: "auto" }}>
                 <a href="https://argocd.homelab" target="_blank" rel="noreferrer"
                   style={{ color: "#ef7b4d", textDecoration: "none", fontSize: 10 }}
                   onClick={(e) => e.stopPropagation()}
@@ -1693,6 +1708,7 @@ export default function Scene3D({
   nodeUptime,
   nsMaxRestarts,
   nodePressures,
+  apps,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1710,6 +1726,7 @@ export default function Scene3D({
   nodeUptime?: string;
   nsMaxRestarts?: Record<string, number>;
   nodePressures?: { memory: boolean; disk: boolean; pid: boolean };
+  apps?: { name: string; sync: string; health: string }[];
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -2038,7 +2055,7 @@ export default function Scene3D({
       />
 
       {/* Floating infra objects */}
-      <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
+      <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} apps={apps} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
       <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} />
