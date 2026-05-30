@@ -23,6 +23,37 @@ function relTime(iso: string | undefined, now: number): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+/** Compute next cron run relative to lastSchedule (or now) for simple schedules */
+function nextCronRun(schedule: string, lastScheduleISO?: string): string {
+  const parts = schedule.trim().split(/\s+/);
+  if (parts.length !== 5) return "";
+  const [min, hr, dom, , dow] = parts;
+  const base = lastScheduleISO ? new Date(lastScheduleISO) : new Date();
+  const next = new Date(base);
+  // Simple daily: "0 N * * *"
+  if (dom === "*" && dow === "*" && /^\d+$/.test(hr) && /^\d+$/.test(min)) {
+    next.setUTCHours(parseInt(hr), parseInt(min), 0, 0);
+    if (next <= base) next.setUTCDate(next.getUTCDate() + 1);
+    const msFromNow = next.getTime() - Date.now();
+    if (msFromNow <= 0) return "soon";
+    const h = Math.floor(msFromNow / 3600000);
+    const m = Math.floor((msFromNow % 3600000) / 60000);
+    return h > 0 ? `in ${h}h${m > 0 ? `${m}m` : ""}` : `in ${m}m`;
+  }
+  // Weekly: "0 N * * W"
+  if (dom === "*" && /^\d+$/.test(dow) && /^\d+$/.test(hr) && /^\d+$/.test(min)) {
+    const targetDow = parseInt(dow);
+    next.setUTCHours(parseInt(hr), parseInt(min), 0, 0);
+    const curDow = next.getUTCDay();
+    let daysAhead = (targetDow - curDow + 7) % 7;
+    if (daysAhead === 0 && next <= base) daysAhead = 7;
+    next.setUTCDate(next.getUTCDate() + daysAhead);
+    const daysFromNow = Math.round((next.getTime() - Date.now()) / 86400000);
+    return daysFromNow <= 0 ? "soon" : daysFromNow === 1 ? "tomorrow" : `in ${daysFromNow}d`;
+  }
+  return "";
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   app: "#7c3aed",
   infra: "#f0883e",
@@ -1519,6 +1550,7 @@ export default function DetailPanel({
           <div className="space-y-1">
             {nsCronJobs[svc.namespace].map((cj, i) => {
               const ranRecently = cj.lastSchedule && (Date.now() - new Date(cj.lastSchedule).getTime()) < 3600000;
+              const nextRun = nextCronRun(cj.schedule, cj.lastSchedule);
               return (
               <div key={i} className={`text-xs font-mono rounded px-2 py-1 border ${ranRecently ? "bg-cyan-900/10 border-cyan-800/30" : "bg-gray-900/50 border-gray-800/50"}`}>
                 <div className="flex items-center justify-between gap-2">
@@ -1526,9 +1558,12 @@ export default function DetailPanel({
                   <span className="text-gray-500 truncate flex-1" title={cj.name}>{cj.name}</span>
                   <span className="shrink-0 text-gray-700 font-mono text-[9px]">{cj.schedule}</span>
                 </div>
-                {cj.lastSchedule && (
-                  <div className={`mt-0.5 pl-4 ${ranRecently ? "text-cyan-600/60" : "text-gray-700"}`}>last: {relTime(cj.lastSchedule, now)}</div>
-                )}
+                <div className="flex items-center gap-2 pl-4 mt-0.5">
+                  {cj.lastSchedule && (
+                    <span className={`${ranRecently ? "text-cyan-600/60" : "text-gray-700"}`}>last: {relTime(cj.lastSchedule, now)}</span>
+                  )}
+                  {nextRun && <span className="text-gray-700 ml-auto">next: {nextRun}</span>}
+                </div>
               </div>
               );
             })}
