@@ -550,6 +550,34 @@ export default function TopologyView({
                 strokeWidth={isActive ? 2 : 1.5}
               />
 
+              {/* CPU usage arc for service nodes */}
+              {isService && node.serviceIdx !== undefined && nsCpuRequestsM && (() => {
+                const ns = services[node.serviceIdx]?.namespace;
+                if (!ns) return null;
+                const cpuM = nsCpuRequestsM[ns];
+                if (!cpuM) return null;
+                const cpuPct = Math.min(1, cpuM / 15950);
+                if (cpuPct < 0.01) return null;
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + cpuPct * 2 * Math.PI;
+                const x1 = Math.cos(startAngle) * r;
+                const y1 = Math.sin(startAngle) * r;
+                const x2 = Math.cos(endAngle) * r;
+                const y2 = Math.sin(endAngle) * r;
+                const largeArc = cpuPct > 0.5 ? 1 : 0;
+                const arcColor = cpuPct > 0.3 ? "#ef4444" : cpuPct > 0.15 ? "#eab308" : "#58a6ff";
+                return (
+                  <path
+                    d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`}
+                    fill="none"
+                    stroke={arcColor}
+                    strokeWidth={2.5}
+                    opacity={0.3}
+                    strokeLinecap="round"
+                  />
+                );
+              })()}
+
               {/* Icon */}
               <text
                 textAnchor="middle"
