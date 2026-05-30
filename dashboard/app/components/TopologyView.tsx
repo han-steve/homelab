@@ -673,6 +673,28 @@ export default function TopologyView({
                     />
                   );
                 })()}
+                {/* CPU share mini-bar along inner top edge of namespace box */}
+                {nsCpuRequestsM?.[ns] && (() => {
+                  const maxCpuM = Math.max(1, ...Object.values(nsCpuRequestsM!));
+                  const pct = nsCpuRequestsM![ns] / maxCpuM;
+                  const boxW = b.maxX - b.minX + pad * 2;
+                  const rx = 14;
+                  const barMaxW = boxW - rx * 2;
+                  const barW = Math.max(3, barMaxW * pct);
+                  const bx = b.minX - pad + rx;
+                  const by = b.minY - pad + 1.5;
+                  const barColor = pct > 0.6 ? "#f59e0b" : pct > 0.3 ? "#60a5fa" : "#374151";
+                  return (
+                    <line
+                      x1={bx} y1={by} x2={bx + barW} y2={by}
+                      stroke={barColor}
+                      strokeWidth={2}
+                      strokeOpacity={0.15 + pct * 0.3}
+                      strokeLinecap="round"
+                      style={{ pointerEvents: "none" }}
+                    />
+                  );
+                })()}
               </g>
             );
           });
