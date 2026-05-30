@@ -226,6 +226,11 @@ export default function Home() {
                 .slice(0, 10)
                 .map((svc, _, filtered) => {
                   const idx = services.indexOf(svc);
+                  const nsIssues = cluster?.unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
+                  const hasCrit = nsIssues.some(p => p.status === "CrashLoopBackOff" || p.status === "Error");
+                  const maxRestarts = Math.max(0, ...nsIssues.map(p => p.restarts ?? 0));
+                  const pods = cluster?.nsPodCounts?.[svc.namespace];
+                  const dotColor = hasCrit ? "#ef4444" : nsIssues.length > 0 ? "#f97316" : "#22c55e";
                   return (
                     <div
                       key={svc.name}
@@ -235,9 +240,16 @@ export default function Home() {
                       <span className="text-lg">{svc.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-200 font-mono truncate">{svc.name}</div>
-                        <div className="text-xs text-gray-600 font-mono">{svc.namespace} · {svc.category}</div>
+                        <div className="text-xs text-gray-600 font-mono flex items-center gap-1.5">
+                          <span>{svc.namespace}</span>
+                          <span>·</span>
+                          <span>{svc.category}</span>
+                          {pods !== undefined && <span className="text-gray-700">{pods}p</span>}
+                          {hasCrit && <span className="text-red-400">⚠ {nsIssues.length} issue{nsIssues.length > 1 ? "s" : ""}</span>}
+                          {maxRestarts > 0 && !hasCrit && <span className="text-orange-400/80">↺{maxRestarts}</span>}
+                        </div>
                       </div>
-                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: svc.status === "running" ? "#22c55e" : "#ef4444" }} />
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor, boxShadow: hasCrit ? `0 0 4px ${dotColor}` : "none" }} />
                     </div>
                   );
                 })}
