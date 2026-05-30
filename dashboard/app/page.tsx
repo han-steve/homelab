@@ -15,6 +15,7 @@ interface ClusterStatus {
   nsMemRequestsMi?: Record<string, number>;
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
+  nsImages?: Record<string, string[]>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   node: { name: string; ready: boolean; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null } | null;
@@ -484,6 +485,7 @@ export default function Home() {
             podMetrics={cluster?.podMetrics}
             totalCpuRequestsM={cluster?.totalCpuRequestsM}
             totalMemRequestsMi={cluster?.totalMemRequestsMi}
+            nsImages={cluster?.nsImages}
           />
         )}
       </div>

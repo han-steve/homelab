@@ -58,6 +58,8 @@ export async function GET() {
     const nsMemRequestsMi: Record<string, number> = {}; // MiB per namespace
     // Track pod start times for uptime display
     const podStartTimes: Record<string, string> = {}; // "namespace/name" -> ISO timestamp
+    // Track container images per namespace (first container of each pod)
+    const nsImages: Record<string, Set<string>> = {};
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
       totalPods = (data.items ?? []).length;
@@ -68,6 +70,15 @@ export async function GET() {
         // Track start time
         const startTime = item.status?.startTime ?? item.metadata?.creationTimestamp;
         if (startTime) podStartTimes[`${ns}/${podName}`] = startTime;
+        // Track distinct images
+        for (const container of item.spec?.containers ?? []) {
+          if (container.image) {
+            if (!nsImages[ns]) nsImages[ns] = new Set();
+            // Strip registry prefix, keep repo:tag
+            const img = (container.image as string).replace(/^[^/]+\.[^/]+\//, "");
+            nsImages[ns].add(img);
+          }
+        }
         // Aggregate resource requests
         for (const container of item.spec?.containers ?? []) {
           const cpuReq = container.resources?.requests?.cpu ?? "";
@@ -97,6 +108,11 @@ export async function GET() {
           });
         }
       }
+    }
+    // Convert image sets to arrays
+    const nsImagesArr: Record<string, string[]> = {};
+    for (const [ns, imgs] of Object.entries(nsImages)) {
+      nsImagesArr[ns] = Array.from(imgs).slice(0, 8); // limit to 8 distinct images
     }
 
     let nodeInfo = null;
@@ -254,6 +270,7 @@ export async function GET() {
       nsMemRequestsMi,
       totalCpuRequestsM: Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0),
       totalMemRequestsMi: Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0),
+      nsImages: nsImagesArr,
       topCpuPods,
       podMetrics: parsedPodMetrics,
       node: nodeInfo,

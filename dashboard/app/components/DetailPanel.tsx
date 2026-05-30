@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -72,6 +72,7 @@ export default function DetailPanel({
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
+  nsImages?: Record<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -844,6 +845,29 @@ export default function DetailPanel({
           </>
         );
       })()}
+
+      {/* Container images for this namespace */}
+      {nsImages && nsImages[svc.namespace] && nsImages[svc.namespace].length > 0 && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Images</span>
+            <span className="text-xs font-mono text-gray-700">{nsImages[svc.namespace].length}</span>
+          </div>
+          <div className="space-y-0.5">
+            {nsImages[svc.namespace].map((img, i) => {
+              const [repo, tag] = img.includes(":") ? img.split(":") : [img, "latest"];
+              return (
+                <div key={i} className="flex items-center gap-1.5 text-xs font-mono">
+                  <span className="text-gray-700">📦</span>
+                  <span className="text-gray-600 truncate flex-1" title={img}>{repo.split("/").pop()}</span>
+                  <span className="shrink-0 text-gray-700/60 truncate max-w-20" title={tag}>{tag.slice(0, 12)}{tag.length > 12 ? "…" : ""}</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Related warning events for this namespace */}
       {recentEvents && (() => {
