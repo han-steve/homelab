@@ -950,6 +950,40 @@ export default function DetailPanel({
         })()}
 
         {/* PVC Storage allocation per namespace */}
+        {/* Pod churn — namespaces with highest recent pod starts */}
+        {recentPods && recentPods.length > 0 && (() => {
+          const now24 = Date.now() - 24 * 3600000;
+          const churn: Record<string, number> = {};
+          for (const p of recentPods) {
+            if (new Date(p.startTime).getTime() > now24) {
+              churn[p.namespace] = (churn[p.namespace] ?? 0) + 1;
+            }
+          }
+          const sorted = Object.entries(churn).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          if (sorted.length === 0) return null;
+          const maxCount = sorted[0][1];
+          return (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Pod Churn <span className="font-normal text-gray-800 text-[9px]">24h</span></h3>
+                <span className="text-[9px] font-mono text-gray-800">{recentPods.filter(p => new Date(p.startTime).getTime() > now24).length} starts</span>
+              </div>
+              <div className="space-y-0.5">
+                {sorted.map(([ns, count]) => (
+                  <div key={ns} className="flex items-center gap-1.5">
+                    <div className="w-20 truncate text-[9px] font-mono text-gray-700" title={ns}>{ns}</div>
+                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-cyan-500/40" style={{ width: `${(count / maxCount) * 100}%` }} />
+                    </div>
+                    <div className="text-[9px] font-mono text-cyan-700/70 w-5 text-right shrink-0">{count}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* PVC Storage allocation per namespace */}
         {nsPvcs && Object.keys(nsPvcs).length > 0 && (() => {
           const parseGiB = (cap: string): number => {
             const m = cap.match(/^(\d+(?:\.\d+)?)(Gi|Mi|Ti|G|M|T)i?$/);
