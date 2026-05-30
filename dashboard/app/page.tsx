@@ -21,6 +21,7 @@ interface ClusterStatus {
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   recentPods?: { namespace: string; name: string; startTime: string }[];
+  podChurn30m?: number;
   longRunningPods?: { namespace: string; name: string; startTime: string; ageDays: number }[];
   node: { name: string; ready: boolean; kubeletVersion?: string; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null; pressures?: string[] } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
@@ -674,6 +675,12 @@ export default function Home() {
                 {cluster.podStatusCounts.failed > 0 && (
                   <span className="hidden md:inline font-mono text-xs text-red-500/70 ml-1" title={`${cluster.podStatusCounts.failed} pod(s) Failed`}>✗{cluster.podStatusCounts.failed}</span>
                 )}
+              </>
+            )}
+            {cluster?.podChurn30m !== undefined && cluster.podChurn30m > 3 && (
+              <>
+                <span className="hidden lg:inline text-gray-800">|</span>
+                <span className="hidden lg:inline font-mono text-xs text-cyan-500/60" title={`${cluster.podChurn30m} pods started in last 30m`}>⟳{cluster.podChurn30m}</span>
               </>
             )}
             {cluster?.longhornStorage && (

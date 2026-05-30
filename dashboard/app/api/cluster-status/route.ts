@@ -304,6 +304,9 @@ export async function GET() {
       .sort((a, b) => b.cpuM - a.cpuM)
       .slice(0, 10);
 
+    // Pod churn: pods started in last 30 minutes (indicates rolling restarts or deployments)
+    const podChurn30m = Object.values(podStartTimes).filter(st => now - new Date(st).getTime() < 30 * 60 * 1000).length;
+
     // Recently started pods (from pods JSON start times, no metrics-server needed)
     const now = Date.now();
     const recentPods = Object.entries(podStartTimes)
@@ -503,6 +506,7 @@ export async function GET() {
       topCpuPods,
       podMetrics: parsedPodMetrics,
       recentPods,
+      podChurn30m,
       longRunningPods,
       node: nodeInfo,
       nodeMetrics,
