@@ -419,6 +419,9 @@ export default function TopologyView({
           const dur = (2.5 + (i * 0.4) % 2.5).toFixed(1) + "s";
           const isActive = link.style === "solid";
           const isHighlighted = !selectedNode || link.source === selectedNode || link.target === selectedNode;
+          // Pod count based link width: heavier lines for high-pod namespaces
+          const srcNs = sNode?.serviceIdx !== undefined ? services[sNode.serviceIdx]?.namespace : null;
+          const podWeight = srcNs && nsPodCounts?.[srcNs] ? Math.min(3.5, 1 + (nsPodCounts[srcNs] / 20)) : 1;
           // Namespace filter: dim links if neither endpoint is a service in the selected ns
           const nsFilteredOut = nsFilter && (() => {
             const sNode = topoNodes.find(n => n.id === link.source);
@@ -435,7 +438,7 @@ export default function TopologyView({
                 d={`M${s.x},${s.y} Q${cx},${cy} ${t.x},${t.y}`}
                 fill="none"
                 stroke={link.color}
-                strokeWidth={isHighlighted ? 2.5 : (link.style === "solid" ? 1.5 : 1)}
+                strokeWidth={isHighlighted ? 2.5 * podWeight : (link.style === "solid" ? 1.5 * podWeight : podWeight)}
                 strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
                 opacity={nsFilteredOut ? 0.04 : (selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45)}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
