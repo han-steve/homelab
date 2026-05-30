@@ -19,7 +19,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -35,6 +35,8 @@ export async function GET() {
       execAsync(`kubectl get nodes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
       // Certificate expiration from cert-manager
       execAsync(`kubectl get certificates -A -o json 2>/dev/null`),
+      // Pod-level CPU/RAM metrics
+      execAsync(`kubectl top pods -A --no-headers 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -207,6 +209,23 @@ export async function GET() {
       } catch {}
     }
 
+    // Parse pod-level metrics (kubectl top pods)
+    // Output: NAMESPACE   NAME   CPU(cores)   MEMORY(bytes)
+    const topPods: { namespace: string; name: string; cpu: string; memory: string }[] = [];
+    if (podMetricsResult.status === "fulfilled" && podMetricsResult.value.stdout.trim()) {
+      for (const line of podMetricsResult.value.stdout.trim().split("\n")) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 4) {
+          topPods.push({ namespace: parts[0], name: parts[1], cpu: parts[2], memory: parts[3] });
+        }
+      }
+    }
+    // Top 10 by CPU usage
+    const topCpuPods = topPods
+      .map(p => ({ ...p, cpuM: p.cpu.endsWith("m") ? parseInt(p.cpu) : parseFloat(p.cpu) * 1000 }))
+      .sort((a, b) => b.cpuM - a.cpuM)
+      .slice(0, 10);
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -215,6 +234,7 @@ export async function GET() {
       nsPodCounts,
       nsCpuRequestsM,
       nsMemRequestsMi,
+      topCpuPods,
       node: nodeInfo,
       nodeMetrics,
       recentEvents,

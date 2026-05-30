@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -68,6 +68,7 @@ export default function DetailPanel({
   apps?: { name: string; sync: string; health: string }[];
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
+  topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -221,6 +222,35 @@ export default function DetailPanel({
                         <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-xs font-mono text-gray-700 w-10 text-right shrink-0">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Top Pods by CPU */}
+        {topCpuPods && topCpuPods.length > 0 && (() => {
+          const maxM = topCpuPods[0].cpuM || 1;
+          return (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Top CPU Pods</h3>
+                <span className="text-xs font-mono text-gray-700">live usage</span>
+              </div>
+              <div className="space-y-1">
+                {topCpuPods.slice(0, 5).map((pod, i) => {
+                  const pct = (pod.cpuM / maxM) * 100;
+                  const label = pod.cpuM >= 1000 ? `${(pod.cpuM/1000).toFixed(1)}c` : `${pod.cpuM}m`;
+                  const color = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate" title={pod.namespace + "/" + pod.name}>{pod.name.split("-").slice(0, 2).join("-")}</span>
+                      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                      </div>
+                      <span className="text-xs font-mono w-10 text-right shrink-0" style={{ color }}>{label}</span>
                     </div>
                   );
                 })}
