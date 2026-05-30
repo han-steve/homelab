@@ -1542,6 +1542,70 @@ export default function DetailPanel({
                 </div>
               );
             })()}
+
+            {/* Unified Recent Activity Feed */}
+            {(recentPods && recentPods.length > 0) || (nsHelmReleases && Object.values(nsHelmReleases).flat().some(r => r.updated && (Date.now() - new Date(r.updated).getTime()) < 7 * 86400000)) ? (() => {
+              type ActivityItem =
+                | { kind: "pod"; ts: number; name: string; namespace: string }
+                | { kind: "helm"; ts: number; name: string; namespace: string };
+              const items: ActivityItem[] = [];
+              // Pod starts (last 48h only to keep it relevant)
+              if (recentPods) {
+                for (const pod of recentPods) {
+                  const ts = pod.startTime ? new Date(pod.startTime).getTime() : 0;
+                  if (ts > 0 && Date.now() - ts < 48 * 3600000) {
+                    items.push({ kind: "pod", ts, name: pod.name, namespace: pod.namespace });
+                  }
+                }
+              }
+              // Helm releases updated in last 7d
+              if (nsHelmReleases) {
+                for (const rels of Object.values(nsHelmReleases)) {
+                  for (const rel of rels) {
+                    if (rel.updated) {
+                      try {
+                        const ts = new Date(rel.updated).getTime();
+                        if (Date.now() - ts < 7 * 86400000) {
+                          items.push({ kind: "helm", ts, name: rel.name, namespace: "" });
+                        }
+                      } catch {/* ignore */}
+                    }
+                  }
+                }
+              }
+              if (items.length === 0) return null;
+              // Sort newest first, cap at 8
+              items.sort((a, b) => b.ts - a.ts);
+              const recent = items.slice(0, 8);
+              return (
+                <>
+                  <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent my-3" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Activity</h3>
+                    <span className="text-xs font-mono text-gray-700">{items.length} events</span>
+                  </div>
+                  <div className="relative pl-4 space-y-1.5 border-l border-gray-800/50 ml-1">
+                    {recent.map((item, i) => {
+                      const isPod = item.kind === "pod";
+                      const isHelm = item.kind === "helm";
+                      const dotColor = isPod ? "#22c55e" : "#06b6d4";
+                      const ageMs = Date.now() - item.ts;
+                      const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h` : `${Math.floor(ageMs / 86400000)}d`;
+                      return (
+                        <div key={i} className="relative text-xs font-mono flex items-center gap-1.5">
+                          <div className="absolute -left-[1.2rem] top-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dotColor + "80" }} />
+                          <span style={{ color: dotColor + "60" }}>{isPod ? "↑" : "⎈"}</span>
+                          <span className="text-gray-600 truncate flex-1" title={(item.namespace ? item.namespace + "/" : "") + item.name}>{item.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 24)}</span>
+                          {item.namespace && <span className="text-gray-800 text-[9px] shrink-0">{item.namespace.slice(0, 8)}</span>}
+                          <span className="text-gray-700 text-[10px] shrink-0">{ageStr}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })() : null}
+
             {recentEvents && recentEvents.length > 0 && (<>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
