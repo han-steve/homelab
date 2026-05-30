@@ -1392,6 +1392,20 @@ export default function DetailPanel({
                 />
               </div>
               <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
+              {/* Storage fill projection based on metricsHistory */}
+              {metricsHistory && metricsHistory.length >= 4 && (() => {
+                const storagePcts = metricsHistory.filter(h => (h as {storagePct?: number}).storagePct !== undefined).map(h => ({ ts: h.ts, pct: (h as {storagePct?: number}).storagePct! }));
+                if (storagePcts.length < 2) return null;
+                const oldest = storagePcts[0];
+                const newest = storagePcts[storagePcts.length - 1];
+                const growthPerMs = (newest.pct - oldest.pct) / Math.max(1, newest.ts - oldest.ts);
+                if (growthPerMs <= 0) return <div className="text-[9px] font-mono text-green-500/50 mt-0.5">↔ stable usage</div>;
+                const remaining = 90 - newest.pct;
+                const msToFull = remaining / growthPerMs;
+                const daysToFull = Math.round(msToFull / 86400000);
+                const color = daysToFull < 30 ? "#ef4444" : daysToFull < 90 ? "#eab308" : "#22c55e";
+                return <div className="text-[9px] font-mono mt-0.5" style={{ color }}>{daysToFull > 365 ? ">1yr to 90%" : `~${daysToFull}d to 90%`}</div>;
+              })()}
               {longhornVolumes && longhornVolumes.length > 0 && (
                 <>
                   {(() => {

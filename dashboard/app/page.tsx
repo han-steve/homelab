@@ -136,7 +136,8 @@ export default function Home() {
           const unhealthy = data.unhealthyPods?.length ?? 0;
           const appsHealthy = data.apps?.filter((a: {health: string}) => a.health === "Healthy").length ?? 0;
           const appsTotal = data.apps?.length ?? 0;
-          metricsHistory.current = [...metricsHistory.current.slice(-39), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now() }];          try { localStorage.setItem("hl_metrics_history", JSON.stringify(metricsHistory.current)); } catch {/* ignore */}          // Track total restarts for rolling restart detection
+          const storagePct = data.longhornStorage?.pct;
+          metricsHistory.current = [...metricsHistory.current.slice(-39), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now(), ...(storagePct !== undefined ? { storagePct } : {}) }];          try { localStorage.setItem("hl_metrics_history", JSON.stringify(metricsHistory.current)); } catch {/* ignore */}          // Track total restarts for rolling restart detection
           const totalRestarts = data.unhealthyPods?.reduce((s: number, p: {restarts?: number}) => s + (p.restarts ?? 0), 0) ?? 0;
           restartHistory.current = [...restartHistory.current.slice(-19), { ts: Date.now(), total: totalRestarts }];
           try { localStorage.setItem("hl_restart_history", JSON.stringify(restartHistory.current)); } catch {/* ignore */}
