@@ -1066,6 +1066,26 @@ export default function DetailPanel({
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">TLS Certs</h3>
               <span className="text-xs font-mono text-gray-700">{certificates.filter(c => c.ready).length}/{certificates.length}</span>
             </div>
+            {/* Expiry forecast mini-bar */}
+            {(() => {
+              const buckets = [30, 60, 90, 180, 365];
+              const counts = buckets.map(days => certificates.filter(c => c.daysLeft <= days && c.daysLeft > 0).length);
+              const expiring30 = certificates.filter(c => c.daysLeft <= 30 && c.daysLeft > 0).length;
+              const expiring90 = certificates.filter(c => c.daysLeft <= 90 && c.daysLeft > 0).length;
+              if (expiring90 === 0) return null;
+              return (
+                <div className="mb-2 flex gap-1 text-center">
+                  {expiring30 > 0 && <div className="flex-1 rounded px-1 py-0.5 bg-red-900/30 border border-red-800/30">
+                    <div className="text-[10px] font-mono font-bold text-red-400">{expiring30}</div>
+                    <div className="text-[8px] font-mono text-gray-700">&lt;30d</div>
+                  </div>}
+                  {expiring90 > expiring30 && <div className="flex-1 rounded px-1 py-0.5 bg-yellow-900/20 border border-yellow-800/20">
+                    <div className="text-[10px] font-mono font-bold text-yellow-500/80">{expiring90 - expiring30}</div>
+                    <div className="text-[8px] font-mono text-gray-700">30-90d</div>
+                  </div>}
+                </div>
+              );
+            })()}
             <div className="space-y-1.5">
               {[...certificates].sort((a, b) => a.daysLeft - b.daysLeft).map((cert, i) => {
                 const isExpiring = cert.daysLeft < 30;

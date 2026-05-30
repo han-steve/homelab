@@ -683,10 +683,11 @@ function CalloutPanel({
 }
 
 /* ── CPU usage arc ring near M2 ─────────────────────── */
-function CpuArcRing({ position, cpuPct, ramPct }: {
+function CpuArcRing({ position, cpuPct, ramPct, storagePct }: {
   position: [number, number, number];
   cpuPct: number;
   ramPct: number;
+  storagePct?: number;
 }) {
   const cpuRef = useRef<THREE.Mesh>(null!);
   const ramRef = useRef<THREE.Mesh>(null!);
@@ -704,14 +705,17 @@ function CpuArcRing({ position, cpuPct, ramPct }: {
 
   const cpuCurve = useMemo(() => buildArc(cpuPct, 1.45), [cpuPct]);
   const ramCurve = useMemo(() => buildArc(ramPct, 1.65), [ramPct]);
+  const storageCurve = useMemo(() => storagePct && storagePct > 0 ? buildArc(storagePct, 1.85) : null, [storagePct]);
 
   const cpuGeo = useMemo(() => cpuPct > 0 ? new THREE.TubeGeometry(cpuCurve, Math.max(4, Math.floor(cpuPct / 2)), 0.015, 6, false) : null, [cpuCurve, cpuPct]);
   const ramGeo = useMemo(() => ramPct > 0 ? new THREE.TubeGeometry(ramCurve, Math.max(4, Math.floor(ramPct / 2)), 0.015, 6, false) : null, [ramCurve, ramPct]);
+  const storageGeo = useMemo(() => storageCurve && storagePct && storagePct > 0 ? new THREE.TubeGeometry(storageCurve, Math.max(4, Math.floor(storagePct / 2)), 0.012, 6, false) : null, [storageCurve, storagePct]);
 
   if (!cpuGeo && !ramGeo) return null;
 
   const cpuColor = cpuPct > 80 ? "#ef4444" : cpuPct > 60 ? "#eab308" : "#58a6ff";
   const ramColor = ramPct > 80 ? "#ef4444" : ramPct > 60 ? "#eab308" : "#06b6d4";
+  const storageColor = storagePct && storagePct > 80 ? "#ef4444" : storagePct && storagePct > 60 ? "#eab308" : "#a855f7";
 
   return (
     <group position={[position[0], 0.06, position[2]]}>
@@ -724,6 +728,12 @@ function CpuArcRing({ position, cpuPct, ramPct }: {
         <torusGeometry args={[1.65, 0.008, 4, 64]} />
         <meshBasicMaterial color="#1a2030" transparent opacity={0.5} />
       </mesh>
+      {storagePct && storagePct > 0 && (
+        <mesh rotation-x={-Math.PI / 2}>
+          <torusGeometry args={[1.85, 0.008, 4, 64]} />
+          <meshBasicMaterial color="#1a2030" transparent opacity={0.5} />
+        </mesh>
+      )}
       {/* CPU arc */}
       {cpuGeo && (
         <mesh ref={cpuRef} geometry={cpuGeo} rotation-x={-Math.PI / 2}>
@@ -734,6 +744,12 @@ function CpuArcRing({ position, cpuPct, ramPct }: {
       {ramGeo && (
         <mesh ref={ramRef} geometry={ramGeo} rotation-x={-Math.PI / 2}>
           <meshBasicMaterial color={ramColor} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+      )}
+      {/* Storage arc */}
+      {storageGeo && (
+        <mesh geometry={storageGeo} rotation-x={-Math.PI / 2}>
+          <meshBasicMaterial color={storageColor} toneMapped={false} transparent opacity={0.7} />
         </mesh>
       )}
     </group>
@@ -1753,8 +1769,9 @@ export default function Scene3D({
         const cpuReqPct = nsCpuRequestsM ? Math.min(100, (Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950) * 100) : 0;
         const cpuToShow = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) || 0) : cpuReqPct;
         const ramToShow = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
+        const storagePct = longhornStorage ? longhornStorage.pct : undefined;
         return cpuToShow > 0 ? (
-          <CpuArcRing position={m2Pos} cpuPct={cpuToShow} ramPct={ramToShow} />
+          <CpuArcRing position={m2Pos} cpuPct={cpuToShow} ramPct={ramToShow} storagePct={storagePct} />
         ) : null;
       })()}
       {/* Refresh countdown sweep arc — outermost ring */}
