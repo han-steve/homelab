@@ -716,6 +716,33 @@ export default function DetailPanel({
           <p>LB: 192.168.1.11-30</p>
         </div>
 
+        {/* Helm releases overview */}
+        {nsHelmReleases && Object.keys(nsHelmReleases).length > 0 && (() => {
+          const allReleases = Object.values(nsHelmReleases).flat();
+          if (allReleases.length === 0) return null;
+          const deployed = allReleases.filter(r => r.status === "deployed").length;
+          return (
+            <>
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Helm Releases</h3>
+                <span className="text-xs font-mono text-gray-700">{deployed}/{allReleases.length} deployed</span>
+              </div>
+              <div className="space-y-0.5">
+                {allReleases.map((rel, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs font-mono">
+                    <div className="flex items-center gap-1.5 truncate flex-1">
+                      <span className={rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}>⎈</span>
+                      <span className="text-gray-600 truncate">{rel.name}</span>
+                    </div>
+                    <span className="shrink-0 text-gray-700 text-[10px] ml-2">{rel.chart.replace(/^[^-]+-/, "")}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
+
         {/* Certificate expiry section */}
         {certificates && certificates.length > 0 && (
           <>
@@ -1067,10 +1094,17 @@ export default function DetailPanel({
           </div>
           <div className="space-y-1">
             {nsHelmReleases[svc.namespace].map((rel, i) => (
-              <div key={i} className="text-xs font-mono flex items-center justify-between gap-2">
-                <span className={`shrink-0 ${rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}`}>⎈</span>
-                <span className="text-gray-500 truncate flex-1" title={rel.name}>{rel.name}</span>
-                <span className="shrink-0 text-gray-700 text-[10px]">{rel.chart.split("-").slice(-1)[0]}</span>
+              <div key={i} className="text-xs font-mono">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`shrink-0 ${rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}`}>⎈</span>
+                  <span className="text-gray-500 truncate flex-1" title={rel.name}>{rel.name}</span>
+                  <span className="shrink-0 text-cyan-700/60 text-[10px]">{rel.chart.replace(/^[^-]+-/, "")}</span>
+                </div>
+                {rel.updated && (
+                  <div className="text-gray-700/60 text-[10px] pl-4 mt-0.5">
+                    upgraded {relTime(new Date(rel.updated).toISOString(), now)}
+                  </div>
+                )}
               </div>
             ))}
           </div>
