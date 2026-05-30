@@ -204,6 +204,14 @@ export default function Home() {
                     <span className="text-xs">{cluster.recentEvents.length} warn</span>
                   </div>
                 )}
+                {/* Cert expiry warning */}
+                {cluster.certificates && cluster.certificates.some(c => c.daysLeft < 30 && c.daysLeft >= 0) && (
+                  <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                    <span className="text-xs">cert exp</span>
+                  </div>
+                )}
+                )}
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <div className="relative" data-apps-dropdown="1">
                   <button
