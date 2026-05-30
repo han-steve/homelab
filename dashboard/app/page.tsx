@@ -167,6 +167,17 @@ export default function Home() {
       if (e.key === "f" || e.key === "F") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if (e.key === "Escape") { setShowHelp(false); setShowSearch(false); setSearchQuery(""); }
+      // g = jump to most critical service
+      if (e.key === "g" || e.key === "G") {
+        if (!cluster) return;
+        const worst = services.reduce<{ idx: number; score: number } | null>((best, svc, i) => {
+          const issues = cluster.unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
+          const score = issues.filter(p => p.status === "CrashLoopBackOff").length * 100 + issues.length * 10 + (issues[0]?.restarts ?? 0);
+          if (!best || score > best.score) return { idx: i, score };
+          return best;
+        }, null);
+        if (worst && worst.score > 0) { setSelectedIdx(worst.idx); setPanelCollapsed(false); }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -222,6 +233,7 @@ export default function Home() {
                 ["3", "Switch to 3D rack view"],
                 ["T", "Switch to topology view"],
                 ["F / ⌘K", "Quick service search"],
+                ["G", "Jump to most critical service"],
                 ["S", "Toggle service spheres (3D)"],
                 ["←/→", "Navigate services"],
                 ["R", "Manual refresh"],
