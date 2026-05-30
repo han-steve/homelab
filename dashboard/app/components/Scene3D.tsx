@@ -312,7 +312,7 @@ function PulseRing({ color }: { color: string }) {
 
 /* ── Callout panel: square marker → dashed line → floating dialog ── */
 function CalloutPanel({
-  anchorPos, panelOffset, title, lines, color, visible, onClose
+  anchorPos, panelOffset, title, lines, color, visible, onClose, link
 }: {
   anchorPos: [number, number, number];
   panelOffset: [number, number, number];
@@ -321,6 +321,7 @@ function CalloutPanel({
   color: string;
   visible: boolean;
   onClose: () => void;
+  link?: string;
 }) {
   const panelPos = useMemo<[number, number, number]>(() => [
     anchorPos[0] + panelOffset[0],
@@ -429,6 +430,29 @@ function CalloutPanel({
               );
             })}
           </div>
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "block",
+                marginTop: 10,
+                padding: "5px 10px",
+                borderRadius: 5,
+                background: `${color}18`,
+                border: `1px solid ${color}30`,
+                color,
+                fontSize: 10,
+                textAlign: "center",
+                textDecoration: "none",
+                fontFamily: "inherit",
+                letterSpacing: 0.5,
+              }}
+            >
+              Open →
+            </a>
+          )}
         </div>
       </Html>
     </group>
@@ -1154,19 +1178,22 @@ export default function Scene3D({
       {/* Service callout panel */}
       {selectedIdx !== null && services[selectedIdx] && (function() {
         const svcPos = getSvcPos(selectedIdx) as [number, number, number];
+        const svc = services[selectedIdx];
+        const urlDisplay = svc.url ? svc.url.replace("https://", "") : (svc.ip !== "internal" ? svc.ip + ":" + svc.port : "cluster-internal");
         return (
           <CalloutPanel
             anchorPos={svcPos}
             panelOffset={[1.8, 0.5, 0]}
-            title={services[selectedIdx].icon + " " + services[selectedIdx].name}
+            title={svc.icon + " " + svc.name}
             lines={[
-              { label: "IP", value: services[selectedIdx].ip },
-              { label: "Port", value: String(services[selectedIdx].port) },
-              { label: "NS", value: services[selectedIdx].namespace },
-              { label: "Status", value: services[selectedIdx].status },
+              { label: "Status", value: svc.status },
+              { label: "NS", value: svc.namespace },
+              { label: "Access", value: urlDisplay },
+              { label: "Category", value: svc.category },
             ]}
-            color={services[selectedIdx].color}
+            color={svc.color}
             visible
+            link={svc.url}
             onClose={() => onSelect(null)}
           />
         );
