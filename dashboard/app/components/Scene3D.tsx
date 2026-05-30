@@ -1750,6 +1750,11 @@ export default function Scene3D({
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
       <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} />
+      {/* Subtle upward data particles: M2 → infra objects */}
+      <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(4.5, 4.2, -1)} color="#f0883e" count={2} />
+      <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-4.5, 3.7, -1)} color="#f0c020" count={2} />
+      <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(0, 5.2, -2)} color="#3b82f6" count={2} />
+      <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-2.5, 5.2, -2)} color="#326ce5" count={2} />
 
       {/* Subtle infra→M2 connection beams */}
       <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(4.5, 4.0, -1)]} color="#f0883e" lineWidth={0.6} transparent opacity={selectedInfra === "argocd" ? 0.4 : 0.06} />
