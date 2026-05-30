@@ -462,12 +462,40 @@ export default function TopologyView({
                 const by = r * 0.72;
                 return (
                   <g>
-                    {/* CPU bar */}
                     <rect x={bx} y={by} width={bw} height={bh} rx={1.5} fill="#1c2128" opacity={0.7} />
                     <rect x={bx} y={by} width={bw * cpu / 100} height={bh} rx={1.5} fill={cpuColor} opacity={0.9} />
-                    {/* RAM bar */}
                     <rect x={bx} y={by + bh + 2} width={bw} height={bh} rx={1.5} fill="#1c2128" opacity={0.7} />
                     <rect x={bx} y={by + bh + 2} width={bw * mem / 100} height={bh} rx={1.5} fill={memColor} opacity={0.9} />
+                  </g>
+                );
+              })()}
+
+              {/* Longhorn storage fill bar */}
+              {node.id === "longhorn" && longhornStorage && (() => {
+                const pct = Math.min(100, longhornStorage.pct);
+                const color = pct > 80 ? "#ef4444" : pct > 60 ? "#eab308" : "#3b82f6";
+                const bw = r * 1.4; const bh = 4; const bx = -bw / 2; const by = r * 0.72;
+                return (
+                  <g>
+                    <rect x={bx} y={by} width={bw} height={bh} rx={2} fill="#1c2128" opacity={0.7} />
+                    <rect x={bx} y={by} width={bw * pct / 100} height={bh} rx={2} fill={color} opacity={0.9} />
+                    <text x={0} y={by + bh + 8} textAnchor="middle" fontSize={7} fill={color} fontFamily="monospace">{pct}%</text>
+                  </g>
+                );
+              })()}
+
+              {/* ArgoCD sync progress bar */}
+              {node.id === "argocd" && apps && (() => {
+                const total = apps.length;
+                const synced = apps.filter(a => a.sync === "Synced").length;
+                const pct = total > 0 ? (synced / total) * 100 : 100;
+                const color = pct < 100 ? "#eab308" : "#22c55e";
+                const bw = r * 1.4; const bh = 4; const bx = -bw / 2; const by = r * 0.72;
+                return (
+                  <g>
+                    <rect x={bx} y={by} width={bw} height={bh} rx={2} fill="#1c2128" opacity={0.7} />
+                    <rect x={bx} y={by} width={bw * pct / 100} height={bh} rx={2} fill={color} opacity={0.9} />
+                    <text x={0} y={by + bh + 8} textAnchor="middle" fontSize={7} fill={color} fontFamily="monospace">{synced}/{total}</text>
                   </g>
                 );
               })()}
