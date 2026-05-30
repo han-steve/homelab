@@ -19,7 +19,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -27,6 +27,8 @@ export async function GET() {
         `kubectl get pods -A -o json --field-selector=status.phase!=Succeeded 2>/dev/null`
       ),
       execAsync(`kubectl get nodes -o json 2>/dev/null`),
+      // Node CPU/RAM from kubectl top (needs metrics-server or custom metrics)
+      execAsync(`kubectl top nodes --no-headers 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -82,11 +84,22 @@ export async function GET() {
       }
     }
 
+    // Parse kubectl top output (e.g. "m2   245m   4012Mi   3%   12%")
+    let nodeMetrics: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null = null;
+    if (metricsResult.status === "fulfilled" && metricsResult.value.stdout.trim()) {
+      const line = metricsResult.value.stdout.trim().split("\n")[0];
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 5) {
+        nodeMetrics = { cpuCores: parts[1], memoryi: parts[2], cpuPct: parts[3], memPct: parts[4] };
+      }
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
       unhealthyPods: unhealthyPods.slice(0, 20),
       node: nodeInfo,
+      nodeMetrics,
     });
   } catch {
     return Response.json(

@@ -8,7 +8,8 @@ interface ClusterStatus {
   timestamp: string;
   apps: { name: string; sync: string; health: string }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
-  node: { name: string; ready: boolean } | null;
+  node: { name: string; ready: boolean; cpu?: string; memory?: string } | null;
+  nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
@@ -163,6 +164,7 @@ export default function Home() {
           selectedIdx={selectedIdx}
           onClose={() => setSelectedIdx(null)}
           onSelectService={setSelectedIdx}
+          nodeMetrics={cluster?.nodeMetrics}
         />
       </div>
     </div>

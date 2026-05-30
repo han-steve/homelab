@@ -31,11 +31,12 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService,
+  selectedIdx, onClose, onSelectService, nodeMetrics,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
   onSelectService?: (idx: number) => void;
+  nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }) {
   const [search, setSearch] = useState("");
 
@@ -61,6 +62,13 @@ export default function DetailPanel({
           <InfoRow label="RAM" value={node.ram} />
           <InfoRow label="Storage" value={node.storage} />
           <InfoRow label="K8s" value={node.k8sVersion} />
+          {nodeMetrics && (
+            <>
+              <div className="h-px bg-gray-800/60 mt-1" />
+              <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent />
+              <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} />
+            </>
+          )}
         </div>
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4" />
