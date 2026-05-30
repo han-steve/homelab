@@ -1868,6 +1868,8 @@ export default function DetailPanel({
             <div className="flex flex-wrap gap-1">
               {colocated.map((cs, i) => {
                 const csIdx = services.indexOf(cs);
+                const csRestarts = nsMaxRestarts[cs.namespace] || 0;
+                const csStatusColor = cs.status === "running" ? "#22c55e" : cs.status === "degraded" ? "#eab308" : "#ef4444";
                 return (
                   <button key={i}
                     onClick={() => onSelectService?.(csIdx)}
@@ -1876,6 +1878,8 @@ export default function DetailPanel({
                   >
                     <span>{cs.icon}</span>
                     <span>{cs.name}</span>
+                    <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: csStatusColor }} />
+                    {csRestarts > 0 && <span className="text-yellow-600/70">↺</span>}
                   </button>
                 );
               })}
