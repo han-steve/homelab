@@ -75,6 +75,8 @@ export default function Home() {
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; appsHealthy: number; appsTotal: number; ts: number }[]>([]);
+  // Track per-pod restart counts over time to detect rolling restarts
+  const restartHistory = useRef<{ ts: number; total: number }[]>([]);
 
   const fetchStatus = useRef(() => {});
   fetchStatus.current = () => {
@@ -92,6 +94,9 @@ export default function Home() {
           const appsHealthy = data.apps?.filter((a: {health: string}) => a.health === "Healthy").length ?? 0;
           const appsTotal = data.apps?.length ?? 0;
           metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now() }];
+          // Track total restarts for rolling restart detection
+          const totalRestarts = data.unhealthyPods?.reduce((s: number, p: {restarts?: number}) => s + (p.restarts ?? 0), 0) ?? 0;
+          restartHistory.current = [...restartHistory.current.slice(-9), { ts: Date.now(), total: totalRestarts }];
         }
       })
       .catch(() => {})
@@ -637,6 +642,7 @@ export default function Home() {
             podStatusCounts={cluster?.podStatusCounts}
             nsStatefulSets={cluster?.nsStatefulSets}
             totalDaemonSets={cluster?.totalDaemonSets}
+            restartHistory={restartHistory.current}
           />
         )}
       </div>

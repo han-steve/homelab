@@ -120,7 +120,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets, restartHistory,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -154,6 +154,7 @@ export default function DetailPanel({
   podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
   nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
   totalDaemonSets?: number;
+  restartHistory?: { ts: number; total: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -236,11 +237,27 @@ export default function DetailPanel({
         {/* Critical pod alert */}
         {unhealthyPods && unhealthyPods.some(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50)) && (() => {
           const critPods = unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
+          // Detect rolling restart trend: compare last 2 samples
+          const restartTrend = (() => {
+            if (!restartHistory || restartHistory.length < 2) return null;
+            const last = restartHistory[restartHistory.length - 1];
+            const prev = restartHistory[restartHistory.length - 2];
+            const delta = last.total - prev.total;
+            if (delta > 5) return { dir: "↑↑", color: "#ef4444", label: `+${delta} restarts` };
+            if (delta > 0) return { dir: "↑", color: "#f97316", label: `+${delta} restarts` };
+            if (delta < 0) return { dir: "↓", color: "#22c55e", label: `${delta} restarts` };
+            return null;
+          })();
           return (
             <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-xs font-semibold font-mono text-red-400 uppercase tracking-wider">Critical Alert</span>
+                {restartTrend && (
+                  <span className="ml-auto text-[10px] font-mono px-1 rounded" style={{ color: restartTrend.color, backgroundColor: restartTrend.color + "15" }}>
+                    {restartTrend.dir} {restartTrend.label}
+                  </span>
+                )}
               </div>
               {critPods.slice(0, 2).map((p, i) => (
                 <div key={i} className="text-xs font-mono">
