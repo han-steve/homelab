@@ -1526,7 +1526,20 @@ export default function DetailPanel({
                       })()}
                     </div>
                     <span className="flex items-center gap-2 normal-case tracking-normal">
-                      {nsCpuRequestsM?.[ns] && <span className="text-gray-700">{nsCpuRequestsM[ns] >= 1000 ? `${(nsCpuRequestsM[ns]/1000).toFixed(1)}c` : `${nsCpuRequestsM[ns]}m`}cpu</span>}
+                      {nsCpuRequestsM?.[ns] && (() => {
+                        const nsC = nsCpuRequestsM[ns];
+                        const maxC = Math.max(1, ...Object.values(nsCpuRequestsM));
+                        const pct = Math.round((nsC / maxC) * 100);
+                        const cpuStr = nsC >= 1000 ? `${(nsC/1000).toFixed(1)}c` : `${nsC}m`;
+                        return (
+                          <span className="flex items-center gap-0.5" title={`${ns}: ${cpuStr} CPU requests`}>
+                            <span className="text-gray-700 text-[9px]">{cpuStr}</span>
+                            <span className="inline-block w-8 h-1 bg-gray-900 rounded-full overflow-hidden align-middle">
+                              <span className="block h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: "#58a6ff35" }} />
+                            </span>
+                          </span>
+                        );
+                      })()}
                       {nsMemRequestsMi?.[ns] && nsMemRequestsMi[ns] > 0 && <span className="text-gray-800">{nsMemRequestsMi[ns] >= 1024 ? `${(nsMemRequestsMi[ns]/1024).toFixed(0)}G` : `${nsMemRequestsMi[ns]}M`}</span>}
                       {nsPodCounts?.[ns] !== undefined && (() => {
                         const total = nsPodCounts![ns];
