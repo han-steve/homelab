@@ -1736,6 +1736,17 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
               <meshPhysicalMaterial color="#3b82f6" metalness={0.5} roughness={0.3} clearcoat={0.6} emissive="#3b82f6" emissiveIntensity={isSelected ? 0.6 : (0.3 - i * 0.08)} />
             </mesh>
           ))}
+          {/* Storage fill level: inner cylinder showing used % */}
+          {storageData && storageData.pct > 0 && (() => {
+            const fillH = 0.62 * (storageData.pct / 100);
+            const fillColor = storageData.pct > 80 ? "#ef4444" : storageData.pct > 60 ? "#eab308" : "#60a5fa";
+            return (
+              <mesh position={[0, -0.31 + fillH / 2, 0]}>
+                <cylinderGeometry args={[0.28, 0.28, fillH, 24]} />
+                <meshBasicMaterial color={fillColor} transparent opacity={0.25} toneMapped={false} />
+              </mesh>
+            );
+          })()}
         </group>
         <Text position={[0, -0.75, 0]} fontSize={0.09} color="#3b82f6" anchorX="center">Longhorn</Text>
         {storageData && (
