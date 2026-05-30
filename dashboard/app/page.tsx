@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState, useEffect, useRef, Suspense } from "react";
 import DetailPanel from "./components/DetailPanel";
+import { services } from "./data";
 
 interface ClusterStatus {
   timestamp: string;
@@ -54,6 +55,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
@@ -106,8 +109,9 @@ export default function Home() {
       if (e.key === "t" || e.key === "T") setView("topology");
       if (e.key === "r" || e.key === "R") fetchStatus.current();
       if (e.key === "p" || e.key === "P") setPanelCollapsed(v => !v);
-      if (e.key === "?" || e.key === "/") setShowHelp(v => !v);
-      if (e.key === "Escape") setShowHelp(false);
+      if (e.key === "?" || e.key === "/") { e.preventDefault(); setShowHelp(v => !v); }
+      if (e.key === "f" || e.key === "F") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
+      if (e.key === "Escape") { setShowHelp(false); setShowSearch(false); setSearchQuery(""); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -143,6 +147,7 @@ export default function Home() {
               {[
                 ["3", "Switch to 3D rack view"],
                 ["T", "Switch to topology view"],
+                ["F", "Quick service search"],
                 ["R", "Manual refresh"],
                 ["P", "Toggle detail panel"],
                 ["?", "Toggle this help"],
@@ -155,6 +160,56 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-4 pt-3 border-t border-gray-800 text-xs font-mono text-gray-700 text-center">Click anywhere to close</div>
+          </div>
+        </div>
+      )}
+      {/* Service quick-search overlay [F] */}
+      {showSearch && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/50 backdrop-blur-sm" onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
+          <div className="bg-gray-900/98 border border-gray-700/60 rounded-xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+              <span className="text-gray-600 text-sm">🔍</span>
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); }
+                  if (e.key === "Enter") {
+                    const matches = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase()));
+                    if (matches.length > 0) { setSelectedIdx(services.indexOf(matches[0])); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); }
+                  }
+                }}
+                placeholder="Search services... (Enter to select)"
+                className="flex-1 bg-transparent text-gray-200 text-sm font-mono placeholder-gray-700 focus:outline-none"
+              />
+              <span className="text-gray-700 text-xs font-mono">ESC</span>
+            </div>
+            <div className="max-h-64 overflow-y-auto p-2">
+              {services
+                .filter(s => !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase()))
+                .slice(0, 10)
+                .map((svc, _, filtered) => {
+                  const idx = services.indexOf(svc);
+                  return (
+                    <div
+                      key={svc.name}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800/60 cursor-pointer transition-colors"
+                      onClick={() => { setSelectedIdx(idx); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); }}
+                    >
+                      <span className="text-lg">{svc.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-200 font-mono truncate">{svc.name}</div>
+                        <div className="text-xs text-gray-600 font-mono">{svc.namespace} · {svc.category}</div>
+                      </div>
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: svc.status === "running" ? "#22c55e" : "#ef4444" }} />
+                    </div>
+                  );
+                })}
+              {services.filter(s => !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <div className="text-center text-gray-700 font-mono text-xs py-6">no matching services</div>
+              )}
+            </div>
           </div>
         </div>
       )}
