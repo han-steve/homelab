@@ -18,6 +18,7 @@ export default function TopologyView({
   unhealthyNamespaces,
   apps,
   longhornStorage,
+  recentEvents,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
@@ -25,6 +26,7 @@ export default function TopologyView({
   unhealthyNamespaces?: Set<string>;
   apps?: { name: string; sync: string; health: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -446,6 +448,20 @@ export default function TopologyView({
                   <g transform={`translate(${-r * 0.72}, ${-r * 0.72})`}>
                     <circle r={8} fill="#1c2128" stroke={node.color} strokeWidth={1} opacity={0.85} />
                     <text textAnchor="middle" dominantBaseline="middle" fontSize={7} fill={node.color} fontFamily="monospace" fontWeight="bold">{pods}</text>
+                  </g>
+                );
+              })()}
+
+              {/* Warning events badge on service nodes */}
+              {isService && node.serviceIdx !== undefined && recentEvents && (() => {
+                const svc = services[node.serviceIdx];
+                if (!svc) return null;
+                const evtCount = recentEvents.filter(e => e.namespace === svc.namespace).length;
+                if (evtCount === 0) return null;
+                return (
+                  <g transform={`translate(${r * 0.72}, ${r * 0.72})`}>
+                    <circle r={8} fill="#1c2128" stroke="#eab308" strokeWidth={1} opacity={0.9} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={7} fill="#eab308" fontFamily="monospace" fontWeight="bold">{evtCount}</text>
                   </g>
                 );
               })()}

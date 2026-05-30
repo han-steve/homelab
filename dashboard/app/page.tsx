@@ -187,6 +187,7 @@ export default function Home() {
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
               apps={cluster?.apps}
               longhornStorage={cluster?.longhornStorage}
+              recentEvents={cluster?.recentEvents}
             />
           )}
         </Suspense>
