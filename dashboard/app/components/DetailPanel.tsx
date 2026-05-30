@@ -843,7 +843,13 @@ export default function DetailPanel({
               return nsKeys.map(ns => (
                 <div key={ns}>
                   <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1 flex items-center justify-between">
-                    <span>{ns}</span>
+                    <div className="flex items-center gap-1.5">
+                      {(() => {
+                        const hasRecent = recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
+                        return hasRecent ? <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 animate-pulse shrink-0" title="pod started in last hour" /> : null;
+                      })()}
+                      <span>{ns}</span>
+                    </div>
                     <span className="flex items-center gap-2 normal-case tracking-normal">
                       {nsCpuRequestsM?.[ns] && <span className="text-gray-700">{nsCpuRequestsM[ns] >= 1000 ? `${(nsCpuRequestsM[ns]/1000).toFixed(1)}c` : `${nsCpuRequestsM[ns]}m`}cpu</span>}
                       {nsPodCounts?.[ns] !== undefined && (() => {

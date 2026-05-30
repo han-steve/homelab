@@ -1688,6 +1688,9 @@ export default function Scene3D({
     ...(longhornStorage ? [
       { label: "Volume", value: `${longhornStorage.usedGiB}G/${longhornStorage.totalGiB}G (${longhornStorage.pct}%)` },
     ] : []),
+    ...(totalPods !== undefined ? [
+      { label: "Pods", value: `${totalPods} running${unhealthyPodCount && unhealthyPodCount > 0 ? ` · ${unhealthyPodCount} issue(s)` : ""}` },
+    ] : []),
   ];
   const gpuInfoLines = [
     { label: "IP", value: gpuNode.ip },
