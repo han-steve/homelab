@@ -1208,6 +1208,13 @@ function ServiceSphere({
         </Text>
         {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
         {isUnhealthy && <UnhealthyDot />}
+        {/* Pod count badge — visible when pods > 1 and not selected */}
+        {nsPods !== undefined && nsPods > 1 && !isSelected && (
+          <Text position={[0.30, 0.36, 0.22]} fontSize={0.052} color={nsPods > 10 ? "#f97316" : "#4a6a5a"} anchorX="center" anchorY="middle"
+            // @ts-expect-error
+            toneMapped={false}
+          >{nsPods}p</Text>
+        )}
         {/* Hover tooltip */}
         {isHovered && !isSelected && (
           <Html position={[0.55, 0.45, 0]} style={{ pointerEvents: "none" }} zIndexRange={[10, 20]}>
