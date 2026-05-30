@@ -1313,7 +1313,13 @@ export default function DetailPanel({
             <div>
               <div className="flex items-center justify-between">
                 <span>Storage: Longhorn</span>
-                <span className="text-gray-500">{longhornStorage.usedGiB}G / {longhornStorage.totalGiB}G</span>
+                <div className="flex items-center gap-1.5">
+                  {longhornVolumes && (() => {
+                    const bad = longhornVolumes.filter(v => v.robustness !== "healthy" && v.robustness !== "unknown" && v.state === "attached").length;
+                    return bad > 0 ? <span className="text-[9px] text-orange-400/70 font-mono border border-orange-700/30 px-1 rounded">⚠{bad} degraded</span> : null;
+                  })()}
+                  <span className="text-gray-500">{longhornStorage.usedGiB}G / {longhornStorage.totalGiB}G</span>
+                </div>
               </div>
               <div className="mt-0.5 h-1 rounded-full bg-gray-800 overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-500"
