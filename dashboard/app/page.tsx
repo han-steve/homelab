@@ -331,9 +331,10 @@ export default function Home() {
                 </span>
                 {/* Warning events indicator */}
                 {cluster.recentEvents && cluster.recentEvents.length > 0 && (
-                  <div className="relative hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                    <span className="text-xs">{cluster.recentEvents.length} warn</span>
+                  <div className="relative hidden sm:flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400 max-w-[220px] overflow-hidden">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
+                    <span className="text-xs shrink-0">{cluster.recentEvents.length}×</span>
+                    <span className="text-xs text-orange-300/70 truncate">{cluster.recentEvents[cluster.recentEvents.length - 1]?.reason}: {cluster.recentEvents[cluster.recentEvents.length - 1]?.message.slice(0, 40)}</span>
                   </div>
                 )}
                 {/* Cert expiry warning */}
