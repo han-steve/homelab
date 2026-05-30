@@ -116,6 +116,18 @@ export default function Home() {
       <div className={`fixed top-0 left-0 right-0 h-0.5 z-50 transition-opacity duration-300 ${isLoading ? "opacity-100" : "opacity-0"}`}>
         <div className="h-full bg-blue-500/70 animate-pulse" style={{ boxShadow: "0 0 8px #3b82f6" }} />
       </div>
+      {/* Critical alert banner */}
+      {cluster && (() => {
+        const crashPods = cluster.unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "OOMKilled");
+        const outOfSync = cluster.apps.filter(a => a.sync !== "Synced");
+        if (crashPods.length === 0 && outOfSync.length === 0) return null;
+        return (
+          <div className={`fixed top-0.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-1.5 rounded-b-lg text-xs font-mono pointer-events-none ${crashPods.length > 0 ? "bg-red-950/90 border-x border-b border-red-700/50 text-red-300" : "bg-yellow-950/90 border-x border-b border-yellow-700/50 text-yellow-300"}`}>
+            {crashPods.length > 0 && <span>⚠ {crashPods.length} pod{crashPods.length !== 1 ? "s" : ""} crashing: {crashPods.slice(0, 2).map(p => p.name.split("-")[0]).join(", ")}{crashPods.length > 2 ? "…" : ""}</span>}
+            {outOfSync.length > 0 && <span className="text-yellow-400">⚡ {outOfSync.length} app{outOfSync.length !== 1 ? "s" : ""} OutOfSync: {outOfSync.slice(0, 2).map(a => a.name).join(", ")}{outOfSync.length > 2 ? "…" : ""}</span>}
+          </div>
+        );
+      })()}
       {/* Main view */}
       <div className="flex-1 relative min-w-0">
         <Suspense
