@@ -172,6 +172,13 @@ export default function Home() {
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.node?.ready ? "bg-green-500 shadow-[0_0_4px_#22c55e]" : "bg-red-500"}`} />
                   <span className="hidden md:inline text-gray-500">node</span>
                 </span>
+                {/* Warning events indicator */}
+                {cluster.recentEvents && cluster.recentEvents.length > 0 && (
+                  <div className="relative hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    <span className="text-xs">{cluster.recentEvents.length} warn</span>
+                  </div>
+                )}
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <div className="relative" data-apps-dropdown="1">
                   <button
