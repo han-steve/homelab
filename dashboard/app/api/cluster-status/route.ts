@@ -2,6 +2,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
+const execLarge = (cmd: string) => execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
 
 interface ArgoApp {
   name: string;
@@ -24,7 +25,7 @@ export async function GET() {
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
-      execAsync(
+      execLarge(
         `kubectl get pods -A -o json --field-selector=status.phase!=Succeeded 2>/dev/null`
       ),
       execAsync(`kubectl get nodes -o json 2>/dev/null`),

@@ -465,6 +465,34 @@ export default function DetailPanel({
           );
         })()}
 
+        {/* Cluster scope stats strip */}
+        {(nsDeployments || nsHelmReleases || k8sServices) && (() => {
+          const nsAll = new Set<string>();
+          for (const src of [nsDeployments, nsStatefulSets, nsCronJobs, nsIngress, nsPvcs]) {
+            if (src) Object.keys(src).forEach(k => nsAll.add(k));
+          }
+          const nsCount = nsAll.size;
+          const helmCount = nsHelmReleases ? Object.values(nsHelmReleases).flat().length : 0;
+          const svcCount = k8sServices ? k8sServices.filter(s => s.type === "LoadBalancer" || s.type === "NodePort").length : 0;
+          if (nsCount + helmCount + svcCount === 0) return null;
+          return (
+            <div className="mb-3 flex gap-1.5 text-center">
+              {nsCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-sm font-bold font-mono text-gray-400">{nsCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">Namespaces</div>
+              </div>}
+              {helmCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-sm font-bold font-mono text-blue-400/60">{helmCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">Helm Releases</div>
+              </div>}
+              {svcCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-sm font-bold font-mono text-purple-400/60">{svcCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">LB/NodePort</div>
+              </div>}
+            </div>
+          );
+        })()}
+
         {/* Namespace resource allocation mini-charts (CPU + Memory) */}
         {(nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0) && (() => {
           const cpuEntries = Object.entries(nsCpuRequestsM)
