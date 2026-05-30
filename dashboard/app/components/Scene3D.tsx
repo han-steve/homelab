@@ -57,9 +57,14 @@ function HoloGrid() {
             vec2 g = fract(vUv * 30.0);
             float line = smoothstep(0.02,0.0, min(g.x, g.y));
             float fade = 1.0 - smoothstep(0.0, 0.5, length(vUv - 0.5));
-            float scan = smoothstep(0.48,0.5, fract(vUv.y - uTime*0.05));
-            float a = (line * 0.12 + scan * 0.04) * fade;
-            gl_FragColor = vec4(0.2, 0.5, 1.0, a);
+            // Slow scan line moving across the grid
+            float scanY = fract(vUv.y * 0.5 - uTime * 0.04);
+            float scan = exp(-scanY * 18.0) * 0.35;
+            // Secondary faster scan
+            float scanX = fract(vUv.x * 0.5 - uTime * 0.025);
+            float scanX2 = exp(-scanX * 22.0) * 0.15;
+            float a = (line * 0.14 + scan + scanX2) * fade;
+            gl_FragColor = vec4(0.18, 0.46, 1.0, a);
           }
         `}
       />
@@ -973,8 +978,8 @@ export default function Scene3D({
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       onPointerMissed={() => { setSelectedNode(null); setSelectedInfra(null); onSelect(null); }}
     >
-      <color attach="background" args={["#07070e"]} />
-      <fog attach="fog" args={["#07070e", 20, 40]} />
+      <color attach="background" args={["#05050e"]} />
+      <fog attach="fog" args={["#07070f", 18, 38]} />
       <ResponsiveCamera />
 
       {/* Lighting */}
@@ -1158,8 +1163,8 @@ export default function Scene3D({
       />
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0.35} luminanceSmoothing={0.85} intensity={0.5} />
-        <Vignette eskil={false} offset={0.1} darkness={0.7} />
+        <Bloom luminanceThreshold={0.30} luminanceSmoothing={0.9} intensity={0.65} mipmapBlur />
+        <Vignette eskil={false} offset={0.08} darkness={0.75} />
       </EffectComposer>
     </Canvas>
   );
