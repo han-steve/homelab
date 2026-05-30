@@ -1674,6 +1674,8 @@ export default function Scene3D({
     ...(nodeMetrics ? [
       { label: "CPU use", value: `${nodeMetrics.cpuCores} (${nodeMetrics.cpuPct})` },
       { label: "RAM use", value: `${nodeMetrics.memoryi} (${nodeMetrics.memPct})` },
+    ] : nsCpuRequestsM ? [
+      { label: "CPU req", value: `${(Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0)/1000).toFixed(1)}c / 15.9c (${((Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950)*100).toFixed(0)}%)` },
     ] : []),
     ...(appsTotal !== undefined ? [
       { label: "ArgoCD", value: `${appsSynced}/${appsTotal} synced` },
@@ -1755,8 +1757,17 @@ export default function Scene3D({
       <Particles />
       <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} period={10} />
       <FloorHealthAura position={m2Pos} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} />
-      {nodeMetrics && <CpuArcGauge position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} />}
-      {nodeMetrics && <RamArcGauge position={m2Pos} ramPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
+      {(() => {
+        const cpuReqPct = nsCpuRequestsM ? Math.min(100, (Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950) * 100) : 0;
+        const cpuPct = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) || 0) : cpuReqPct;
+        const ramPct = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
+        return cpuPct > 0 ? (
+          <>
+            <CpuArcGauge position={m2Pos} cpuPct={cpuPct} />
+            {ramPct > 0 && <RamArcGauge position={m2Pos} ramPct={ramPct} />}
+          </>
+        ) : null;
+      })()}
       {/* Lightning arcs when CPU > 60% */}
       {nodeMetrics && parseInt(nodeMetrics.cpuPct, 10) > 60 && (
         <LightningArc from={new THREE.Vector3(m2Pos[0], m2Pos[1] + 1.5, m2Pos[2])} to={new THREE.Vector3(-2.5, 5.2, -2)} intensity={Math.min(1, (parseInt(nodeMetrics.cpuPct, 10) - 60) / 40)} />

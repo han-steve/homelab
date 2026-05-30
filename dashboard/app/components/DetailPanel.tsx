@@ -176,13 +176,14 @@ export default function DetailPanel({
         </div>
         {/* Quick status ribbon */}
         {(apps || unhealthyPods || longhornStorage || certificates) && (() => {
-          const podStatus = unhealthyPods ? (unhealthyPods.length === 0 ? "ok" : "warn") : "unknown";
+          const hasCriticalPod = unhealthyPods?.some(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
+          const podStatus = unhealthyPods ? (unhealthyPods.length === 0 ? "ok" : hasCriticalPod ? "err" : "warn") : "unknown";
           const argoStatus = apps ? (apps.every(a => a.sync === "Synced") ? "ok" : "warn") : "unknown";
           const storageStatus = longhornStorage ? (longhornStorage.pct > 80 ? "err" : longhornStorage.pct > 60 ? "warn" : "ok") : "unknown";
           const certStatus = certificates ? (certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 14) ? "err" : certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 30) ? "warn" : "ok") : "unknown";
           // Compute panel health score
           const syncScore = apps && apps.length > 0 ? (apps.filter(a => a.sync === "Synced").length / apps.length) * 35 : 35;
-          const podScore = unhealthyPods ? (unhealthyPods.length === 0 ? 35 : Math.max(0, 35 - unhealthyPods.length * 5)) : 35;
+          const podScore = unhealthyPods ? (unhealthyPods.length === 0 ? 35 : hasCriticalPod ? Math.max(0, 35 - unhealthyPods.length * 7) : Math.max(5, 35 - unhealthyPods.length * 3)) : 35;
           const storageScore = longhornStorage ? (longhornStorage.pct > 80 ? 0 : longhornStorage.pct > 60 ? 8 : 15) : 15;
           const cpuReqPctForScore = (totalCpuRequestsM && totalCpuRequestsM > 0) ? (totalCpuRequestsM / 15950) * 100 : 0;
           const cpuScore = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) > 85 ? 0 : parseInt(nodeMetrics.cpuPct, 10) > 70 ? 7 : 15)
@@ -195,11 +196,27 @@ export default function DetailPanel({
             err: { label: "ERR", color: "#ef4444", bg: "#1c0505" },
             unknown: { label: "--", color: "#6b7280", bg: "#111827" },
           };
-          const items = [
-            { label: "Pods", status: podStatus },
-            { label: "ArgoCD", status: argoStatus },
-            { label: "Storage", status: storageStatus },
-            { label: "Certs", status: certStatus },
+          const items: { label: string; status: string; value?: string }[] = [
+            {
+              label: "Pods",
+              status: podStatus,
+              value: unhealthyPods ? (hasCriticalPod ? `${unhealthyPods.length} issues` : unhealthyPods.length === 0 ? "all ok" : `${unhealthyPods.length} warn`) : undefined,
+            },
+            {
+              label: "ArgoCD",
+              status: argoStatus,
+              value: apps ? `${apps.filter(a => a.sync === "Synced").length}/${apps.length}` : undefined,
+            },
+            {
+              label: "Storage",
+              status: storageStatus,
+              value: longhornStorage ? `${longhornStorage.pct.toFixed(0)}%` : undefined,
+            },
+            {
+              label: "Certs",
+              status: certStatus,
+              value: certificates ? `${certificates.length} certs` : undefined,
+            },
           ];
           return (
             <div className="mb-4">
@@ -208,12 +225,13 @@ export default function DetailPanel({
                 <span className="text-lg font-bold font-mono" style={{ color: scoreColor }}>{healthScore}%</span>
               </div>
               <div className="flex gap-1.5 mb-0">
-                {items.map(({ label, status }) => {
+                {items.map(({ label, status, value }) => {
                   const s = STATUS[status];
                   return (
                     <div key={label} className="flex-1 rounded px-1 py-1 text-center" style={{ backgroundColor: s.bg, border: `1px solid ${s.color}20` }}>
                       <div className="text-gray-600 font-mono" style={{ fontSize: 9 }}>{label}</div>
                       <div className="font-mono font-semibold" style={{ fontSize: 9, color: s.color }}>{s.label}</div>
+                      {value && <div className="font-mono truncate" style={{ fontSize: 8, color: s.color, opacity: 0.7 }}>{value}</div>}
                     </div>
                   );
                 })}
