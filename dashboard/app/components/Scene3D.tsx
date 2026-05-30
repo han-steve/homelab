@@ -752,6 +752,17 @@ function CpuArcRing({ position, cpuPct, ramPct, storagePct }: {
           <meshBasicMaterial color={storageColor} toneMapped={false} transparent opacity={0.7} />
         </mesh>
       )}
+      {/* Floating labels for each ring */}
+      {cpuGeo && cpuPct > 0 && (
+        <Text position={[-1.45, 0.06, 0]} fontSize={0.08} color={cpuColor} anchorX="right" toneMapped={false}>
+          {cpuPct.toFixed(0)}%
+        </Text>
+      )}
+      {ramGeo && ramPct > 0 && (
+        <Text position={[-1.65, 0.06, 0]} fontSize={0.07} color={ramColor} anchorX="right" toneMapped={false}>
+          {ramPct.toFixed(0)}%
+        </Text>
+      )}
     </group>
   );
 }
