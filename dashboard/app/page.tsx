@@ -249,6 +249,7 @@ export default function Home() {
               refreshProgress={(30 - nextRefreshIn) / 30}
               longhornStorage={cluster?.longhornStorage}
               totalPods={cluster?.totalPods}
+              recentEvents={cluster?.recentEvents}
             />
           ) : (
             <TopologyView

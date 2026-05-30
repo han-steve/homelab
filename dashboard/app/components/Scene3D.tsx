@@ -957,9 +957,28 @@ function HeartbeatRing({ color, phaseOffset = 0 }: { color: string; phaseOffset?
   );
 }
 
+/* ── Fast warning pulse ring for services with events ──── */
+function EventPulseRing() {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = (clock.getElapsedTime() * 1.8) % 1; // faster: 1.8 cycles/sec
+    const r = 0.42 + t * 0.45;
+    ref.current.scale.setScalar(r / 0.42);
+    const mat = ref.current.material as THREE.MeshBasicMaterial;
+    mat.opacity = Math.max(0, 0.45 * (1 - t * 1.5));
+  });
+  return (
+    <mesh ref={ref} rotation={[Math.PI / 2, 0, 0]} raycast={() => {}}>
+      <torusGeometry args={[0.42, 0.01, 6, 48]} />
+      <meshBasicMaterial color="#eab308" transparent opacity={0.45} toneMapped={false} />
+    </mesh>
+  );
+}
+
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
-  isSelected, isHovered, isUnhealthy = false, onClick, onPointerOver, onPointerOut,
+  isSelected, isHovered, isUnhealthy = false, hasEvents = false, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
@@ -969,6 +988,7 @@ function ServiceSphere({
   isSelected: boolean;
   isHovered: boolean;
   isUnhealthy?: boolean;
+  hasEvents?: boolean;
   onClick: () => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -1025,6 +1045,8 @@ function ServiceSphere({
             <meshBasicMaterial color="#ef4444" transparent opacity={0.5} toneMapped={false} />
           </mesh>
         )}
+        {/* Fast amber pulse for services with warning events */}
+        {hasEvents && !isUnhealthy && <EventPulseRing />}
         {/* Outer glow shell on hover/select */}
         {(isSelected || isHovered) && (
           <mesh>
@@ -1080,7 +1102,7 @@ function ServiceSphere({
 
 /* ── Services radial display ─────────────────────────── */
 function ServicesDisplay({
-  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces,
+  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents,
 }: {
   nodePos: [number, number, number];
   visible: boolean;
@@ -1090,6 +1112,7 @@ function ServicesDisplay({
   onHoverSvc: (i: number) => void;
   onUnhoverSvc: () => void;
   unhealthyNamespaces?: Set<string>;
+  recentEvents?: { namespace: string }[];
 }) {
   const positions = useMemo<[number, number, number][]>(() => {
     const cols = 5;
@@ -1137,6 +1160,7 @@ function ServicesDisplay({
               isSelected={selectedSvc === i}
               isHovered={hoveredSvc === i}
               isUnhealthy={!!unhealthyNamespaces?.has(svc.namespace)}
+              hasEvents={!!recentEvents?.some(e => e.namespace === svc.namespace)}
               onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
               onPointerOver={() => onHoverSvc(i)}
               onPointerOut={onUnhoverSvc}
@@ -1434,6 +1458,7 @@ export default function Scene3D({
   refreshProgress,
   longhornStorage,
   totalPods,
+  recentEvents,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1444,6 +1469,7 @@ export default function Scene3D({
   refreshProgress?: number; // 0 = just refreshed, 1 = about to refresh
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   totalPods?: number;
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1690,6 +1716,7 @@ export default function Scene3D({
         onHoverSvc={(i) => setHoveredSvc(i)}
         onUnhoverSvc={() => setHoveredSvc(null)}
         unhealthyNamespaces={unhealthyNamespaces}
+        recentEvents={recentEvents}
       />
 
       {/* Service callout panel */}
