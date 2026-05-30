@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -100,6 +100,7 @@ export default function DetailPanel({
   nsIngress?: Record<string, string[]>;
   nsDeployments?: Record<string, { name: string; desired: number; available: number; ready: number }[]>;
   nsCronJobs?: Record<string, { name: string; schedule: string; lastSchedule?: string; active: number }[]>;
+  nsHelmReleases?: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -1050,6 +1051,26 @@ export default function DetailPanel({
                 {cj.lastSchedule && (
                   <div className="text-gray-700 mt-0.5 pl-4">last: {relTime(cj.lastSchedule, now)}</div>
                 )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Helm releases for this namespace */}
+      {nsHelmReleases && nsHelmReleases[svc.namespace] && nsHelmReleases[svc.namespace].length > 0 && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Helm</span>
+            <span className="text-xs font-mono text-gray-700">{nsHelmReleases[svc.namespace].length} release{nsHelmReleases[svc.namespace].length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="space-y-1">
+            {nsHelmReleases[svc.namespace].map((rel, i) => (
+              <div key={i} className="text-xs font-mono flex items-center justify-between gap-2">
+                <span className={`shrink-0 ${rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}`}>⎈</span>
+                <span className="text-gray-500 truncate flex-1" title={rel.name}>{rel.name}</span>
+                <span className="shrink-0 text-gray-700 text-[10px]">{rel.chart.split("-").slice(-1)[0]}</span>
               </div>
             ))}
           </div>

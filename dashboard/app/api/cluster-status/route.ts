@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult, helmResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -48,6 +48,8 @@ export async function GET() {
       execAsync(`kubectl get deployments -A -o json 2>/dev/null`),
       // CronJobs for last schedule time and status
       execAsync(`kubectl get cronjobs -A -o json 2>/dev/null`),
+      // Helm releases (all namespaces)
+      execAsync(`helm ls -A --output json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -341,6 +343,7 @@ export async function GET() {
       nsIngress,
       nsDeployments,
       nsCronJobs,
+      nsHelmReleases,
       certificates,
     });
   } catch {    // Parse Traefik IngressRoutes: namespace → [hostname]
@@ -390,6 +393,23 @@ export async function GET() {
             schedule: cj.spec?.schedule ?? "",
             lastSchedule,
             active,
+          });
+        }
+      } catch {}
+    }    // Parse Helm releases: namespace → [{name, chart, appVersion, status, updated}]
+    const nsHelmReleases: Record<string, { name: string; chart: string; appVersion: string; status: string; updated: string }[]> = {};
+    if (helmResult.status === "fulfilled" && helmResult.value.stdout.trim()) {
+      try {
+        const helmData: { name: string; namespace: string; chart: string; app_version: string; status: string; updated: string }[] = JSON.parse(helmResult.value.stdout);
+        for (const rel of helmData) {
+          const ns = rel.namespace ?? "";
+          if (!nsHelmReleases[ns]) nsHelmReleases[ns] = [];
+          nsHelmReleases[ns].push({
+            name: rel.name,
+            chart: rel.chart,
+            appVersion: rel.app_version || "",
+            status: rel.status,
+            updated: rel.updated,
           });
         }
       } catch {}
