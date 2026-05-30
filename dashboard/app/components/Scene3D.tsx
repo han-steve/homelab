@@ -1655,6 +1655,7 @@ export default function Scene3D({
   nsPodCounts,
   nsCpuRequestsM,
   unhealthyPodCount,
+  nodeUptime,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1669,6 +1670,7 @@ export default function Scene3D({
   nsPodCounts?: Record<string, number>;
   nsCpuRequestsM?: Record<string, number>;
   unhealthyPodCount?: number;
+  nodeUptime?: string;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1895,7 +1897,7 @@ export default function Scene3D({
         sublabel={(() => {
           if (nodeMetrics) return `CPU ${nodeMetrics.cpuPct} · RAM ${nodeMetrics.memPct}`;
           const cpuPct = nsCpuRequestsM ? Math.round((Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950) * 100) : null;
-          if (cpuPct !== null) return `${cpuPct}% req · ${totalPods ?? "?"} pods`;
+          if (cpuPct !== null) return `${cpuPct}% req · ${totalPods ?? "?"} pods${nodeUptime ? ` · ↑${nodeUptime}` : ""}`;
           return node.cpu.split("(")[0].trim();
         })()}
         color="#58a6ff"

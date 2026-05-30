@@ -267,6 +267,7 @@ export default function Home() {
               nsPodCounts={cluster?.nsPodCounts}
               nsCpuRequestsM={cluster?.nsCpuRequestsM}
               unhealthyPodCount={cluster?.unhealthyPods.length}
+              nodeUptime={cluster?.node?.uptime}
             />
           ) : (
             <TopologyView
