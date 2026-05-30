@@ -52,26 +52,27 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
 
+  const fetchStatus = useRef(() => {});
+  fetchStatus.current = () => {
+    setIsLoading(true);
+    setNextRefreshIn(30);
+    fetch("/api/cluster-status")
+      .then((r) => r.json())
+      .then((data: ClusterStatus) => {
+        setCluster(data);
+        if (data.nodeMetrics) {
+          const cpu = parseInt(data.nodeMetrics.cpuPct, 10) || 0;
+          const ram = parseInt(data.nodeMetrics.memPct, 10) || 0;
+          metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, ts: Date.now() }];
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  };
+
   useEffect(() => {
-    const fetchStatus = () => {
-      setIsLoading(true);
-      setNextRefreshIn(30);
-      fetch("/api/cluster-status")
-        .then((r) => r.json())
-        .then((data: ClusterStatus) => {
-          setCluster(data);
-          // Store metrics history (keep last 20 samples)
-          if (data.nodeMetrics) {
-            const cpu = parseInt(data.nodeMetrics.cpuPct, 10) || 0;
-            const ram = parseInt(data.nodeMetrics.memPct, 10) || 0;
-            metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, ts: Date.now() }];
-          }
-        })
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    };
-    fetchStatus();
-    const id = setInterval(fetchStatus, 30000);
+    fetchStatus.current();
+    const id = setInterval(() => fetchStatus.current(), 30000);
     // Countdown timer
     const countdown = setInterval(() => {
       setNextRefreshIn(v => Math.max(0, v - 1));
@@ -283,12 +284,18 @@ export default function Home() {
           </div>
         )}
         {cluster && (
-          <div className="absolute bottom-5 right-5 text-xs text-gray-700 pointer-events-none font-mono hidden sm:block">
+          <div className="absolute bottom-5 right-5 text-xs text-gray-700 font-mono hidden sm:flex items-center gap-2">
             {isLoading ? (
               <span className="text-blue-500/60 animate-pulse">syncing...</span>
             ) : (
-              <span>last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · refresh in {nextRefreshIn}s</span>
+              <span className="pointer-events-none">last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · refresh in {nextRefreshIn}s</span>
             )}
+            <button
+              onClick={() => fetchStatus.current()}
+              disabled={isLoading}
+              className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
+              title="Manual refresh"
+            >↺</button>
           </div>
         )}
       </div>
