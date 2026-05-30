@@ -667,6 +667,7 @@ export default function DetailPanel({
           const allNs = Object.keys(nsPodCounts).sort();
           const unhealthyNsSet = new Set((unhealthyPods ?? []).map(p => p.namespace));
           const critNsSet = new Set((unhealthyPods ?? []).filter(p => p.status === "CrashLoopBackOff" || p.status === "Error").map(p => p.namespace));
+          const eventNsSet = new Set((recentEvents ?? []).map(e => e.namespace));
           return (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
@@ -678,19 +679,22 @@ export default function DetailPanel({
                   const pods = nsPodCounts[ns] || 0;
                   const isCrit = critNsSet.has(ns);
                   const isWarn = !isCrit && unhealthyNsSet.has(ns);
+                  const hasEvents = !isCrit && !isWarn && eventNsSet.has(ns);
                   const isActive = nsFilter === ns;
                   const dotColor = isCrit ? "#ef4444" : isWarn ? "#f97316" : "#22c55e";
                   const borderClass = isCrit ? "border-red-800/60" : isWarn ? "border-orange-800/50" : isActive ? "border-blue-600/50" : "border-gray-800/40";
                   const shortNs = ns.replace(/^kube-/, "k-").replace(/^longhorn-/, "lh-").replace(/^ingress-/, "ing-").replace(/^external-/, "ext-").replace(/^home-/, "hm-").replace(/^homelab-/, "hl-").replace(/^cert-/, "ct-").replace(/^actual-/, "ac-").replace(/^vc-/, "vc:");
+                  const evCount = (recentEvents ?? []).filter(e => e.namespace === ns).length;
                   return (
                     <button key={ns}
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
-                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-900/60 border ${borderClass} text-left transition-colors hover:bg-gray-800/60 cursor-pointer`}
-                      title={`${ns} · ${pods} pods${isCrit ? " · CRITICAL" : isWarn ? " · WARNING" : ""}`}
+                      className={`relative flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-900/60 border ${borderClass} text-left transition-colors hover:bg-gray-800/60 cursor-pointer`}
+                      title={`${ns} · ${pods} pods${isCrit ? " · CRITICAL" : isWarn ? " · WARNING" : ""}${evCount > 0 ? ` · ${evCount} events` : ""}`}
                     >
                       <span className="w-1.5 h-1.5 rounded-full shrink-0 flex-none" style={{ backgroundColor: dotColor, boxShadow: isCrit ? `0 0 4px ${dotColor}` : "none" }} />
                       <span className={`truncate text-[9px] font-mono flex-1 ${isCrit ? "text-red-400/70" : isWarn ? "text-orange-400/60" : isActive ? "text-blue-400/80" : "text-gray-600"}`}>{shortNs}</span>
                       <span className="text-[9px] font-mono text-gray-700 shrink-0">{pods}</span>
+                      {hasEvents && evCount > 0 && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-orange-400/60 animate-pulse" />}
                     </button>
                   );
                 })}
