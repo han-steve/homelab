@@ -3,6 +3,21 @@
 import { useState } from "react";
 import { services, node, type Service } from "../data";
 
+function Sparkline({ data, color, height = 20 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 2) return null;
+  const w = 120, h = height;
+  const max = Math.max(...data, 1);
+  const xs = data.map((_, i) => (i / (data.length - 1)) * w);
+  const ys = data.map(v => h - (v / max) * (h - 2) - 1);
+  const d = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+  return (
+    <svg width={w} height={h} className="block">
+      <polyline points={xs.map((x, i) => `${x},${ys[i]}`).join(" ")} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={2} fill={color} opacity={0.9} />
+    </svg>
+  );
+}
+
 function StatusBadge({ status }: { status: Service["status"] }) {
   const styles = {
     running: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -31,7 +46,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -39,6 +54,7 @@ export default function DetailPanel({
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
+  metricsHistory?: { cpu: number; ram: number; ts: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -73,6 +89,18 @@ export default function DetailPanel({
               <div className="h-px bg-gray-800/60 mt-1" />
               <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent bar />
               <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} bar />
+              {metricsHistory && metricsHistory.length >= 2 && (
+                <div className="flex items-end gap-3 mt-2">
+                  <div>
+                    <div className="text-xs text-gray-700 font-mono mb-0.5">CPU history</div>
+                    <Sparkline data={metricsHistory.map(m => m.cpu)} color="#58a6ff" height={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-700 font-mono mb-0.5">RAM history</div>
+                    <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} />
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

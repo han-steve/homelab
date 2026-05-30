@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import DetailPanel from "./components/DetailPanel";
 
 interface ClusterStatus {
@@ -47,6 +47,7 @@ export default function Home() {
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
+  const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
 
   useEffect(() => {
     const fetchStatus = () => {
@@ -54,7 +55,15 @@ export default function Home() {
       setNextRefreshIn(30);
       fetch("/api/cluster-status")
         .then((r) => r.json())
-        .then(setCluster)
+        .then((data: ClusterStatus) => {
+          setCluster(data);
+          // Store metrics history (keep last 20 samples)
+          if (data.nodeMetrics) {
+            const cpu = parseInt(data.nodeMetrics.cpuPct, 10) || 0;
+            const ram = parseInt(data.nodeMetrics.memPct, 10) || 0;
+            metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, ts: Date.now() }];
+          }
+        })
         .catch(() => {})
         .finally(() => setIsLoading(false));
     };
@@ -245,6 +254,7 @@ export default function Home() {
           nodeMetrics={cluster?.nodeMetrics}
           nsPodCounts={cluster?.nsPodCounts}
           recentEvents={cluster?.recentEvents}
+          metricsHistory={metricsHistory.current}
         />
       </div>
     </div>
