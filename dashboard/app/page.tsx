@@ -407,6 +407,7 @@ export default function Home() {
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
               refreshProgress={(30 - nextRefreshIn) / 30}
               longhornStorage={cluster?.longhornStorage}
+              longhornVolumeCount={cluster?.longhornVolumes?.length}
               totalPods={cluster?.totalPods}
               recentEvents={cluster?.recentEvents}
               nsPodCounts={cluster?.nsPodCounts}

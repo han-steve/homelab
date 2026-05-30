@@ -1809,11 +1809,12 @@ function CiliumObject({ position, isSelected, onClick, nsCount }: { position: [n
 }
 
 /* ── Longhorn storage object ─────────────────────────── */
-function LonghornObject({ position, isSelected, onClick, storageData }: {
+function LonghornObject({ position, isSelected, onClick, storageData, volumeCount }: {
   position: [number, number, number];
   isSelected?: boolean;
   onClick?: () => void;
   storageData?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  volumeCount?: number;
 }) {
   const ref = useRef<THREE.Group>(null!);
   useFrame(({ clock }) => {
@@ -1846,6 +1847,14 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
           })()}
         </group>
         <Text position={[0, -0.75, 0]} fontSize={0.09} color="#3b82f6" anchorX="center">Longhorn</Text>
+        {volumeCount !== undefined && (
+          <Billboard position={[0.65, 0.5, 0]}>
+            <Text fontSize={0.1} color="#3b82f699" anchorX="center" anchorY="middle"
+              // @ts-expect-error
+              toneMapped={false}
+            >{`${volumeCount}vol`}</Text>
+          </Billboard>
+        )}
         {storageData && (
           <Text position={[0, 0.72, 0]} fontSize={0.11} color={storageData.pct > 80 ? "#ef4444" : storageData.pct > 60 ? "#eab308" : "#3b82f6"} anchorX="center" toneMapped={false}>
             {storageData.pct}%
@@ -2048,6 +2057,7 @@ export default function Scene3D({
   unhealthyNamespaces,
   refreshProgress,
   longhornStorage,
+  longhornVolumeCount,
   totalPods,
   recentEvents,
   nsPodCounts,
@@ -2068,6 +2078,7 @@ export default function Scene3D({
   unhealthyNamespaces?: Set<string>;
   refreshProgress?: number; // 0 = just refreshed, 1 = about to refresh
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  longhornVolumeCount?: number;
   totalPods?: number;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   nsPodCounts?: Record<string, number>;
@@ -2462,7 +2473,7 @@ export default function Scene3D({
       {/* Floating infra objects */}
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} apps={apps} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} nsCount={nsPodCounts ? Object.keys(nsPodCounts).length : undefined} />
-      <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
+      <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} volumeCount={longhornVolumeCount} />
       <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} podStatusCounts={undefined} appsSynced={appsSynced} appsTotal={appsTotal} kubeletVersion={kubeletVersion} />
       {/* Ambient namespace count billboard near M2 */}
       {nsPodCounts && !showServices && (
