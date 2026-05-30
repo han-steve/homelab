@@ -105,6 +105,13 @@ export default function DetailPanel({
           const argoStatus = apps ? (apps.every(a => a.sync === "Synced") ? "ok" : "warn") : "unknown";
           const storageStatus = longhornStorage ? (longhornStorage.pct > 80 ? "err" : longhornStorage.pct > 60 ? "warn" : "ok") : "unknown";
           const certStatus = certificates ? (certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 14) ? "err" : certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 30) ? "warn" : "ok") : "unknown";
+          // Compute panel health score
+          const syncScore = apps && apps.length > 0 ? (apps.filter(a => a.sync === "Synced").length / apps.length) * 35 : 35;
+          const podScore = unhealthyPods ? (unhealthyPods.length === 0 ? 35 : Math.max(0, 35 - unhealthyPods.length * 5)) : 35;
+          const storageScore = longhornStorage ? (longhornStorage.pct > 80 ? 0 : longhornStorage.pct > 60 ? 8 : 15) : 15;
+          const cpuScore = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) > 85 ? 0 : parseInt(nodeMetrics.cpuPct, 10) > 70 ? 7 : 15) : 15;
+          const healthScore = Math.round(syncScore + podScore + storageScore + cpuScore);
+          const scoreColor = healthScore >= 90 ? "#22c55e" : healthScore >= 70 ? "#eab308" : "#ef4444";
           const STATUS: Record<string, { label: string; color: string; bg: string }> = {
             ok: { label: "OK", color: "#22c55e", bg: "#052e16" },
             warn: { label: "WARN", color: "#eab308", bg: "#1c1400" },
@@ -118,16 +125,22 @@ export default function DetailPanel({
             { label: "Certs", status: certStatus },
           ];
           return (
-            <div className="flex gap-1.5 mb-4">
-              {items.map(({ label, status }) => {
-                const s = STATUS[status];
-                return (
-                  <div key={label} className="flex-1 rounded px-1 py-1 text-center" style={{ backgroundColor: s.bg, border: `1px solid ${s.color}20` }}>
-                    <div className="text-gray-600 font-mono" style={{ fontSize: 9 }}>{label}</div>
-                    <div className="font-mono font-semibold" style={{ fontSize: 9, color: s.color }}>{s.label}</div>
-                  </div>
-                );
-              })}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-mono text-gray-700 uppercase tracking-wider">Cluster Health</span>
+                <span className="text-lg font-bold font-mono" style={{ color: scoreColor }}>{healthScore}%</span>
+              </div>
+              <div className="flex gap-1.5 mb-0">
+                {items.map(({ label, status }) => {
+                  const s = STATUS[status];
+                  return (
+                    <div key={label} className="flex-1 rounded px-1 py-1 text-center" style={{ backgroundColor: s.bg, border: `1px solid ${s.color}20` }}>
+                      <div className="text-gray-600 font-mono" style={{ fontSize: 9 }}>{label}</div>
+                      <div className="font-mono font-semibold" style={{ fontSize: 9, color: s.color }}>{s.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })()}
