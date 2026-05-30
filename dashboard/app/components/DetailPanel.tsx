@@ -744,9 +744,14 @@ export default function DetailPanel({
                       </div>
                       {nsCpuRequestsM?.[ns] && (() => {
                         const cpuPct = Math.min(100, (nsCpuRequestsM[ns] / 15950) * 100);
-                        const cpuColor = cpuPct > 20 ? "#58a6ff30" : "#1f2937";
-                        return <div className="w-full h-0.5 rounded-full mt-0.5" style={{ background: "#1f2937" }}>
-                          <div className="h-full rounded-full" style={{ width: `${cpuPct}%`, backgroundColor: cpuColor.replace("30", "60") }} />
+                        const memPct = nsMemRequestsMi?.[ns] ? Math.min(100, (nsMemRequestsMi[ns] / 30720) * 100) : 0;
+                        return <div className="w-full mt-0.5 flex gap-0.5">
+                          <div className="flex-1 h-0.5 rounded-full" style={{ background: "#1f2937" }}>
+                            <div className="h-full rounded-full" style={{ width: `${cpuPct}%`, backgroundColor: cpuPct > 20 ? "#58a6ff60" : "#1f2937" }} />
+                          </div>
+                          {memPct > 0 && <div className="flex-1 h-0.5 rounded-full" style={{ background: "#1f2937" }}>
+                            <div className="h-full rounded-full" style={{ width: `${memPct}%`, backgroundColor: memPct > 20 ? "#a855f760" : "#1f2937" }} />
+                          </div>}
                         </div>;
                       })()}
                       {hasEvents && evCount > 0 && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-orange-400/60 animate-pulse" />}
