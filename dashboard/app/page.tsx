@@ -10,6 +10,8 @@ interface ClusterStatus {
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
   totalPods?: number;
   nsPodCounts?: Record<string, number>;
+  nsCpuRequestsM?: Record<string, number>;
+  nsMemRequestsMi?: Record<string, number>;
   node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
@@ -344,6 +346,8 @@ export default function Home() {
             unhealthyPods={cluster?.unhealthyPods}
             certificates={cluster?.certificates}
             apps={cluster?.apps}
+            nsCpuRequestsM={cluster?.nsCpuRequestsM}
+            nsMemRequestsMi={cluster?.nsMemRequestsMi}
           />
         )}
       </div>

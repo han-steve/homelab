@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -66,6 +66,8 @@ export default function DetailPanel({
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
   apps?: { name: string; sync: string; health: string }[];
+  nsCpuRequestsM?: Record<string, number>;
+  nsMemRequestsMi?: Record<string, number>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -246,7 +248,10 @@ export default function DetailPanel({
                 <div key={ns}>
                   <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1 flex items-center justify-between">
                     <span>{ns}</span>
-                    {nsPodCounts?.[ns] && <span className="text-gray-800 normal-case tracking-normal">{nsPodCounts[ns]}p</span>}
+                    <span className="flex items-center gap-2 normal-case tracking-normal">
+                      {nsCpuRequestsM?.[ns] && <span className="text-gray-700">{nsCpuRequestsM[ns] >= 1000 ? `${(nsCpuRequestsM[ns]/1000).toFixed(1)}c` : `${nsCpuRequestsM[ns]}m`}cpu</span>}
+                      {nsPodCounts?.[ns] && <span className="text-gray-800">{nsPodCounts[ns]}p</span>}
+                    </span>
                   </div>
                   {grouped[ns].map(svc => {
                     const i = services.indexOf(svc);

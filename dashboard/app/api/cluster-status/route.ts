@@ -52,12 +52,27 @@ export async function GET() {
     const unhealthyPods: PodStatus[] = [];
     let totalPods = 0;
     const nsPodCounts: Record<string, number> = {};
+    const nsCpuRequestsM: Record<string, number> = {}; // millicores per namespace
+    const nsMemRequestsMi: Record<string, number> = {}; // MiB per namespace
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
       totalPods = (data.items ?? []).length;
       for (const item of data.items ?? []) {
         const ns = item.metadata?.namespace ?? "unknown";
         nsPodCounts[ns] = (nsPodCounts[ns] || 0) + 1;
+        // Aggregate resource requests
+        for (const container of item.spec?.containers ?? []) {
+          const cpuReq = container.resources?.requests?.cpu ?? "";
+          const memReq = container.resources?.requests?.memory ?? "";
+          if (cpuReq) {
+            const mcpu = cpuReq.endsWith("m") ? parseInt(cpuReq) : parseFloat(cpuReq) * 1000;
+            if (!isNaN(mcpu)) nsCpuRequestsM[ns] = (nsCpuRequestsM[ns] || 0) + mcpu;
+          }
+          if (memReq) {
+            const mi = memReq.endsWith("Mi") ? parseInt(memReq) : memReq.endsWith("Gi") ? parseFloat(memReq) * 1024 : memReq.endsWith("Ki") ? parseFloat(memReq) / 1024 : 0;
+            if (mi) nsMemRequestsMi[ns] = (nsMemRequestsMi[ns] || 0) + mi;
+          }
+        }
         const cs = item.status?.containerStatuses?.[0];
         const phase = item.status?.phase;
         const ready = cs?.ready ?? false;
@@ -198,6 +213,8 @@ export async function GET() {
       unhealthyPods: unhealthyPods.slice(0, 20),
       totalPods,
       nsPodCounts,
+      nsCpuRequestsM,
+      nsMemRequestsMi,
       node: nodeInfo,
       nodeMetrics,
       recentEvents,
