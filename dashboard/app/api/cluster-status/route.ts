@@ -44,8 +44,10 @@ export async function GET() {
     }
 
     const unhealthyPods: PodStatus[] = [];
+    let totalPods = 0;
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
+      totalPods = (data.items ?? []).length;
       for (const item of data.items ?? []) {
         const cs = item.status?.containerStatuses?.[0];
         const phase = item.status?.phase;
@@ -107,6 +109,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       apps,
       unhealthyPods: unhealthyPods.slice(0, 20),
+      totalPods,
       node: nodeInfo,
       nodeMetrics,
     });

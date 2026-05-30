@@ -8,6 +8,7 @@ interface ClusterStatus {
   timestamp: string;
   apps: { name: string; sync: string; health: string }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
+  totalPods?: number;
   node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }
@@ -175,7 +176,10 @@ export default function Home() {
                     className="flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer transition-colors hover:bg-gray-800/50"
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500 shadow-[0_0_4px_#22c55e]" : "bg-orange-500"}`} />
-                    <span className="hidden sm:inline text-gray-500">{cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}</span>
+                    <span className="hidden sm:inline text-gray-500">
+                      {cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}
+                      {cluster.totalPods ? ` · ${cluster.totalPods} pods` : ""}
+                    </span>
                   </button>
                   {showPods && (
                     <div className="absolute top-full right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 min-w-64 max-h-72 overflow-y-auto">
