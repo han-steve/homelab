@@ -313,6 +313,7 @@ export default function Home() {
           longhornStorage={cluster?.longhornStorage}
           unhealthyPods={cluster?.unhealthyPods}
           certificates={cluster?.certificates}
+          apps={cluster?.apps}
         />
       </div>
     </div>

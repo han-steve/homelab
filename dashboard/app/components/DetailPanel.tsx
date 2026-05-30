@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -65,6 +65,7 @@ export default function DetailPanel({
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
+  apps?: { name: string; sync: string; health: string }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -318,7 +319,39 @@ export default function DetailPanel({
           ) : (
             <p>Storage: Longhorn</p>
           )}
-          <p>GitOps: ArgoCD v3.4.2</p>
+          {apps && apps.length > 0 ? (() => {
+            const synced = apps.filter(a => a.sync === "Synced").length;
+            const healthy = apps.filter(a => a.health === "Healthy").length;
+            const outOfSync = apps.length - synced;
+            const degraded = apps.filter(a => a.health === "Degraded").length;
+            return (
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span>GitOps: ArgoCD v3.4.2</span>
+                  <span style={{ color: outOfSync > 0 ? "#eab308" : "#22c55e" }}>
+                    {synced}/{apps.length} synced
+                  </span>
+                </div>
+                <div className="flex h-1 rounded-full overflow-hidden gap-px mt-0.5">
+                  {apps.map((a, i) => (
+                    <div key={i} title={a.name}
+                      className="flex-1 transition-all duration-300"
+                      style={{
+                        background: a.sync !== "Synced" ? "#eab308" : a.health === "Healthy" ? "#22c55e" : a.health === "Degraded" ? "#ef4444" : "#6b7280",
+                      }}
+                    />
+                  ))}
+                </div>
+                {(outOfSync > 0 || degraded > 0) && (
+                  <div className="text-xs mt-0.5" style={{ color: "#f87171" }}>
+                    {outOfSync > 0 ? `${outOfSync} OutOfSync` : ""}{outOfSync > 0 && degraded > 0 ? " · " : ""}{degraded > 0 ? `${degraded} Degraded` : ""}
+                  </div>
+                )}
+              </div>
+            );
+          })() : (
+            <p>GitOps: ArgoCD v3.4.2</p>
+          )}
           <p>LB: 192.168.1.11-30</p>
         </div>
 
