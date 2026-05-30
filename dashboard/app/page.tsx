@@ -360,7 +360,16 @@ export default function Home() {
           }
         >
           {view === "rack" ? (
-            <Scene3D
+            <div className="relative flex-1 w-full h-full">
+              {/* Red edge glow overlay when CrashLoopBackOff detected */}
+              {cluster?.unhealthyPods.some(p => p.status === "CrashLoopBackOff") && (
+                <div className="absolute inset-0 pointer-events-none z-10" style={{
+                  boxShadow: "inset 0 0 80px -20px rgba(239,68,68,0.15)",
+                  animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                }} />
+              )}
+              <div className="absolute inset-0">
+              <Scene3D
               onSelect={setSelectedIdx}
               selectedIdx={selectedIdx}
               nodeMetrics={cluster?.nodeMetrics}
@@ -385,6 +394,8 @@ export default function Home() {
               nodePressures={cluster?.node?.pressures}
               apps={cluster?.apps}
             />
+            </div>
+            </div>
           ) : (
             <TopologyView
               onSelectService={setSelectedIdx}
