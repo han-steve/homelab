@@ -13,6 +13,7 @@ interface ClusterStatus {
   node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
+  longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
 }
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
@@ -267,6 +268,7 @@ export default function Home() {
           nsPodCounts={cluster?.nsPodCounts}
           recentEvents={cluster?.recentEvents}
           metricsHistory={metricsHistory.current}
+          longhornStorage={cluster?.longhornStorage}
         />
       </div>
     </div>

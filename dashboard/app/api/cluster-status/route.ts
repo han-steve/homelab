@@ -19,7 +19,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -31,6 +31,8 @@ export async function GET() {
       execAsync(`kubectl top nodes --no-headers 2>/dev/null`),
       // Recent warning events across all namespaces
       execAsync(`kubectl get events -A --field-selector=type=Warning --sort-by='.lastTimestamp' -o json 2>/dev/null`),
+      // Longhorn storage nodes (disk usage)
+      execAsync(`kubectl get nodes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -137,6 +139,33 @@ export async function GET() {
       } catch {}
     }
 
+    // Parse Longhorn disk usage from nodes.longhorn.io
+    let longhornStorage: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null = null;
+    if (longhornResult.status === "fulfilled" && longhornResult.value.stdout.trim()) {
+      try {
+        const lhData = JSON.parse(longhornResult.value.stdout);
+        let totalBytes = 0, usedBytes = 0;
+        for (const node of lhData.items ?? []) {
+          for (const [, disk] of Object.entries(node.status?.diskStatus ?? {})) {
+            const d = disk as { storageAvailable?: number; storageMaximum?: number; storageScheduled?: number };
+            if (d.storageMaximum) {
+              totalBytes += d.storageMaximum;
+              usedBytes += (d.storageMaximum - (d.storageAvailable ?? 0));
+            }
+          }
+        }
+        if (totalBytes > 0) {
+          const gb = (b: number) => Math.round(b / (1024 ** 3) * 10) / 10;
+          longhornStorage = {
+            totalGiB: gb(totalBytes),
+            usedGiB: gb(usedBytes),
+            freeGiB: gb(totalBytes - usedBytes),
+            pct: Math.round((usedBytes / totalBytes) * 100),
+          };
+        }
+      } catch {}
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -146,6 +175,7 @@ export async function GET() {
       node: nodeInfo,
       nodeMetrics,
       recentEvents,
+      longhornStorage,
     });
   } catch {
     return Response.json(

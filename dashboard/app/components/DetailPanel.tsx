@@ -46,7 +46,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -55,6 +55,7 @@ export default function DetailPanel({
   nsPodCounts?: Record<string, number>;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   metricsHistory?: { cpu: number; ram: number; ts: number }[];
+  longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -223,7 +224,25 @@ export default function DetailPanel({
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
         <div className="space-y-1 text-xs text-gray-600 font-mono">
           <p>CNI: Cilium v1.19.4</p>
-          <p>Storage: Longhorn</p>
+          {longhornStorage ? (
+            <div>
+              <div className="flex items-center justify-between">
+                <span>Storage: Longhorn</span>
+                <span className="text-gray-500">{longhornStorage.usedGiB}G / {longhornStorage.totalGiB}G</span>
+              </div>
+              <div className="mt-0.5 h-1 rounded-full bg-gray-800 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${longhornStorage.pct}%`,
+                    backgroundColor: longhornStorage.pct > 80 ? "#ef4444" : longhornStorage.pct > 60 ? "#eab308" : "#3b82f6",
+                  }}
+                />
+              </div>
+              <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
+            </div>
+          ) : (
+            <p>Storage: Longhorn</p>
+          )}
           <p>GitOps: ArgoCD v3.4.2</p>
           <p>LB: 192.168.1.11-30</p>
         </div>
