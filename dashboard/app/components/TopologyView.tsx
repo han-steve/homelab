@@ -1058,6 +1058,12 @@ export default function TopologyView({
                   <span className="text-gray-600">helm</span>
                   <span className="text-cyan-600/70">⎈ {svcHelmCount}</span>
                 </div>}
+                {tService && nsHelmReleases?.[tService.namespace]?.filter(r => r.status !== "deployed").map((r, i) => (
+                  <div key={i} className="flex justify-between gap-4">
+                    <span className="text-gray-700 truncate max-w-[70px]">{r.name.slice(0, 10)}</span>
+                    <span className="text-yellow-500/70 text-[9px]">{r.status}</span>
+                  </div>
+                ))}
                 {svcEvents > 0 && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">events</span>
                   <span className="text-yellow-400">⚠ {svcEvents}</span>
