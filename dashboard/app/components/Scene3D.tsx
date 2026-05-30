@@ -720,7 +720,7 @@ function ServiceSphere({
 
   useFrame(() => {
     if (outerRef.current) {
-      const targetScale = visible ? 1 : 0;
+      const targetScale = visible ? (isSelected ? 1.15 : isHovered ? 1.08 : 1.0) : 0;
       const curr = outerRef.current.scale.x;
       outerRef.current.scale.setScalar(curr + (targetScale - curr) * (visible ? 0.12 : 0.22));
     }
@@ -771,6 +771,11 @@ function ServiceSphere({
         {isSelected && (
           <SelectionOrbitRing color={catColor} />
         )}
+        {/* Thin category ring at equator */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.42, 0.008, 6, 48]} />
+          <meshBasicMaterial color={catColor} transparent opacity={isRunning ? 0.35 : 0.08} toneMapped={false} />
+        </mesh>
         {/* Name */}
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}
