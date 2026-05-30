@@ -168,7 +168,22 @@ export default function DetailPanel({
   const [expandedPvcNs, setExpandedPvcNs] = useState<string | null>(null);
   const [showArgoApps, setShowArgoApps] = useState(false);
   const [copiedSnapshot, setCopiedSnapshot] = useState(false);
+  const [podLogsPod, setPodLogsPod] = useState<{namespace: string; name: string} | null>(null);
+  const [podLogsData, setPodLogsData] = useState<string[] | null>(null);
+  const [podLogsLoading, setPodLogsLoading] = useState(false);
   const now = useNow();
+
+  // Fetch pod logs when podLogsPod changes
+  useEffect(() => {
+    if (!podLogsPod) { setPodLogsData(null); return; }
+    setPodLogsLoading(true);
+    setPodLogsData(null);
+    fetch(`/api/pod-logs?namespace=${encodeURIComponent(podLogsPod.namespace)}&pod=${encodeURIComponent(podLogsPod.name)}`)
+      .then(r => r.json())
+      .then(d => setPodLogsData(d.lines ?? []))
+      .catch(() => setPodLogsData(["Error fetching logs"]))
+      .finally(() => setPodLogsLoading(false));
+  }, [podLogsPod]);
 
   // Map namespace → max restart count from unhealthy pods
   const nsMaxRestarts: Record<string, number> = {};
@@ -2031,6 +2046,7 @@ export default function DetailPanel({
                   const restartColor = pod.restarts > 100 ? "#ef4444" : pod.restarts > 20 ? "#f97316" : "#eab308";
                   const bgColor = isCrash ? "#ef444408" : isOOM ? "#a855f708" : "#f9731608";
                   const borderColor = isCrash ? "#ef444425" : isOOM ? "#a855f725" : "#f9731625";
+                  const isShowingLogs = podLogsPod?.name === pod.name && podLogsPod?.namespace === pod.namespace;
                   return (
                     <div key={i} className="rounded px-2 py-1.5 border text-xs font-mono" style={{ backgroundColor: bgColor, borderColor }}>
                       <div className="flex items-center justify-between gap-1 mb-1">
@@ -2039,11 +2055,38 @@ export default function DetailPanel({
                           <span className="text-[9px] px-1 py-0 rounded font-mono" style={{ backgroundColor: (isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316") + "20", color: isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316" }}>{pod.status}</span>
                           {pod.restarts > 0 && <span style={{ color: restartColor }}>↺{pod.restarts}</span>}
                           {pod.lastRestartAt && <span className="text-gray-700 text-[9px]">{relTime(pod.lastRestartAt, now)}</span>}
+                          <button
+                            onClick={() => setPodLogsPod(isShowingLogs ? null : { namespace: pod.namespace, name: pod.name })}
+                            className={`text-[9px] px-1 py-0 rounded border transition-colors ${isShowingLogs ? "border-blue-700/50 text-blue-400/80 bg-blue-900/20" : "border-gray-700/40 text-gray-600 hover:text-gray-400 hover:border-gray-500"}`}
+                            title={isShowingLogs ? "Hide logs" : "View logs"}
+                          >{isShowingLogs ? "hide" : "logs"}</button>
                         </div>
                       </div>
                       {pod.restarts > 0 && (
                         <div className="h-0.5 bg-gray-900 rounded-full overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{ width: `${restartPct}%`, backgroundColor: restartColor + "80" }} />
+                        </div>
+                      )}
+                      {/* Inline log viewer */}
+                      {isShowingLogs && (
+                        <div className="mt-2 border-t border-gray-800/50 pt-1.5">
+                          {podLogsLoading ? (
+                            <div className="text-gray-600 text-[9px] animate-pulse">Loading logs…</div>
+                          ) : podLogsData ? (
+                            <div className="max-h-40 overflow-y-auto space-y-0 scrollbar-thin" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
+                              {podLogsData.slice(-30).map((line, li) => {
+                                const isErr = /error|fatal|exception|crash|panic/i.test(line);
+                                const isWarn = /warn|warning/i.test(line);
+                                // Strip timestamp prefix if present (format: 2024-01-01T00:00:00.000Z text)
+                                const text = line.replace(/^\d{4}-\d{2}-\d{2}T[\d:.Z]+\s+/, "");
+                                return (
+                                  <div key={li} className={`text-[8px] font-mono leading-tight py-0.5 ${isErr ? "text-red-400/70" : isWarn ? "text-yellow-500/60" : "text-gray-700"}`} title={line}>
+                                    {text.slice(0, 120)}{text.length > 120 ? "…" : ""}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
                         </div>
                       )}
                     </div>
