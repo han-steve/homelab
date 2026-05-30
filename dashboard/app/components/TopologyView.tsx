@@ -22,6 +22,8 @@ export default function TopologyView({
   recentEvents,
   nsMaxRestarts,
   recentPods,
+  nsMemRequestsMi,
+  nsHelmReleases,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
@@ -33,6 +35,8 @@ export default function TopologyView({
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   nsMaxRestarts?: Record<string, number>;
   recentPods?: { namespace: string; name: string; startTime: string }[];
+  nsMemRequestsMi?: Record<string, number>;
+  nsHelmReleases?: Record<string, { name: string; chart: string; status: string; updated?: string }[]>;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -957,6 +961,8 @@ export default function TopologyView({
         const tService = tNode && tNode.serviceIdx !== undefined ? services[tNode.serviceIdx] : null;
         const svcPods = tService && nsPodCounts ? nsPodCounts[tService.namespace] : null;
         const svcCpuM = tService && nsCpuRequestsM ? nsCpuRequestsM[tService.namespace] : null;
+        const svcMemMi = tService && nsMemRequestsMi ? nsMemRequestsMi[tService.namespace] : null;
+        const svcHelmCount = tService && nsHelmReleases ? (nsHelmReleases[tService.namespace]?.length ?? 0) : 0;
         const svcEvents = tService && recentEvents ? recentEvents.filter(e => e.namespace === tService.namespace).length : 0;
         const svcRestarts = tService && nsMaxRestarts ? nsMaxRestarts[tService.namespace] : undefined;
         const isUnhealthy = tService && unhealthyNamespaces?.has(tService.namespace);
@@ -980,6 +986,14 @@ export default function TopologyView({
                 {svcCpuM !== null && svcCpuM !== undefined && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">cpu req</span>
                   <span className="text-blue-400">{svcCpuM >= 1000 ? `${(svcCpuM/1000).toFixed(1)}c` : `${svcCpuM}m`}</span>
+                </div>}
+                {svcMemMi !== null && svcMemMi !== undefined && svcMemMi > 0 && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">mem req</span>
+                  <span className="text-violet-400">{svcMemMi >= 1024 ? `${(svcMemMi/1024).toFixed(1)}G` : `${Math.round(svcMemMi)}M`}</span>
+                </div>}
+                {svcHelmCount > 0 && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">helm</span>
+                  <span className="text-cyan-600/70">⎈ {svcHelmCount}</span>
                 </div>}
                 {svcEvents > 0 && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">events</span>

@@ -441,6 +441,8 @@ export default function Home() {
                 return m;
               })() : undefined}
               recentPods={cluster?.recentPods}
+              nsMemRequestsMi={cluster?.nsMemRequestsMi}
+              nsHelmReleases={cluster?.nsHelmReleases}
             />
           )}
         </Suspense>
