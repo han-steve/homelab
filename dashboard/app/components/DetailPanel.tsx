@@ -177,13 +177,19 @@ export default function DetailPanel({
   // Fetch pod logs when podLogsPod changes
   useEffect(() => {
     if (!podLogsPod) { setPodLogsData(null); return; }
-    setPodLogsLoading(true);
+    const fetchLogs = () => {
+      setPodLogsLoading(true);
+      fetch(`/api/pod-logs?namespace=${encodeURIComponent(podLogsPod.namespace)}&pod=${encodeURIComponent(podLogsPod.name)}`)
+        .then(r => r.json())
+        .then(d => setPodLogsData(d.lines ?? []))
+        .catch(() => setPodLogsData(["Error fetching logs"]))
+        .finally(() => setPodLogsLoading(false));
+    };
     setPodLogsData(null);
-    fetch(`/api/pod-logs?namespace=${encodeURIComponent(podLogsPod.namespace)}&pod=${encodeURIComponent(podLogsPod.name)}`)
-      .then(r => r.json())
-      .then(d => setPodLogsData(d.lines ?? []))
-      .catch(() => setPodLogsData(["Error fetching logs"]))
-      .finally(() => setPodLogsLoading(false));
+    fetchLogs();
+    // Auto-refresh every 5 seconds while logs are open
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
   }, [podLogsPod]);
 
   // Map namespace → max restart count from unhealthy pods
@@ -2127,7 +2133,14 @@ export default function DetailPanel({
                       {/* Inline log viewer */}
                       {isShowingLogs && (
                         <div className="mt-2 border-t border-gray-800/50 pt-1.5">
-                          {podLogsLoading ? (
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-mono text-gray-700">last 60 lines</span>
+                            <span className="flex items-center gap-1 text-[8px] font-mono text-blue-500/60">
+                              <span className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+                              live
+                            </span>
+                          </div>
+                          {podLogsLoading && !podLogsData ? (
                             <div className="text-gray-600 text-[9px] animate-pulse">Loading logs…</div>
                           ) : podLogsData ? (
                             <div className="max-h-40 overflow-y-auto space-y-0 scrollbar-thin" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
