@@ -45,10 +45,13 @@ export async function GET() {
 
     const unhealthyPods: PodStatus[] = [];
     let totalPods = 0;
+    const nsPodCounts: Record<string, number> = {};
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
       totalPods = (data.items ?? []).length;
       for (const item of data.items ?? []) {
+        const ns = item.metadata?.namespace ?? "unknown";
+        nsPodCounts[ns] = (nsPodCounts[ns] || 0) + 1;
         const cs = item.status?.containerStatuses?.[0];
         const phase = item.status?.phase;
         const ready = cs?.ready ?? false;
@@ -110,6 +113,7 @@ export async function GET() {
       apps,
       unhealthyPods: unhealthyPods.slice(0, 20),
       totalPods,
+      nsPodCounts,
       node: nodeInfo,
       nodeMetrics,
     });

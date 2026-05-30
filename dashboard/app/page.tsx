@@ -9,6 +9,7 @@ interface ClusterStatus {
   apps: { name: string; sync: string; health: string }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
   totalPods?: number;
+  nsPodCounts?: Record<string, number>;
   node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }
@@ -241,6 +242,7 @@ export default function Home() {
           onClose={() => setSelectedIdx(null)}
           onSelectService={setSelectedIdx}
           nodeMetrics={cluster?.nodeMetrics}
+          nsPodCounts={cluster?.nsPodCounts}
         />
       </div>
     </div>

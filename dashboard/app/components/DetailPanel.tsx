@@ -31,12 +31,13 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
   onSelectService?: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
+  nsPodCounts?: Record<string, number>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -132,7 +133,10 @@ export default function DetailPanel({
               const nsKeys = [...namespaceOrder.filter(ns => grouped[ns]), ...Object.keys(grouped).filter(ns => !namespaceOrder.includes(ns))];
               return nsKeys.map(ns => (
                 <div key={ns}>
-                  <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1">{ns}</div>
+                  <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1 flex items-center justify-between">
+                    <span>{ns}</span>
+                    {nsPodCounts?.[ns] && <span className="text-gray-800 normal-case tracking-normal">{nsPodCounts[ns]}p</span>}
+                  </div>
                   {grouped[ns].map(svc => {
                     const i = services.indexOf(svc);
                     return (
