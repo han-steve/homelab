@@ -37,6 +37,7 @@ interface ClusterStatus {
   nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
   totalDaemonSets?: number;
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
+  helmFailedReleases?: { namespace: string; name: string; version: string }[];
 }
 
 const Scene3D = dynamic(() => import("./components/Scene3D"), {
@@ -681,6 +682,14 @@ export default function Home() {
               <>
                 <span className="hidden lg:inline text-gray-800">|</span>
                 <span className="hidden lg:inline font-mono text-xs text-cyan-500/60" title={`${cluster.podChurn30m} pods started in last 30m`}>⟳{cluster.podChurn30m}</span>
+              </>
+            )}
+            {cluster?.helmFailedReleases && cluster.helmFailedReleases.length > 0 && (
+              <>
+                <span className="hidden md:inline text-gray-800">|</span>
+                <span className="hidden md:inline font-mono text-xs text-red-500/60 animate-pulse" title={`Failed Helm releases: ${cluster.helmFailedReleases.map(r => `${r.namespace}/${r.name}`).join(", ")}`}>
+                  ⎈{cluster.helmFailedReleases.length}fail
+                </span>
               </>
             )}
             {cluster?.longhornStorage && (

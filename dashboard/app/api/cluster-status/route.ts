@@ -22,7 +22,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult, helmResult, pvcResult, ssResult, dsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult, deployResult, cronResult, helmResult, pvcResult, ssResult, dsResult, helmFailedResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -58,6 +58,8 @@ export async function GET() {
       execAsync(`kubectl get statefulsets -A -o json 2>/dev/null`),
       // DaemonSets per namespace
       execAsync(`kubectl get daemonsets -A -o json 2>/dev/null`),
+      // Failed Helm release revisions (from secrets)
+      execAsync(`kubectl get secrets -A -l 'owner=helm,status=failed' -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.labels.name}{" "}{.metadata.labels.version}{"\\n"}{end}' 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -490,6 +492,17 @@ export async function GET() {
       } catch {}
     }
 
+    // Parse failed Helm releases
+    const helmFailedReleases: { namespace: string; name: string; version: string }[] = [];
+    if (helmFailedResult.status === "fulfilled" && helmFailedResult.value.stdout.trim()) {
+      for (const line of helmFailedResult.value.stdout.trim().split("\n")) {
+        const parts = line.trim().split(" ");
+        if (parts.length >= 2) {
+          helmFailedReleases.push({ namespace: parts[0], name: parts[1], version: parts[2] ?? "?" });
+        }
+      }
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -522,6 +535,7 @@ export async function GET() {
       nsStatefulSets,
       totalDaemonSets,
       certificates,
+      helmFailedReleases,
     });
   } catch {
     return Response.json(
