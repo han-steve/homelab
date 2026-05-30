@@ -932,6 +932,9 @@ export default function DetailPanel({
               >✕</button>
             )}
           </div>
+          {(search || nsFilter || showUnhealthyOnly || categoryFilter !== "all") && (
+            <span className="text-xs font-mono text-gray-600 shrink-0 tabular-nums">{filteredServices.length}/{services.length}</span>
+          )}
           <button
             onClick={() => setShowUnhealthyOnly(v => !v)}
             title="Show unhealthy/restarting only"
