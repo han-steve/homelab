@@ -144,6 +144,7 @@ export default function DetailPanel({
   const [showUnhealthyOnly, setShowUnhealthyOnly] = useState(false);
   const [nsFilter, setNsFilter] = useState<string | null>(null);
   const [expandedPvcNs, setExpandedPvcNs] = useState<string | null>(null);
+  const [showArgoApps, setShowArgoApps] = useState(false);
   const now = useNow();
 
   // Map namespace → max restart count from unhealthy pods
@@ -1268,6 +1269,41 @@ export default function DetailPanel({
                 )}
                 {lastSyncAgo && (
                   <div className="text-xs mt-0.5 text-gray-700">last sync {lastSyncAgo} · {lastSynced.name}</div>
+                )}
+                <button
+                  className="text-[9px] font-mono text-gray-700 hover:text-gray-500 mt-0.5 transition-colors"
+                  onClick={() => setShowArgoApps(v => !v)}
+                >{showArgoApps ? "▴ collapse" : "▾ all apps"}</button>
+                {showArgoApps && (
+                  <div className="mt-1 space-y-px max-h-40 overflow-y-auto pr-1">
+                    {[...apps].sort((a, b) => a.name.localeCompare(b.name)).map((a, i) => {
+                      const isSynced = a.sync === "Synced";
+                      const isHealthy = a.health === "Healthy";
+                      const dotColor = !isSynced ? "#eab308" : !isHealthy ? "#ef4444" : "#22c55e";
+                      let syncedAgo = "";
+                      if (a.syncedAt) {
+                        try {
+                          const ms = Date.now() - new Date(a.syncedAt).getTime();
+                          const days = Math.floor(ms / 86400000);
+                          const hrs = Math.floor(ms / 3600000);
+                          syncedAgo = days > 0 ? `${days}d` : `${hrs}h`;
+                        } catch {/* ignore */}
+                      }
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-1 px-0.5 py-px text-[10px] font-mono rounded hover:bg-gray-900/40">
+                          <div className="flex items-center gap-1 truncate flex-1">
+                            <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                            <span className="truncate text-gray-600">{a.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {!isSynced && <span className="text-yellow-600/70">OutOfSync</span>}
+                            {!isHealthy && isSynced && <span className="text-red-500/70">{a.health}</span>}
+                            {syncedAgo && <span className="text-gray-800">{syncedAgo}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             );
