@@ -1876,10 +1876,26 @@ export default function DetailPanel({
       {nsImages && nsImages[svc.namespace] && nsImages[svc.namespace].length > 0 && (
         <>
           <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Images</span>
-            <span className="text-xs font-mono text-gray-700">{nsImages[svc.namespace].length}</span>
-          </div>
+          {(() => {
+            const imgs = nsImages[svc.namespace];
+            const latestCount = imgs.filter(img => {
+              const tag = img.includes(":") ? img.split(":").pop() : "latest";
+              return tag === "latest";
+            }).length;
+            return (
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Images</span>
+                <div className="flex items-center gap-1.5">
+                  {latestCount > 0 && (
+                    <span className="text-[9px] font-mono px-1 rounded bg-yellow-900/30 text-yellow-600/70 border border-yellow-800/20" title={`${latestCount} image(s) using :latest tag`}>
+                      ⚠{latestCount}:latest
+                    </span>
+                  )}
+                  <span className="text-xs font-mono text-gray-700">{imgs.length}</span>
+                </div>
+              </div>
+            );
+          })()}
           <div className="space-y-1">
             {nsImages[svc.namespace].map((img, i) => {
               const parts = img.includes(":") ? img.split(":") : [img, "latest"];
