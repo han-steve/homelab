@@ -487,23 +487,32 @@ export default function Home() {
           </div>
         )}
         {cluster && (
-          <div className="absolute bottom-5 right-5 text-xs text-gray-700 font-mono hidden sm:flex items-center gap-2">
-            {isLoading ? (
-              <span className="text-blue-500/60 animate-pulse">syncing...</span>
-            ) : (
-              <span className="pointer-events-none">last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · refresh in {nextRefreshIn}s</span>
-            )}
-            <button
-              onClick={() => fetchStatus.current()}
-              disabled={isLoading}
-              className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
-              title="Manual refresh"
-            >↺</button>
-            <button
-              onClick={() => setShowHelp(v => !v)}
-              className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors"
-              title="Keyboard shortcuts (?)"
-            >?</button>
+          <div className="absolute bottom-5 right-5 text-xs text-gray-700 font-mono hidden sm:flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              {isLoading ? (
+                <span className="text-blue-500/60 animate-pulse">syncing...</span>
+              ) : (
+                <span className="pointer-events-none">last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · {nextRefreshIn}s</span>
+              )}
+              <button
+                onClick={() => fetchStatus.current()}
+                disabled={isLoading}
+                className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
+                title="Manual refresh"
+              >↺</button>
+              <button
+                onClick={() => setShowHelp(v => !v)}
+                className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors"
+                title="Keyboard shortcuts (?)"
+              >?</button>
+            </div>
+            {/* Refresh progress bar */}
+            <div className="w-full h-px bg-gray-800/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600/40 rounded-full transition-all duration-1000"
+                style={{ width: `${(1 - nextRefreshIn / 30) * 100}%` }}
+              />
+            </div>
           </div>
         )}
       </div>
