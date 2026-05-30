@@ -126,6 +126,7 @@ export default function Home() {
       if (e.key === "p" || e.key === "P") setPanelCollapsed(v => !v);
       if (e.key === "?" || e.key === "/") { e.preventDefault(); setShowHelp(v => !v); }
       if (e.key === "f" || e.key === "F") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if (e.key === "Escape") { setShowHelp(false); setShowSearch(false); setSearchQuery(""); }
     };
     window.addEventListener("keydown", handler);
@@ -176,7 +177,7 @@ export default function Home() {
               {[
                 ["3", "Switch to 3D rack view"],
                 ["T", "Switch to topology view"],
-                ["F", "Quick service search"],
+                ["F / ⌘K", "Quick service search"],
                 ["R", "Manual refresh"],
                 ["P", "Toggle detail panel"],
                 ["?", "Toggle this help"],
@@ -436,6 +437,14 @@ export default function Home() {
             <span className="hidden md:inline text-gray-600">Talos v1.13.2</span>
             <span className="hidden md:inline text-gray-800">|</span>
             <span className="hidden md:inline text-gray-600">K8s v1.36</span>
+            {cluster?.recentEvents && cluster.recentEvents.length > 0 && (
+              <>
+                <span className="hidden md:inline text-gray-800">|</span>
+                <span className={`hidden md:inline font-mono text-xs ${cluster.recentEvents.length > 5 ? "text-orange-500/80" : "text-yellow-600/70"}`} title={`${cluster.recentEvents.length} warning events`}>
+                  ⚠{cluster.recentEvents.length}
+                </span>
+              </>
+            )}
             {cluster?.longhornStorage && (
               <>
                 <span className="hidden md:inline text-gray-800">|</span>
