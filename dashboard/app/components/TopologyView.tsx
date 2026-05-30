@@ -288,6 +288,20 @@ export default function TopologyView({
               </>
             );
           })()}
+          {apps && apps.length > 0 && (() => {
+            const healthy = apps.filter(a => a.health === "Healthy").length;
+            const outOfSync = apps.filter(a => a.sync !== "Synced").length;
+            const degraded = apps.filter(a => a.health === "Degraded").length;
+            if (healthy === apps.length) return null;
+            return (
+              <>
+                <span className="text-gray-700">·</span>
+                <span style={{ color: degraded > 0 ? "#ef444480" : "#eab30880" }} title={`ArgoCD: ${healthy} healthy, ${outOfSync} OutOfSync, ${degraded} degraded`}>
+                  ⎔ {degraded > 0 ? `${degraded}⬇` : `${outOfSync}↺`}
+                </span>
+              </>
+            );
+          })()}
         </div>
         {/* Namespace health dots */}
         {uniqueNamespaces.length > 0 && (
