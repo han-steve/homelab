@@ -258,6 +258,33 @@ export default function DetailPanel({
           );
         })()}
         {/* Quick access links */}
+        {/* Cluster stats row */}
+        {(totalCpuRequestsM || apps || nsPodCounts) && (() => {
+          const totalPods = nsPodCounts ? Object.values(nsPodCounts).reduce((a,b)=>a+b,0) : 0;
+          const cpuPct = totalCpuRequestsM ? Math.round((totalCpuRequestsM / 15950) * 100) : 0;
+          const memPct = totalMemRequestsMi ? Math.round((totalMemRequestsMi / (31753032/1024)) * 100) : 0;
+          const syncedApps = (apps ?? []).filter(a => a.sync === "Synced").length;
+          return (
+            <div className="mb-3 grid grid-cols-4 gap-1 text-center">
+              {totalPods > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-[11px] font-mono font-bold text-gray-400">{totalPods}</div>
+                <div className="text-[9px] font-mono text-gray-700">pods</div>
+              </div>}
+              {cpuPct > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-[11px] font-mono font-bold" style={{ color: cpuPct > 80 ? "#ef4444" : cpuPct > 60 ? "#eab308" : "#58a6ff" }}>{cpuPct}%</div>
+                <div className="text-[9px] font-mono text-gray-700">cpu req</div>
+              </div>}
+              {memPct > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-[11px] font-mono font-bold" style={{ color: memPct > 80 ? "#ef4444" : memPct > 60 ? "#f97316" : "#06b6d4" }}>{memPct}%</div>
+                <div className="text-[9px] font-mono text-gray-700">ram req</div>
+              </div>}
+              {apps && apps.length > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-[11px] font-mono font-bold" style={{ color: syncedApps < apps.length ? "#eab308" : "#22c55e" }}>{syncedApps}/{apps.length}</div>
+                <div className="text-[9px] font-mono text-gray-700">apps</div>
+              </div>}
+            </div>
+          );
+        })()}
         <div className="mb-4 grid grid-cols-4 gap-1">
           {[
             { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab", ns: "argocd" },
