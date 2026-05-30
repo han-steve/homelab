@@ -942,6 +942,21 @@ export default function TopologyView({
                 );
               })()}
 
+              {/* Restart count badge — bottom-left, for nodes with high restarts */}
+              {isService && node.serviceIdx !== undefined && nsMaxRestarts && (() => {
+                const svc = services[node.serviceIdx];
+                if (!svc) return null;
+                const restarts = nsMaxRestarts[svc.namespace] ?? 0;
+                if (restarts < 5) return null;
+                const color = restarts > 100 ? "#ef4444" : restarts > 20 ? "#f97316" : "#eab308";
+                return (
+                  <g transform={`translate(${-r * 0.72}, ${r * 0.72})`}>
+                    <circle r={8} fill="#1c0505" stroke={color} strokeWidth={1} opacity={0.9} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={6} fill={color} fontFamily="monospace" fontWeight="bold">↺{restarts > 99 ? "99+" : restarts}</text>
+                  </g>
+                );
+              })()}
+
               {/* Connection count badge — bottom-right, for highly-connected nodes */}
               {isService && (() => {
                 const linkCount = topoLinks.filter(l => l.source === node.id || l.target === node.id).length;
