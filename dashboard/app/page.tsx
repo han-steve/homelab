@@ -73,6 +73,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<string | null>(null);
   const [searchHighlight, setSearchHighlight] = useState(0);
+  const [alertDismissed, setAlertDismissed] = useState<string | null>(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; appsHealthy: number; appsTotal: number; ts: number }[]>(
@@ -229,12 +230,20 @@ export default function Home() {
         const outOfSync = cluster.apps.filter(a => a.sync !== "Synced");
         const storageWarn = cluster.longhornStorage && cluster.longhornStorage.pct > 80;
         if (crashPods.length === 0 && outOfSync.length === 0 && !storageWarn) return null;
+        // Compute a unique "key" for the current alert state so dismiss persists until state changes
+        const alertKey = crashPods.map(p => p.name).join("|") + "|" + outOfSync.map(a => a.name).join("|");
+        if (alertDismissed === alertKey) return null;
         const hasCritical = crashPods.length > 0 || storageWarn;
         return (
-          <div className={`fixed top-0.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-1.5 rounded-b-lg text-xs font-mono pointer-events-none ${hasCritical ? "bg-red-950/90 border-x border-b border-red-700/50 text-red-300" : "bg-yellow-950/90 border-x border-b border-yellow-700/50 text-yellow-300"}`}>
-            {crashPods.length > 0 && <span>⚠ {crashPods.length} pod{crashPods.length !== 1 ? "s" : ""} crashing · {crashPods.slice(0, 2).map(p => `${p.name.split("-")[0]}${p.restarts > 0 ? ` ↺${p.restarts}` : ""}`).join(", ")}{crashPods.length > 2 ? ` +${crashPods.length - 2} more` : ""}</span>}
+          <div className={`fixed top-0.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-1.5 rounded-b-lg text-xs font-mono ${hasCritical ? "bg-red-950/90 border-x border-b border-red-700/50 text-red-300" : "bg-yellow-950/90 border-x border-b border-yellow-700/50 text-yellow-300"}`}>
+            {crashPods.length > 0 && <span>⚠ {crashPods.length} crashing: {crashPods.slice(0, 2).map(p => `${p.namespace}/${p.name.split("-")[0]}${p.restarts > 0 ? ` ↺${p.restarts}` : ""}`).join(", ")}{crashPods.length > 2 ? ` +${crashPods.length - 2} more` : ""}</span>}
             {outOfSync.length > 0 && <span className="text-yellow-400">⚡ {outOfSync.length} app{outOfSync.length !== 1 ? "s" : ""} OutOfSync: {outOfSync.slice(0, 2).map(a => a.name).join(", ")}{outOfSync.length > 2 ? "…" : ""}</span>}
             {storageWarn && <span className="text-red-300">💾 storage {cluster.longhornStorage!.pct.toFixed(0)}% full</span>}
+            <button
+              onClick={() => setAlertDismissed(alertKey)}
+              className="ml-1 text-gray-500 hover:text-gray-300 transition-colors text-[10px] shrink-0"
+              title="Dismiss alert"
+            >✕</button>
           </div>
         );
       })()}
