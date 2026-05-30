@@ -287,14 +287,25 @@ export default function TopologyView({
                 opacity={selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
               />
-              {/* Animated data packet on active links */}
+              {/* Animated data packets on active links — two staggered particles */}
               {isActive && (
-                <circle r={3} fill={link.color} opacity={isHighlighted ? 1.0 : 0.4} filter="url(#glow)">
-                  <animateMotion
-                    dur={dur}
-                    repeatCount="indefinite"
-                    calcMode="linear"
-                  >
+                <>
+                  <circle r={2.5} fill={link.color} opacity={isHighlighted ? 0.9 : 0.3} filter="url(#glow)">
+                    <animateMotion dur={dur} repeatCount="indefinite" calcMode="linear">
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
+                  </circle>
+                  <circle r={1.8} fill={link.color} opacity={isHighlighted ? 0.6 : 0.2} filter="url(#glow)">
+                    <animateMotion dur={dur} begin={`-${(parseFloat(dur) / 2).toFixed(1)}s`} repeatCount="indefinite" calcMode="linear">
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
+                  </circle>
+                </>
+              )}
+              {/* Slow ghost particle on dashed (inactive) links */}
+              {!isActive && isHighlighted && (
+                <circle r={1.5} fill={link.color} opacity={0.25}>
+                  <animateMotion dur={`${(parseFloat(dur) * 2.5).toFixed(1)}s`} repeatCount="indefinite" calcMode="linear">
                     <mpath href={`#${pathId}`} />
                   </animateMotion>
                 </circle>
