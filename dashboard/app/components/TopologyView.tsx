@@ -412,12 +412,16 @@ export default function TopologyView({
                   fill={fillColor} fillOpacity={0.03}
                   stroke={fillColor} strokeWidth={0.8} strokeOpacity={0.15}
                   strokeDasharray={isUnhealthyNs ? "4 3" : undefined}
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
                 />
                 <text
                   x={b.minX - pad + 8} y={b.minY - pad - 4}
                   fontSize={9} fontFamily="monospace"
-                  fill={fillColor} fillOpacity={0.4}
-                >{ns}</text>
+                  fill={fillColor} fillOpacity={nsFilter === ns ? 0.8 : 0.4}
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
+                >{ns}{nsFilter === ns ? " ✕" : ""}</text>
               </g>
             );
           });
