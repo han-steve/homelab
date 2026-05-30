@@ -117,6 +117,20 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Dynamic document.title reflecting cluster health
+  useEffect(() => {
+    if (!cluster) { document.title = "homelab — loading..."; return; }
+    const crashPods = cluster.unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "OOMKilled");
+    const outOfSync = cluster.apps.filter(a => a.sync !== "Synced");
+    if (crashPods.length > 0) {
+      document.title = `🔴 ${crashPods.length} crashing — homelab`;
+    } else if (outOfSync.length > 0) {
+      document.title = `🟡 ${outOfSync.length} OutOfSync — homelab`;
+    } else {
+      document.title = "🟢 homelab — all healthy";
+    }
+  }, [cluster]);
+
   return (
     <div className="flex h-screen bg-gray-950 text-white">
       {/* Loading progress bar — thin line at top */}
