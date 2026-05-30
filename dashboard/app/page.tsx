@@ -167,6 +167,13 @@ export default function Home() {
       if (e.key === "f" || e.key === "F") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if (e.key === "Escape") { setShowHelp(false); setShowSearch(false); setSearchQuery(""); }
+      // Arrow left/right = navigate services when one is selected
+      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && selectedIdx !== null && !showSearch) {
+        e.preventDefault();
+        const dir = e.key === "ArrowLeft" ? -1 : 1;
+        setSelectedIdx(idx => idx === null ? 0 : (idx + dir + services.length) % services.length);
+        setPanelCollapsed(false);
+      }
       // g = jump to most critical service
       if (e.key === "g" || e.key === "G") {
         if (!cluster) return;
@@ -246,7 +253,7 @@ export default function Home() {
                 ["F / ⌘K", "Quick service search"],
                 ["G", "Jump to most critical service"],
                 ["S", "Toggle service spheres (3D)"],
-                ["←/→", "Navigate services"],
+                ["←/→", "Navigate services (when selected)"],
                 ["R", "Manual refresh"],
                 ["P", "Toggle detail panel"],
                 ["?", "Toggle this help"],
