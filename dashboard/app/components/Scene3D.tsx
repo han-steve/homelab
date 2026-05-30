@@ -903,22 +903,29 @@ function ServiceSphere({
         <mesh>
           <icosahedronGeometry args={[0.36, 1]} />
           <meshPhysicalMaterial
-            color={catColor}
+            color={isUnhealthy ? "#ef4444" : catColor}
             metalness={0}
             roughness={0.08}
             transparent
             opacity={isRunning ? 0.65 : 0.22}
             clearcoat={1.0}
             clearcoatRoughness={0.05}
-            emissive={catColor}
-            emissiveIntensity={isSelected ? 0.45 : isHovered ? 0.25 : (isRunning ? 0.15 : 0.03)}
+            emissive={isUnhealthy ? "#ef4444" : catColor}
+            emissiveIntensity={isSelected ? 0.45 : isHovered ? 0.25 : (isRunning ? (isUnhealthy ? 0.35 : 0.15) : 0.03)}
           />
         </mesh>
+        {/* Warning ring for unhealthy services */}
+        {isUnhealthy && !isSelected && (
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.5, 0.014, 8, 48]} />
+            <meshBasicMaterial color="#ef4444" transparent opacity={0.5} toneMapped={false} />
+          </mesh>
+        )}
         {/* Outer glow shell on hover/select */}
         {(isSelected || isHovered) && (
           <mesh>
             <icosahedronGeometry args={[0.44, 1]} />
-            <meshBasicMaterial color={catColor} transparent opacity={0.12} toneMapped={false} />
+            <meshBasicMaterial color={isUnhealthy ? "#ef4444" : catColor} transparent opacity={0.12} toneMapped={false} />
           </mesh>
         )}
         {/* Icon */}
