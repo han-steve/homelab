@@ -1100,6 +1100,31 @@ function ServiceSphere({
   );
 }
 
+/* ── Animated data particles along a beam ─────────────── */
+function BeamParticles({ from, to, color, count = 4 }: { from: THREE.Vector3; to: THREE.Vector3; color: string; count?: number }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    for (let i = 0; i < count; i++) {
+      const mesh = refs.current[i];
+      if (!mesh) continue;
+      const phase = ((t * 1.2 + i / count) % 1);
+      mesh.position.lerpVectors(from, to, phase);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = Math.sin(phase * Math.PI) * 0.9;
+    }
+  });
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <mesh key={i} ref={el => { refs.current[i] = el; }} raycast={() => {}}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshBasicMaterial color={color} transparent opacity={0} toneMapped={false} />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
 /* ── Services radial display ─────────────────────────── */
 function ServicesDisplay({
   nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents,
@@ -1150,6 +1175,10 @@ function ServicesDisplay({
                 opacity={selectedSvc === i ? 0.35 : 0.08}
                 dashed={false}
               />
+            )}
+            {/* Animated data particles along selected service beam */}
+            {visible && selectedSvc === i && (
+              <BeamParticles from={linePoints[0]} to={linePoints[1]} color={catColor} />
             )}
             <ServiceSphere
               position={positions[i]}
