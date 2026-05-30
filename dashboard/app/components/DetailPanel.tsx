@@ -1862,13 +1862,20 @@ export default function DetailPanel({
           <div className="space-y-1">
             {nsStatefulSets[svc.namespace].map((ss, i) => {
               const healthy = ss.ready >= ss.desired;
+              const pct = ss.desired > 0 ? Math.round((ss.ready / ss.desired) * 100) : 100;
+              const barColor = healthy ? "#06b6d450" : pct > 50 ? "#eab30870" : "#ef444470";
               return (
-                <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                  <span className={healthy ? "text-cyan-500/70" : "text-red-400/80"}>◈</span>
-                  <span className="text-gray-500 truncate flex-1" title={ss.name}>{ss.name}</span>
-                  <span className={`shrink-0 ${healthy ? "text-cyan-500/60" : "text-red-400/70"}`}>
-                    {ss.ready}/{ss.desired}
-                  </span>
+                <div key={i} className="text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className={healthy ? "text-cyan-500/70" : "text-red-400/80"}>◈</span>
+                    <span className="text-gray-500 truncate flex-1" title={ss.name}>{ss.name}</span>
+                    <span className={`shrink-0 ${healthy ? "text-cyan-500/60" : "text-red-400/70"}`}>
+                      {ss.ready}/{ss.desired}
+                    </span>
+                  </div>
+                  <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                  </div>
                 </div>
               );
             })}
