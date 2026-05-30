@@ -718,6 +718,18 @@ export default function TopologyView({
                 );
               })()}
 
+              {/* Connection count badge — bottom-right, for highly-connected nodes */}
+              {isService && (() => {
+                const linkCount = topoLinks.filter(l => l.source === node.id || l.target === node.id).length;
+                if (linkCount < 3) return null;
+                return (
+                  <g transform={`translate(${r * 0.72}, ${-r * 0.72})`}>
+                    <circle r={7} fill="#0f172a" stroke="#374151" strokeWidth={0.8} opacity={0.9} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={6} fill="#4b5563" fontFamily="monospace">{linkCount}</text>
+                  </g>
+                );
+              })()}
+
               {/* Connection count badge on infrastructure nodes */}
               {(node.type === "node" || node.type === "router" || node.type === "infra") && (() => {
                 const connCount = topoLinks.filter(l => l.source === node.id || l.target === node.id).length;
