@@ -1,7 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { services, node, type Service } from "../data";
+
+function useNow() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
+function relTime(iso: string | undefined, now: number): string {
+  if (!iso) return "";
+  const ms = now - new Date(iso).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   app: "#7c3aed",
@@ -60,7 +80,7 @@ export default function DetailPanel({
   onSelectService?: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
-  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
   metricsHistory?: { cpu: number; ram: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
@@ -81,6 +101,7 @@ export default function DetailPanel({
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showUnhealthyOnly, setShowUnhealthyOnly] = useState(false);
+  const now = useNow();
 
   // Map namespace → max restart count from unhealthy pods
   const nsMaxRestarts: Record<string, number> = {};
@@ -759,7 +780,7 @@ export default function DetailPanel({
                 <div key={i} className="text-xs font-mono bg-orange-500/5 border border-orange-500/15 rounded px-2 py-1.5">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <span className="text-orange-400/80 truncate flex-1">{ev.reason}</span>
-                    <span className="text-gray-700 shrink-0">{ev.age}</span>
+                    <span className="text-gray-700 shrink-0">{relTime(ev.lastTimestamp, now) || ev.age}</span>
                   </div>
                   <div className="text-gray-600 truncate">{ev.name}</div>
                   <div className="text-gray-700 truncate mt-0.5">{ev.message}</div>
@@ -994,7 +1015,7 @@ export default function DetailPanel({
                 <div key={i} className="text-xs font-mono px-2 py-1 rounded bg-orange-500/5 border border-orange-500/15">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
                     <span className="text-orange-400 truncate">{ev.reason}</span>
-                    <span className="text-gray-700 shrink-0">×{ev.count}</span>
+                    <span className="text-gray-700 shrink-0">{relTime(ev.lastTimestamp, now) || `×${ev.count}`}</span>
                   </div>
                   <div className="text-gray-600 truncate">{ev.message.slice(0, 70)}{ev.message.length > 70 ? "…" : ""}</div>
                 </div>
