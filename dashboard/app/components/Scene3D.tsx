@@ -248,6 +248,45 @@ function CpuArcGauge({ position, cpuPct }: { position: [number, number, number];
   );
 }
 
+/* ── Lightning arc between two points ──────────────────── */
+function LightningArc({ from, to, intensity = 1 }: { from: THREE.Vector3; to: THREE.Vector3; intensity?: number }) {
+  const lineRef = useRef<THREE.Line>(null!);
+  const segCount = 8;
+  const positions = useMemo(() => new Float32Array((segCount + 1) * 3), []);
+  const geom = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return g;
+  }, [positions]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    // Flicker rapidly — show/hide based on sine
+    const flicker = Math.sin(t * 18 + Math.random()) > (1 - intensity * 0.6);
+    if (lineRef.current) lineRef.current.visible = flicker;
+    if (!flicker) return;
+
+    // Build jagged path from → to
+    const spread = 0.6 * intensity;
+    for (let i = 0; i <= segCount; i++) {
+      const frac = i / segCount;
+      const x = from.x + (to.x - from.x) * frac + (i > 0 && i < segCount ? (Math.random() - 0.5) * spread : 0);
+      const y = from.y + (to.y - from.y) * frac + (i > 0 && i < segCount ? (Math.random() - 0.5) * spread * 0.6 : 0);
+      const z = from.z + (to.z - from.z) * frac + (i > 0 && i < segCount ? (Math.random() - 0.5) * spread * 0.4 : 0);
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+    }
+    geom.attributes.position.needsUpdate = true;
+  });
+
+  return (
+    <line ref={lineRef} geometry={geom} renderOrder={10}>
+      <lineBasicMaterial color="#facc15" transparent opacity={0.7 * intensity} linewidth={2} toneMapped={false} />
+    </line>
+  );
+}
+
 function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
   origin: [number, number, number];
   color?: string;
@@ -1670,6 +1709,10 @@ export default function Scene3D({
       <FloorHealthAura position={m2Pos} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} />
       {nodeMetrics && <CpuArcRing position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} memPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
       {nodeMetrics && <CpuArcGauge position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} />}
+      {/* Lightning arcs when CPU > 60% */}
+      {nodeMetrics && parseInt(nodeMetrics.cpuPct, 10) > 60 && (
+        <LightningArc from={new THREE.Vector3(m2Pos[0], m2Pos[1] + 1.5, m2Pos[2])} to={new THREE.Vector3(-2.5, 5.2, -2)} intensity={Math.min(1, (parseInt(nodeMetrics.cpuPct, 10) - 60) / 40)} />
+      )}
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
