@@ -751,20 +751,39 @@ function ServicesDisplay({
 
   return (
     <>
-      {services.map((svc, i) => (
-        <ServiceSphere
-          key={svc.name}
-          position={positions[i]}
-          service={svc}
-          visible={visible}
-          delay={i}
-          isSelected={selectedSvc === i}
-          isHovered={hoveredSvc === i}
-          onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
-          onPointerOver={() => onHoverSvc(i)}
-          onPointerOut={onUnhoverSvc}
-        />
-      ))}
+      {services.map((svc, i) => {
+        const catColor = CATEGORY_COLORS[svc.category] || "#666";
+        const linePoints = [
+          new THREE.Vector3(nodePos[0], nodePos[1] + 1.2, nodePos[2]),
+          new THREE.Vector3(positions[i][0], positions[i][1] - 0.4, positions[i][2]),
+        ];
+        return (
+          <group key={svc.name}>
+            {/* Beam from M2 to service sphere */}
+            {visible && (
+              <Line
+                points={linePoints}
+                color={catColor}
+                lineWidth={selectedSvc === i ? 1.2 : 0.5}
+                transparent
+                opacity={selectedSvc === i ? 0.35 : 0.08}
+                dashed={false}
+              />
+            )}
+            <ServiceSphere
+              position={positions[i]}
+              service={svc}
+              visible={visible}
+              delay={i}
+              isSelected={selectedSvc === i}
+              isHovered={hoveredSvc === i}
+              onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
+              onPointerOver={() => onHoverSvc(i)}
+              onPointerOut={onUnhoverSvc}
+            />
+          </group>
+        );
+      })}
     </>
   );
 }
