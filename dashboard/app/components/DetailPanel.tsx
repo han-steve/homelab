@@ -301,6 +301,28 @@ export default function DetailPanel({
                 </svg>
                 <div className="flex-1">
                   <span className="text-xs font-mono text-gray-700 uppercase tracking-wider">Cluster Health</span>
+                  {/* Health history sparkline */}
+                  {metricsHistory && metricsHistory.length >= 3 && (() => {
+                    const scores = metricsHistory.map(m => Math.round(
+                      (m.appsTotal ? ((m.appsHealthy ?? 0) / m.appsTotal) * 35 : 35) +
+                      (m.unhealthy === 0 ? 35 : Math.max(0, 35 - (m.unhealthy ?? 0) * 7)) + 15
+                    ));
+                    const minS = Math.min(...scores);
+                    const maxS = Math.max(...scores);
+                    const range = maxS - minS || 1;
+                    const w = 88, h = 16, pts = scores.map((s, i) => {
+                      const x = (i / (scores.length - 1)) * (w - 4) + 2;
+                      const y = h - 2 - ((s - minS) / range) * (h - 4);
+                      return `${x},${y}`;
+                    }).join(" ");
+                    const lastColor = scores[scores.length - 1] >= 90 ? "#22c55e" : scores[scores.length - 1] >= 70 ? "#eab308" : "#ef4444";
+                    return (
+                      <svg width={w} height={h} className="mt-1 block">
+                        <polyline points={pts} fill="none" stroke={lastColor} strokeWidth={1} opacity={0.5} />
+                        <circle cx={parseFloat(pts.split(" ").pop()!.split(",")[0])} cy={parseFloat(pts.split(" ").pop()!.split(",")[1])} r={1.5} fill={lastColor} />
+                      </svg>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="flex gap-1.5 mb-0">
