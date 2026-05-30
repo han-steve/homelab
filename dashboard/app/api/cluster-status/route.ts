@@ -74,12 +74,21 @@ export async function GET() {
         const ready = conditions.find(
           (c: { type: string }) => c.type === "Ready"
         );
+        const creationTime = n.metadata?.creationTimestamp;
+        let uptime: string | null = null;
+        if (creationTime) {
+          const uptimeMs = Date.now() - new Date(creationTime).getTime();
+          const uptimeDays = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
+          const uptimeHrs = Math.floor((uptimeMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          uptime = uptimeDays > 0 ? `${uptimeDays}d ${uptimeHrs}h` : `${uptimeHrs}h`;
+        }
         nodeInfo = {
           name: n.metadata?.name,
           ready: ready?.status === "True",
           kubeletVersion: n.status?.nodeInfo?.kubeletVersion,
           cpu: n.status?.capacity?.cpu,
           memory: n.status?.capacity?.memory,
+          uptime,
         };
       }
     }

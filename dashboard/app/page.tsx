@@ -8,7 +8,7 @@ interface ClusterStatus {
   timestamp: string;
   apps: { name: string; sync: string; health: string }[];
   unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
-  node: { name: string; ready: boolean; cpu?: string; memory?: string } | null;
+  node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }
 
@@ -196,6 +196,12 @@ export default function Home() {
             <span className="hidden md:inline text-gray-600">Talos v1.13.2</span>
             <span className="hidden md:inline text-gray-800">|</span>
             <span className="hidden md:inline text-gray-600">K8s v1.36</span>
+            {cluster?.node?.uptime && (
+              <>
+                <span className="hidden md:inline text-gray-800">|</span>
+                <span className="hidden md:inline text-gray-600" title="Node uptime">↑ {cluster.node.uptime}</span>
+              </>
+            )}
           </div>
         </div>
 
