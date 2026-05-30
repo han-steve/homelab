@@ -40,6 +40,7 @@ export default function Home() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [view, setView] = useState<ViewMode>("rack");
   const [cluster, setCluster] = useState<ClusterStatus | null>(null);
+  const [showApps, setShowApps] = useState(false);
 
   useEffect(() => {
     const fetchStatus = () =>
@@ -51,6 +52,16 @@ export default function Home() {
     const id = setInterval(fetchStatus, 30000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!showApps) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-apps-dropdown]")) setShowApps(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showApps]);
 
   return (
     <div className="flex h-screen bg-gray-950 text-white">
@@ -124,13 +135,29 @@ export default function Home() {
                   <span className="hidden md:inline text-gray-500">node</span>
                 </span>
                 <span className="hidden sm:inline text-gray-800">|</span>
-                <span
-                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded ${cluster.apps.every(a => a.sync === "Synced") ? "" : "bg-yellow-500/10 text-yellow-400"}`}
-                  title={cluster.apps.map(a => `${a.name}: ${a.sync}`).join("\n")}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.apps.every(a => a.sync === "Synced") ? "bg-green-500" : "bg-yellow-500"}`} />
-                  <span className="hidden sm:inline">{cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced</span>
-                </span>
+                <div className="relative" data-apps-dropdown="1">
+                  <button
+                    onClick={() => setShowApps(v => !v)}
+                    className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer transition-colors ${cluster.apps.every(a => a.sync === "Synced") ? "hover:bg-gray-800/50" : "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${cluster.apps.every(a => a.sync === "Synced") ? "bg-green-500" : "bg-yellow-500"}`} />
+                    <span className="hidden sm:inline">{cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced</span>
+                  </button>
+                  {showApps && (
+                    <div className="absolute top-full right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 min-w-52 max-h-80 overflow-y-auto">
+                      <div className="px-3 py-2 text-xs font-mono text-gray-500 border-b border-gray-800">ArgoCD Apps</div>
+                      {cluster.apps.map(app => (
+                        <div key={app.name} className="flex items-center justify-between px-3 py-1.5 text-xs font-mono hover:bg-gray-800/50">
+                          <span className="text-gray-300">{app.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={app.sync === "Synced" ? "text-green-400" : "text-yellow-400"}>{app.sync}</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${app.health === "Healthy" ? "bg-green-500" : app.health === "Degraded" ? "bg-red-500" : "bg-yellow-500"}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <span className="flex items-center gap-1.5" title={cluster.unhealthyPods.map(p => `${p.namespace}/${p.name}: ${p.status}`).join("\n")}>
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500" : "bg-orange-500"}`} />
