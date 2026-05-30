@@ -97,6 +97,38 @@ export default function DetailPanel({
 
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
+        {/* Quick status ribbon */}
+        {(apps || unhealthyPods || longhornStorage || certificates) && (() => {
+          const podStatus = unhealthyPods ? (unhealthyPods.length === 0 ? "ok" : "warn") : "unknown";
+          const argoStatus = apps ? (apps.every(a => a.sync === "Synced") ? "ok" : "warn") : "unknown";
+          const storageStatus = longhornStorage ? (longhornStorage.pct > 80 ? "err" : longhornStorage.pct > 60 ? "warn" : "ok") : "unknown";
+          const certStatus = certificates ? (certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 14) ? "err" : certificates.some(c => c.daysLeft >= 0 && c.daysLeft < 30) ? "warn" : "ok") : "unknown";
+          const STATUS: Record<string, { label: string; color: string; bg: string }> = {
+            ok: { label: "OK", color: "#22c55e", bg: "#052e16" },
+            warn: { label: "WARN", color: "#eab308", bg: "#1c1400" },
+            err: { label: "ERR", color: "#ef4444", bg: "#1c0505" },
+            unknown: { label: "--", color: "#6b7280", bg: "#111827" },
+          };
+          const items = [
+            { label: "Pods", status: podStatus },
+            { label: "ArgoCD", status: argoStatus },
+            { label: "Storage", status: storageStatus },
+            { label: "Certs", status: certStatus },
+          ];
+          return (
+            <div className="flex gap-1.5 mb-4">
+              {items.map(({ label, status }) => {
+                const s = STATUS[status];
+                return (
+                  <div key={label} className="flex-1 rounded px-1 py-1 text-center" style={{ backgroundColor: s.bg, border: `1px solid ${s.color}20` }}>
+                    <div className="text-gray-600 font-mono" style={{ fontSize: 9 }}>{label}</div>
+                    <div className="font-mono font-semibold" style={{ fontSize: 9, color: s.color }}>{s.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl">{"\u26A1"}</div>
           <div>
