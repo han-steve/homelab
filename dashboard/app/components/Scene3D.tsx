@@ -147,12 +147,13 @@ function DataPacket({ curve, color, speed = 0.2 }: {
 
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
-  from, to, color = "#58a6ff", active = true
+  from, to, color = "#58a6ff", active = true, speed = 0.18
 }: {
   from: [number, number, number];
   to: [number, number, number];
   color?: string;
   active?: boolean;
+  speed?: number;
 }) {
   const flowRef = useRef<THREE.Mesh>(null!);
 
@@ -205,7 +206,7 @@ function FloorCable({
         </mesh>
       )}
       {/* Data packet: a tiny glowing sphere that travels the cable */}
-      {active && <DataPacket curve={curve} color={color} speed={0.18} />}
+      {active && <DataPacket curve={curve} color={color} speed={speed} />}
     </group>
   );
 }
@@ -1005,8 +1006,8 @@ export default function Scene3D({
       <Particles />
 
       {/* Floor cables (at ground level) */}
-      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active />
-      <FloorCable from={routerPos} to={gpuPos} color="#d29922" active={false} />
+      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} />
+      <FloorCable from={routerPos} to={gpuPos} color="#d29922" active speed={0.13} />
 
       {/* Glow rings at floor level (fixed, don't hover with models) */}
       <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
