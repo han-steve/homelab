@@ -124,7 +124,7 @@ export default function Home() {
           const unhealthy = data.unhealthyPods?.length ?? 0;
           const appsHealthy = data.apps?.filter((a: {health: string}) => a.health === "Healthy").length ?? 0;
           const appsTotal = data.apps?.length ?? 0;
-          metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now() }];          try { localStorage.setItem("hl_metrics_history", JSON.stringify(metricsHistory.current)); } catch {/* ignore */}          // Track total restarts for rolling restart detection
+          metricsHistory.current = [...metricsHistory.current.slice(-39), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now() }];          try { localStorage.setItem("hl_metrics_history", JSON.stringify(metricsHistory.current)); } catch {/* ignore */}          // Track total restarts for rolling restart detection
           const totalRestarts = data.unhealthyPods?.reduce((s: number, p: {restarts?: number}) => s + (p.restarts ?? 0), 0) ?? 0;
           restartHistory.current = [...restartHistory.current.slice(-19), { ts: Date.now(), total: totalRestarts }];
           try { localStorage.setItem("hl_restart_history", JSON.stringify(restartHistory.current)); } catch {/* ignore */}
@@ -608,6 +608,22 @@ export default function Home() {
                   <span className="hidden md:inline font-semibold tabular-nums" style={{ color }} title="Cluster health score">
                     {score}%{trendArrow && <span style={{ color: trendColor, fontSize: "0.65rem", marginLeft: 1 }}>{trendArrow}</span>}
                   </span>
+                  {hist.length >= 4 && (() => {
+                    // Compute 24h SLA: pct of samples where unhealthy=0
+                    const recentHist = hist.filter(h => Date.now() - h.ts < 86400000);
+                    if (recentHist.length < 2) return null;
+                    const healthy = recentHist.filter(h => (h.unhealthy ?? 0) === 0).length;
+                    const sla = Math.round((healthy / recentHist.length) * 100);
+                    const slaColor = sla >= 99 ? "#22c55e" : sla >= 95 ? "#eab308" : "#ef4444";
+                    return (
+                      <>
+                        <span className="hidden lg:inline text-gray-800">|</span>
+                        <span className="hidden lg:inline text-[10px] font-mono tabular-nums" style={{ color: slaColor }} title={`24h SLA: ${healthy}/${recentHist.length} samples with all pods healthy`}>
+                          SLA {sla}%
+                        </span>
+                      </>
+                    );
+                  })()}
                   <span className="hidden md:inline text-gray-800">|</span>
                 </>
               );
