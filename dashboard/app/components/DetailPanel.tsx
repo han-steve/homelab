@@ -767,6 +767,32 @@ export default function DetailPanel({
         );
       })()}
 
+      {/* Related warning events for this namespace */}
+      {recentEvents && (() => {
+        const nsEvents = recentEvents.filter(e => e.namespace === svc.namespace);
+        if (nsEvents.length === 0) return null;
+        return (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Events</span>
+              <span className="text-xs font-mono text-orange-500/70">{nsEvents.length} warning{nsEvents.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="space-y-1.5">
+              {nsEvents.slice(0, 4).map((ev, i) => (
+                <div key={i} className="text-xs font-mono px-2 py-1 rounded bg-orange-500/5 border border-orange-500/15">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className="text-orange-400 truncate">{ev.reason}</span>
+                    <span className="text-gray-700 shrink-0">×{ev.count}</span>
+                  </div>
+                  <div className="text-gray-600 truncate">{ev.message.slice(0, 70)}{ev.message.length > 70 ? "…" : ""}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
+
       {/* kubectl command hints */}
       <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
       {[
