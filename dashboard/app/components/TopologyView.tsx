@@ -252,13 +252,19 @@ export default function TopologyView({
         </div>
         {/* Namespace health dots */}
         {uniqueNamespaces.length > 0 && (
-          <div className="flex items-center gap-0.5 pointer-events-none">
+          <div className="flex items-center gap-0.5">
             {uniqueNamespaces.map(ns => {
               const isUnhealthy = unhealthyNamespaces?.has(ns);
-              const hasEvent = recentEvents?.some(e => e.namespace === ns);
+              const nsEvents = recentEvents?.filter(e => e.namespace === ns) ?? [];
+              const hasEvent = nsEvents.length > 0;
               const dotColor = isUnhealthy ? "#ef444480" : hasEvent ? "#f9731650" : "#22c55e30";
+              const size = isUnhealthy ? "w-1.5 h-1.5" : hasEvent ? "w-1.5 h-1.5" : "w-1 h-1";
               return (
-                <div key={ns} title={ns} className="w-1 h-1 rounded-full" style={{ backgroundColor: dotColor }} />
+                <div key={ns} title={`${ns}${nsEvents.length > 0 ? ` · ${nsEvents.length} events` : ""}`}
+                  className={`${size} rounded-full cursor-pointer transition-all hover:scale-150`}
+                  style={{ backgroundColor: dotColor }}
+                  onClick={() => setNsFilter(f => f === ns ? null : ns)}
+                />
               );
             })}
           </div>
