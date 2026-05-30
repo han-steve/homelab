@@ -39,11 +39,15 @@ export default function DetailPanel({
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }) {
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   if (selectedIdx === null) {
-    const filteredServices = search
-      ? services.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.category.includes(search.toLowerCase()))
-      : services;
+    const categories = ["all", "app", "infra", "monitoring", "storage"];
+    const filteredServices = services.filter(s => {
+      const matchCat = categoryFilter === "all" || s.category === categoryFilter;
+      const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.category.includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    });
 
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
@@ -81,7 +85,7 @@ export default function DetailPanel({
         </div>
 
         {/* Search filter */}
-        <div className="relative mb-3">
+        <div className="relative mb-2">
           <input
             type="text"
             value={search}
@@ -95,6 +99,23 @@ export default function DetailPanel({
               className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-xs"
             >✕</button>
           )}
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-1 mb-3 flex-wrap">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={"px-2 py-0.5 rounded text-xs font-mono transition-all " + (
+                categoryFilter === cat
+                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/40"
+                  : "text-gray-600 hover:text-gray-400 border border-transparent"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-1.5">
@@ -144,6 +165,19 @@ export default function DetailPanel({
         <span className="text-base leading-none">{"\u2190"}</span>
         <span>back to overview</span>
       </button>
+
+      {/* Prev/Next navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => onSelectService?.((selectedIdx - 1 + services.length) % services.length)}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-mono border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-300 transition-all"
+        >← prev</button>
+        <span className="text-xs font-mono text-gray-700">{selectedIdx + 1} / {services.length}</span>
+        <button
+          onClick={() => onSelectService?.((selectedIdx + 1) % services.length)}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-mono border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-300 transition-all"
+        >next →</button>
+      </div>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
