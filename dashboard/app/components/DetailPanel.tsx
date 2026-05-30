@@ -308,6 +308,12 @@ export default function DetailPanel({
                 const pts = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
                 const isRising = vals[vals.length - 1] > vals[0];
                 const trendColor = isRising ? "#ef4444" : "#22c55e";
+                // Rate: restarts per hour based on oldest→newest sample
+                const oldest = restartHistory[0];
+                const newest = restartHistory[restartHistory.length - 1];
+                const deltaRestarts = newest.total - oldest.total;
+                const deltaHours = Math.max(0.016, (newest.ts - oldest.ts) / 3600000);
+                const rph = deltaRestarts > 0 ? (deltaRestarts / deltaHours).toFixed(1) : null;
                 return (
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="text-[9px] font-mono text-red-800">restarts</span>
@@ -316,6 +322,7 @@ export default function DetailPanel({
                       <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r={1.5} fill={trendColor} opacity={0.8} />
                     </svg>
                     <span className="text-[9px] font-mono" style={{ color: trendColor }}>{vals[vals.length-1]}</span>
+                    {rph && <span className="text-[9px] font-mono text-red-600/70">~{rph}/hr</span>}
                   </div>
                 );
               })()}
