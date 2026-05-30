@@ -1293,6 +1293,36 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
   );
 }
 
+/* ── Orbiting pods around K8s object ─────────────────── */
+function OrbitingPods({ count, radius = 0.65 }: { count: number; radius?: number }) {
+  const groupRef = useRef<THREE.Group>(null!);
+  const n = Math.min(count, 12);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (groupRef.current) {
+      groupRef.current.children.forEach((child, i) => {
+        const phase = (i / n) * Math.PI * 2;
+        // Use two orbital planes mixed together
+        const angle = t * 0.5 + phase;
+        const tilt = (i % 3 === 0) ? 0.4 : (i % 3 === 1) ? -0.3 : 0;
+        child.position.x = Math.cos(angle) * radius;
+        child.position.y = Math.sin(angle * 0.7 + tilt) * radius * 0.35;
+        child.position.z = Math.sin(angle) * radius;
+      });
+    }
+  });
+  return (
+    <group ref={groupRef}>
+      {Array.from({ length: n }, (_, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[0.028, 6, 6]} />
+          <meshBasicMaterial color={i < 2 ? "#ef4444" : "#326ce5"} transparent opacity={0.85} toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /* ── Kubernetes cluster object ───────────────────────── */
 function KubernetesObject({ position, isSelected, onClick, totalPods }: {
   position: [number, number, number];
@@ -1322,6 +1352,8 @@ function KubernetesObject({ position, isSelected, onClick, totalPods }: {
           <sphereGeometry args={[0.22, 16, 16]} />
           <meshPhysicalMaterial color={k8sColor} metalness={0.3} roughness={0.2} clearcoat={0.9} emissive={k8sColor} emissiveIntensity={isSelected ? 0.9 : 0.5} />
         </mesh>
+        {/* Orbiting pods */}
+        {totalPods !== undefined && totalPods > 0 && <OrbitingPods count={Math.min(totalPods, 10)} />}
         {/* Three orbit rings at different angles */}
         <mesh ref={ringA}>
           <torusGeometry args={[0.42, 0.012, 12, 64]} />
