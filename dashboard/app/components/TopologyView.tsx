@@ -21,6 +21,7 @@ export default function TopologyView({
   longhornStorage,
   recentEvents,
   nsMaxRestarts,
+  recentPods,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
@@ -31,6 +32,7 @@ export default function TopologyView({
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   nsMaxRestarts?: Record<string, number>;
+  recentPods?: { namespace: string; name: string; startTime: string }[];
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -445,8 +447,20 @@ export default function TopologyView({
             const heatFill = heatmapMode ? (heatPct > 0.7 ? "#f97316" : heatPct > 0.4 ? "#eab308" : heatPct > 0.15 ? "#3b82f6" : "#1e3a5f") : fillColor;
             const heatFillOpacity = heatmapMode ? (0.04 + heatPct * 0.14) : 0.03;
             const heatStrokeOpacity = heatmapMode ? (0.2 + heatPct * 0.5) : (isUnhealthyNs ? 0.4 : 0.15);
+            // Recently active: any pod started in this namespace in last hour
+            const isRecentlyActive = !isUnhealthyNs && recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
             return (
               <g key={ns} opacity={selectedNode ? 0.3 : 0.7}>
+                {isRecentlyActive && (
+                  <rect
+                    x={b.minX - pad - 2} y={b.minY - pad - 2}
+                    width={b.maxX - b.minX + pad * 2 + 4} height={b.maxY - b.minY + pad * 2 + 4}
+                    rx={16} ry={16}
+                    fill="none" stroke="#22c55e" strokeWidth={1.2} strokeOpacity={0.0}
+                  >
+                    <animate attributeName="strokeOpacity" values="0;0.35;0" dur="2.5s" repeatCount="indefinite" />
+                  </rect>
+                )}
                 <rect
                   x={b.minX - pad} y={b.minY - pad}
                   width={b.maxX - b.minX + pad * 2} height={b.maxY - b.minY + pad * 2}
@@ -463,7 +477,7 @@ export default function TopologyView({
                   fill={fillColor} fillOpacity={nsFilter === ns ? 0.8 : 0.4}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
-                >{isUnhealthyNs ? "⚠ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}</text>
+                >{isUnhealthyNs ? "⚠ " : ""}{isRecentlyActive ? "↑ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}</text>
               </g>
             );
           });

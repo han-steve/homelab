@@ -331,6 +331,7 @@ export default function Home() {
                 }
                 return m;
               })() : undefined}
+              recentPods={cluster?.recentPods}
             />
           )}
         </Suspense>

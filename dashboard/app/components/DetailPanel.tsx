@@ -1619,7 +1619,18 @@ export default function DetailPanel({
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Starts</h3>
-                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in 7d{recentFresh > 0 ? ` · ${recentFresh} <1h` : ""}</span>
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const last24h = fresh.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 86400000);
+                        if (last24h.length === 0) return null;
+                        const nsCounts: Record<string, number> = {};
+                        for (const p of last24h) nsCounts[p.namespace] = (nsCounts[p.namespace] || 0) + 1;
+                        const topNs = Object.entries(nsCounts).sort((a,b)=>b[1]-a[1])[0];
+                        if (!topNs) return null;
+                        return <span className="text-[9px] font-mono px-1 py-0 rounded bg-purple-900/20 text-purple-500/60 border border-purple-800/20" title="Most active namespace in last 24h">🔥{topNs[0].slice(0, 8)}</span>;
+                      })()}
+                      <span className="text-xs font-mono text-green-500/50">{fresh.length} in 7d{recentFresh > 0 ? ` · ${recentFresh} <1h` : ""}</span>
+                    </div>
                   </div>
                   {/* 7-day mini bar chart */}
                   <div className="flex items-end gap-0.5 h-6 mb-2">
