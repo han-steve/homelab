@@ -20,6 +20,7 @@ export default function TopologyView({
   apps,
   longhornStorage,
   recentEvents,
+  nsMaxRestarts,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
@@ -29,6 +30,7 @@ export default function TopologyView({
   apps?: { name: string; sync: string; health: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
+  nsMaxRestarts?: Record<string, number>;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -764,6 +766,10 @@ export default function TopologyView({
                 {svcEvents > 0 && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">events</span>
                   <span className="text-yellow-400">⚠ {svcEvents}</span>
+                </div>}
+                {svcRestarts !== undefined && svcRestarts > 0 && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">restarts</span>
+                  <span style={{ color: svcRestarts > 100 ? "#ef4444" : svcRestarts > 20 ? "#f97316" : "#eab308" }}>↺ {svcRestarts}</span>
                 </div>}
                 {isUnhealthy && <div className="text-red-400 mt-0.5">⚠ unhealthy pods detected</div>}
               </div>

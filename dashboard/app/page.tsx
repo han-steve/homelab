@@ -308,6 +308,13 @@ export default function Home() {
               apps={cluster?.apps}
               longhornStorage={cluster?.longhornStorage}
               recentEvents={cluster?.recentEvents}
+              nsMaxRestarts={cluster ? (() => {
+                const m: Record<string, number> = {};
+                for (const p of cluster.unhealthyPods) {
+                  if ((p.restarts ?? 0) > 0) m[p.namespace] = Math.max(m[p.namespace] ?? 0, p.restarts ?? 0);
+                }
+                return m;
+              })() : undefined}
             />
           )}
         </Suspense>
