@@ -113,6 +113,12 @@ export default function TopologyView({
       }
       // 0 = reset ns filter
       if (e.key === "0") setNsFilter(null);
+      // 1-9 = jump to Nth namespace
+      const numKey = parseInt(e.key, 10);
+      if (numKey >= 1 && numKey <= 9 && !e.ctrlKey && !e.metaKey) {
+        const ns = uniqueNamespaces[numKey - 1];
+        if (ns) setNsFilter(f => f === ns ? null : ns);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1161,7 +1167,7 @@ export default function TopologyView({
             );
           })()}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
-          <div className="text-gray-700/60">H=heatmap · N=next ns · dbl-click=reset</div>
+          <div className="text-gray-700/60">H=heatmap · N=next ns · 1-9=ns · dbl-click=reset</div>
           <button
             onClick={() => setHeatmapMode(v => !v)}
             className={`mt-1 px-2 py-0.5 rounded text-[10px] font-mono border transition-colors ${heatmapMode ? "bg-orange-500/15 border-orange-500/40 text-orange-400" : "border-gray-800 text-gray-700 hover:text-gray-500"}`}
