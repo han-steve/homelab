@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult, ingressResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -42,6 +42,8 @@ export async function GET() {
       execAsync(`kubectl get volumes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
       // Services with LoadBalancer/NodePort IPs
       execAsync(`kubectl get svc -A -o json 2>/dev/null`),
+      // Traefik IngressRoutes (hostnames)
+      execAsync(`kubectl get ingressroutes.traefik.io -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -331,9 +333,28 @@ export async function GET() {
       longhornStorage,
       longhornVolumes,
       k8sServices,
+      nsIngress,
       certificates,
     });
-  } catch {
+  } catch {    // Parse Traefik IngressRoutes: namespace → [hostname]
+    const nsIngress: Record<string, string[]> = {};
+    if (ingressResult.status === "fulfilled" && ingressResult.value.stdout.trim()) {
+      try {
+        const ingData = JSON.parse(ingressResult.value.stdout);
+        for (const route of ingData.items ?? []) {
+          const ns = route.metadata?.namespace ?? "";
+          for (const rule of route.spec?.routes ?? []) {
+            // Extract host from match string like "Host(`example.homelab.local`)"
+            const match = rule.match as string ?? "";
+            const hostMatch = match.match(/Host\(`([^`]+)`\)/i);
+            if (hostMatch) {
+              if (!nsIngress[ns]) nsIngress[ns] = [];
+              if (!nsIngress[ns].includes(hostMatch[1])) nsIngress[ns].push(hostMatch[1]);
+            }
+          }
+        }
+      } catch {}
+    }
     return Response.json(
       { error: "Failed to fetch cluster status" },
       { status: 500 }

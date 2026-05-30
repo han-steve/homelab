@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices, nsIngress,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -76,6 +76,7 @@ export default function DetailPanel({
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   nodePressures?: string[];
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
+  nsIngress?: Record<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -842,6 +843,17 @@ export default function DetailPanel({
             </div>
           );
         })()}
+        {/* Traefik IngressRoute hostnames */}
+        {nsIngress?.[svc.namespace] && nsIngress[svc.namespace].length > 0 && (
+          <div className="space-y-0.5">
+            {nsIngress[svc.namespace].map((host, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs font-mono">
+                <span className="text-indigo-500/60">↗</span>
+                <span className="text-indigo-400/80 truncate">{host}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {svc.url && (
