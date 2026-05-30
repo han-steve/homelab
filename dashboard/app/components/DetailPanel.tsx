@@ -777,15 +777,18 @@ export default function DetailPanel({
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
               <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
             </div>
-            <div className="space-y-1.5">
+            {/* Compact timeline */}
+            <div className="relative pl-4 space-y-2 border-l border-gray-800/60 ml-1">
               {recentEvents.slice(0, 5).map((ev, i) => (
-                <div key={i} className="text-xs font-mono bg-orange-500/5 border border-orange-500/15 rounded px-2 py-1.5">
+                <div key={i} className="relative text-xs font-mono">
+                  {/* Timeline dot */}
+                  <div className="absolute -left-[1.2rem] top-1 w-1.5 h-1.5 rounded-full bg-orange-500/60 border border-orange-500/30" />
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <span className="text-orange-400/80 truncate flex-1">{ev.reason}</span>
-                    <span className="text-gray-700 shrink-0">{relTime(ev.lastTimestamp, now) || ev.age}</span>
+                    <span className="text-gray-700 shrink-0 text-[10px]">{relTime(ev.lastTimestamp, now) || ev.age}</span>
                   </div>
-                  <div className="text-gray-600 truncate">{ev.name}</div>
-                  <div className="text-gray-700 truncate mt-0.5">{ev.message}</div>
+                  <div className="text-gray-600 truncate">{ev.name}<span className="text-gray-800 mx-1">·</span>{ev.namespace}</div>
+                  <div className="text-gray-700/80 truncate mt-0.5 text-[10px]">{ev.message}</div>
                 </div>
               ))}
             </div>
