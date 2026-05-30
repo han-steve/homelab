@@ -454,6 +454,23 @@ export default function TopologyView({
                 />
               )}
 
+              {/* Namespace label below service nodes */}
+              {isService && node.serviceIdx !== undefined && (() => {
+                const svc = services[node.serviceIdx];
+                if (!svc) return null;
+                const ns = svc.namespace.length > 12 ? svc.namespace.slice(0, 11) + "…" : svc.namespace;
+                return (
+                  <text
+                    textAnchor="middle"
+                    y={r + 16}
+                    fontSize={7}
+                    fill="#4b5563"
+                    fontFamily="monospace"
+                    opacity={0.8}
+                  >{ns}</text>
+                );
+              })()}
+
               {/* M2 node CPU + RAM inline bars */}
               {node.id === "m2" && nodeMetrics && (() => {
                 const cpu = parseInt(nodeMetrics.cpuPct, 10) || 0;
