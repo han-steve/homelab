@@ -1338,6 +1338,15 @@ export default function DetailPanel({
           const allReleases = Object.values(nsHelmReleases).flat();
           if (allReleases.length === 0) return null;
           const deployed = allReleases.filter(r => r.status === "deployed").length;
+          // Sort by most recently updated
+          const sortedReleases = [...allReleases].sort((a, b) => {
+            const ta = a.updated ? new Date(a.updated).getTime() : 0;
+            const tb = b.updated ? new Date(b.updated).getTime() : 0;
+            return tb - ta;
+          });
+          const newestMs = sortedReleases[0]?.updated ? Date.now() - new Date(sortedReleases[0].updated).getTime() : 0;
+          const oldestMs = sortedReleases[sortedReleases.length - 1]?.updated ? Date.now() - new Date(sortedReleases[sortedReleases.length - 1].updated).getTime() : 0;
+          const ageRange = Math.max(1, oldestMs - newestMs);
           return (
             <>
               <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
@@ -1346,17 +1355,21 @@ export default function DetailPanel({
                 <span className="text-xs font-mono text-gray-700">{deployed}/{allReleases.length} deployed</span>
               </div>
               <div className="space-y-0.5">
-                {allReleases.map((rel, i) => {
+                {sortedReleases.map((rel, i) => {
                   let updatedAgo = "";
                   let isRecent = false;
+                  let agePct = 100;
                   if (rel.updated) {
                     try {
                       const ms = Date.now() - new Date(rel.updated).getTime();
                       const days = Math.floor(ms / 86400000);
                       isRecent = ms < 86400000; // updated in last 24h
                       updatedAgo = days > 0 ? `${days}d` : `${Math.floor(ms/3600000)}h`;
+                      // agePct: 100 = newest, 0 = oldest (linear within range)
+                      agePct = Math.max(0, Math.min(100, ((oldestMs - ms) / ageRange) * 100));
                     } catch {/* ignore */}
                   }
+                  const ageBarColor = isRecent ? "#06b6d4" : agePct > 60 ? "#3b82f6" : agePct > 30 ? "#4b5563" : "#1f2937";
                   return (
                   <div key={i} className={`flex items-center justify-between text-xs font-mono rounded px-0.5 py-0.5 transition-colors ${isRecent ? "bg-cyan-900/10 border border-cyan-900/20" : ""}`}>
                     <div className="flex items-center gap-1.5 truncate flex-1">
@@ -1365,6 +1378,10 @@ export default function DetailPanel({
                       <span className={`truncate ${isRecent ? "text-cyan-400/70" : "text-gray-600"}`}>{rel.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {/* Age freshness indicator */}
+                      <div className="w-8 h-0.5 rounded-full bg-gray-900 overflow-hidden" title={`Updated ${updatedAgo}`}>
+                        <div className="h-full rounded-full" style={{ width: `${agePct}%`, backgroundColor: ageBarColor }} />
+                      </div>
                       <span className="text-gray-700 text-[10px]">{rel.chart.replace(/^[^-]+-/, "")}</span>
                       {updatedAgo && <span className={`text-[10px] ${isRecent ? "text-cyan-700/70" : "text-gray-800"}`}>{updatedAgo}</span>}
                     </div>
