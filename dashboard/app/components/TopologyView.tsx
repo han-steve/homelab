@@ -990,6 +990,7 @@ export default function TopologyView({
             <div className="text-yellow-600/60">⚡ {recentEvents.length} warning event{recentEvents.length !== 1 ? "s" : ""}</div>
           )}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
+          <div className="text-gray-700/60">H=heatmap · N=next ns · 0=reset</div>
           <button
             onClick={() => setHeatmapMode(v => !v)}
             className={`mt-1 px-2 py-0.5 rounded text-[10px] font-mono border transition-colors ${heatmapMode ? "bg-orange-500/15 border-orange-500/40 text-orange-400" : "border-gray-800 text-gray-700 hover:text-gray-500"}`}
