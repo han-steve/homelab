@@ -512,6 +512,34 @@ export default function DetailPanel({
         {recentEvents && recentEvents.length > 0 && (
           <>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
+            {/* Top restarting pods */}
+            {unhealthyPods && unhealthyPods.filter(p => p.restarts > 0).length > 0 && (() => {
+              const restarting = [...unhealthyPods].filter(p => p.restarts > 0).sort((a, b) => b.restarts - a.restarts).slice(0, 5);
+              const maxRestarts = restarting[0].restarts;
+              return (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Restart Leaders</h3>
+                    <span className="text-xs font-mono text-orange-500/70">{unhealthyPods.filter(p => p.restarts > 0).length} restarting</span>
+                  </div>
+                  <div className="space-y-1">
+                    {restarting.map((pod, i) => {
+                      const pct = (pod.restarts / maxRestarts) * 100;
+                      const color = pod.restarts > 10 ? "#ef4444" : pod.restarts > 3 ? "#f97316" : "#eab308";
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-gray-700 w-28 shrink-0 truncate" title={pod.namespace + "/" + pod.name}>{pod.name.split("-")[0]}</span>
+                          <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                          </div>
+                          <span className="text-xs font-mono w-6 text-right shrink-0" style={{ color }}>↺{pod.restarts}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
               <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
