@@ -1073,6 +1073,28 @@ export default function TopologyView({
                   <span style={{ color: svcRestarts > 100 ? "#ef4444" : svcRestarts > 20 ? "#f97316" : "#eab308" }}>↺ {svcRestarts}</span>
                 </div>}
                 {isUnhealthy && <div className="text-red-400 mt-0.5">⚠ unhealthy pods detected</div>}
+                {tService && recentPods && (() => {
+                  const nsPods = recentPods.filter(p => p.namespace === tService.namespace);
+                  const recent = [...nsPods].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 3);
+                  if (recent.length === 0) return null;
+                  const now = Date.now();
+                  return (
+                    <div className="mt-1 border-t border-gray-800/60 pt-1">
+                      {recent.map((p, i) => {
+                        const ageMs = now - new Date(p.startTime).getTime();
+                        const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h` : `${Math.floor(ageMs / 86400000)}d`;
+                        const isNew = ageMs < 1800000;
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-[9px]">
+                            <span style={{ color: isNew ? "#22c55e" : "#374151" }}>↑</span>
+                            <span className="text-gray-700 truncate flex-1">{p.name.split("-").slice(0, 2).join("-")}</span>
+                            <span style={{ color: isNew ? "#22c55e80" : "#374151" }}>{ageStr}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {isM2 && nodeMetrics && (
