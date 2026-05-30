@@ -13,9 +13,11 @@ interface ClusterStatus {
   nsPodCounts?: Record<string, number>;
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
+  totalCpuRequestsM?: number;
+  totalMemRequestsMi?: number;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[];
-  node: { name: string; ready: boolean; cpu?: string; memory?: string; uptime?: string | null } | null;
+  node: { name: string; ready: boolean; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
@@ -479,6 +481,8 @@ export default function Home() {
             nsMemRequestsMi={cluster?.nsMemRequestsMi}
             topCpuPods={cluster?.topCpuPods}
             podMetrics={cluster?.podMetrics}
+            totalCpuRequestsM={cluster?.totalCpuRequestsM}
+            totalMemRequestsMi={cluster?.totalMemRequestsMi}
           />
         )}
       </div>

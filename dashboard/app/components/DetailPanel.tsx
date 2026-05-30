@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -70,6 +70,8 @@ export default function DetailPanel({
   nsMemRequestsMi?: Record<string, number>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[];
+  totalCpuRequestsM?: number;
+  totalMemRequestsMi?: number;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -180,6 +182,48 @@ export default function DetailPanel({
         </div>
 
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4" />
+
+        {/* Cluster capacity gauge: requests vs allocatable */}
+        {totalCpuRequestsM !== undefined && nodeMetrics && (() => {
+          // M2 has 10 physical cores = 10000m, allocatable ~9800m
+          const allocCpuM = 9800;
+          const allocMemMi = 16000; // ~15.6GiB allocatable
+          const cpuReqPct = Math.min(100, (totalCpuRequestsM / allocCpuM) * 100);
+          const memReqMi = totalMemRequestsMi ?? 0;
+          const memReqPct = Math.min(100, (memReqMi / allocMemMi) * 100);
+          const cpuUsePct = parseInt(nodeMetrics.cpuPct, 10) || 0;
+          const memUsePct = parseInt(nodeMetrics.memPct, 10) || 0;
+          return (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Cluster Capacity</h3>
+                <span className="text-xs font-mono text-gray-700">req / use / alloc</span>
+              </div>
+              <div className="space-y-1.5">
+                <div>
+                  <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
+                    <span>CPU</span>
+                    <span>{totalCpuRequestsM >= 1000 ? `${(totalCpuRequestsM/1000).toFixed(1)}c` : `${totalCpuRequestsM}m`} req · {cpuUsePct}% use</span>
+                  </div>
+                  <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-blue-500/30" style={{ width: `${cpuReqPct}%` }} />
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-blue-400/60" style={{ width: `${cpuUsePct}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
+                    <span>RAM</span>
+                    <span>{memReqMi >= 1024 ? `${(memReqMi/1024).toFixed(1)}G` : `${Math.round(memReqMi)}M`} req · {memUsePct}% use</span>
+                  </div>
+                  <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-500/30" style={{ width: `${memReqPct}%` }} />
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-400/60" style={{ width: `${memUsePct}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Quick service health grid */}
         <div className="mb-4">

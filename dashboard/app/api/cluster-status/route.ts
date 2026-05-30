@@ -116,6 +116,8 @@ export async function GET() {
           kubeletVersion: n.status?.nodeInfo?.kubeletVersion,
           cpu: n.status?.capacity?.cpu,
           memory: n.status?.capacity?.memory,
+          allocatableCpu: n.status?.allocatable?.cpu,
+          allocatableMemory: n.status?.allocatable?.memory,
           uptime,
         };
       }
@@ -235,6 +237,8 @@ export async function GET() {
       nsPodCounts,
       nsCpuRequestsM,
       nsMemRequestsMi,
+      totalCpuRequestsM: Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0),
+      totalMemRequestsMi: Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0),
       topCpuPods,
       podMetrics: parsedPodMetrics,
       node: nodeInfo,
