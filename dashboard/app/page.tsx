@@ -136,6 +136,7 @@ export default function Home() {
               onSelectService={setSelectedIdx}
               nodeMetrics={cluster?.nodeMetrics}
               nsPodCounts={cluster?.nsPodCounts}
+              unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
             />
           )}
         </Suspense>

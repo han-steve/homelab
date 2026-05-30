@@ -15,10 +15,12 @@ export default function TopologyView({
   onSelectService,
   nodeMetrics,
   nsPodCounts,
+  unhealthyNamespaces,
 }: {
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
+  unhealthyNamespaces?: Set<string>;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -327,6 +329,13 @@ export default function TopologyView({
                 setTooltip((t) => ({ ...t, visible: false }))
               }
             >
+              {/* Unhealthy node warning ring */}
+              {isService && node.serviceIdx !== undefined && unhealthyNamespaces?.has(services[node.serviceIdx]?.namespace ?? "") && (
+                <circle r={r + 5} fill="none" stroke="#ef4444" strokeWidth={1.5} opacity={0.6} filter="url(#glow)">
+                  <animate attributeName="opacity" values="0.6;0.15;0.6" dur="1.2s" repeatCount="indefinite" />
+                </circle>
+              )}
+
               {/* Neighbor highlight ring */}
               {isNeighbor && (
                 <circle r={r + 4} fill="none" stroke="#ffffff" strokeWidth={1} opacity={0.25} />
@@ -373,7 +382,7 @@ export default function TopologyView({
               <circle
                 r={r}
                 fill="#161b22"
-                stroke={nodeColor}
+                stroke={isService && node.serviceIdx !== undefined && unhealthyNamespaces?.has(services[node.serviceIdx]?.namespace ?? "") ? "#ef4444" : nodeColor}
                 strokeWidth={isActive ? 2 : 1.5}
               />
 
