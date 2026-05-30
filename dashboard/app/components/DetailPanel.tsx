@@ -2227,6 +2227,7 @@ export default function DetailPanel({
                         <span className={`truncate flex-1 ${isCrash ? "text-red-400/80" : isOOM ? "text-purple-400/80" : "text-orange-400/70"}`} title={pod.name}>{pod.name.replace(/-[a-z0-9]{5,10}$/, "")}</span>
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
                           <span className="text-[9px] px-1 py-0 rounded font-mono" style={{ backgroundColor: (isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316") + "20", color: isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316" }}>{pod.status}</span>
+                          {pod.restarts > 200 && <span className="text-[8px] px-0.5 rounded bg-red-900/30 text-red-400/80 border border-red-700/30 animate-pulse" title="Extreme restart count">🔥</span>}
                           {pod.restarts > 0 && <span style={{ color: restartColor }}>↺{pod.restarts}</span>}
                           {pod.lastRestartAt && <span className="text-gray-700 text-[9px]">{relTime(pod.lastRestartAt, now)}</span>}
                           <button
