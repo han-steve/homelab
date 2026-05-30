@@ -985,6 +985,23 @@ export default function DetailPanel({
           );
         })()}
 
+        {/* Top namespace by restarts callout */}
+        {(() => {
+          const topNs = Object.entries(nsMaxRestarts).sort((a, b) => b[1] - a[1])[0];
+          if (!topNs || topNs[1] < 20) return null;
+          const [ns, count] = topNs;
+          const isCrit = count > 100;
+          const color = isCrit ? "#ef4444" : "#f97316";
+          return (
+            <div className="mb-2 flex items-center gap-2 px-2 py-1 rounded border" style={{ borderColor: color + "30", backgroundColor: color + "06" }}>
+              <span className="text-[10px] font-mono shrink-0" style={{ color }}>↺{count}</span>
+              <span className="text-[9px] font-mono text-gray-600">top restarts</span>
+              <span className="text-[9px] font-mono truncate flex-1" style={{ color: color + "99" }}>{ns}</span>
+              {isCrit && <span className="text-[8px] font-mono shrink-0 animate-pulse" style={{ color: color + "80" }}>CRIT</span>}
+            </div>
+          );
+        })()}
+
         {/* Cluster scope stats strip */}
         {(nsDeployments || nsHelmReleases || k8sServices) && (() => {
           const nsAll = new Set<string>();
