@@ -62,12 +62,23 @@ type ViewMode = "rack" | "topology";
 
 export default function Home() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [view, setView] = useState<ViewMode>("rack");
+  const [view, setView] = useState<ViewMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("hl_view");
+      if (saved === "rack" || saved === "topology") return saved;
+    }
+    return "rack";
+  });
   const [cluster, setCluster] = useState<ClusterStatus | null>(null);
   const [showApps, setShowApps] = useState(false);
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("hl_panel_collapsed") === "1";
+    }
+    return false;
+  });
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,10 +171,10 @@ export default function Home() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "3") setView("rack");
-      if (e.key === "t" || e.key === "T") setView("topology");
+      if (e.key === "3") { setView("rack"); localStorage.setItem("hl_view", "rack"); }
+      if (e.key === "t" || e.key === "T") { setView("topology"); localStorage.setItem("hl_view", "topology"); }
       if (e.key === "r" || e.key === "R") fetchStatus.current();
-      if (e.key === "p" || e.key === "P") setPanelCollapsed(v => !v);
+      if (e.key === "p" || e.key === "P") setPanelCollapsed(v => { const next = !v; localStorage.setItem("hl_panel_collapsed", next ? "1" : "0"); return next; });
       if (e.key === "?" || e.key === "/") { e.preventDefault(); setShowHelp(v => !v); }
       if (e.key === "f" || e.key === "F") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setShowSearch(true); setSearchQuery(""); }
@@ -443,7 +454,7 @@ export default function Home() {
           {/* View switcher */}
           <div className="flex items-center bg-gray-900 rounded-lg border border-gray-800/50 p-0.5">
             <button
-              onClick={() => setView("rack")}
+              onClick={() => { setView("rack"); localStorage.setItem("hl_view", "rack"); }}
               className={
                 "px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
                 (view === "rack"
@@ -454,7 +465,7 @@ export default function Home() {
               🖥️ <span className="hidden sm:inline">3D Rack</span>
             </button>
             <button
-              onClick={() => setView("topology")}
+              onClick={() => { setView("topology"); localStorage.setItem("hl_view", "topology"); }}
               className={
                 "px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer " +
                 (view === "topology"
