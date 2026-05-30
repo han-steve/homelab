@@ -1886,7 +1886,12 @@ export default function Scene3D({
         modelRotation={[0, Math.PI * 0.15, 0]}
         position={m2Pos}
         label={"M2 · " + node.ip}
-        sublabel={node.cpu.split("(")[0].trim()}
+        sublabel={(() => {
+          if (nodeMetrics) return `CPU ${nodeMetrics.cpuPct} · RAM ${nodeMetrics.memPct}`;
+          const cpuPct = nsCpuRequestsM ? Math.round((Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950) * 100) : null;
+          if (cpuPct !== null) return `${cpuPct}% req · ${totalPods ?? "?"} pods`;
+          return node.cpu.split("(")[0].trim();
+        })()}
         color="#58a6ff"
         status="online"
         isSelected={selectedNode === "m2"}
