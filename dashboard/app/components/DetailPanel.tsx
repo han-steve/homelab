@@ -134,6 +134,24 @@ export default function DetailPanel({
 
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
+        {/* Critical pod alert */}
+        {unhealthyPods && unhealthyPods.some(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50)) && (() => {
+          const critPods = unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
+          return (
+            <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs font-semibold font-mono text-red-400 uppercase tracking-wider">Critical Alert</span>
+              </div>
+              {critPods.slice(0, 2).map((p, i) => (
+                <div key={i} className="text-xs font-mono text-red-300/80">
+                  {p.name.split("-").slice(0, 3).join("-")}: <span className="text-red-400">{p.status}</span>
+                  {p.restarts > 0 && <span className="text-red-500/70"> ↺{p.restarts}</span>}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         {/* Quick access links */}
         <div className="mb-4 grid grid-cols-4 gap-1">
           {[
@@ -165,7 +183,9 @@ export default function DetailPanel({
           const syncScore = apps && apps.length > 0 ? (apps.filter(a => a.sync === "Synced").length / apps.length) * 35 : 35;
           const podScore = unhealthyPods ? (unhealthyPods.length === 0 ? 35 : Math.max(0, 35 - unhealthyPods.length * 5)) : 35;
           const storageScore = longhornStorage ? (longhornStorage.pct > 80 ? 0 : longhornStorage.pct > 60 ? 8 : 15) : 15;
-          const cpuScore = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) > 85 ? 0 : parseInt(nodeMetrics.cpuPct, 10) > 70 ? 7 : 15) : 15;
+          const cpuReqPctForScore = (totalCpuRequestsM && totalCpuRequestsM > 0) ? (totalCpuRequestsM / 15950) * 100 : 0;
+          const cpuScore = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) > 85 ? 0 : parseInt(nodeMetrics.cpuPct, 10) > 70 ? 7 : 15)
+            : cpuReqPctForScore > 90 ? 5 : cpuReqPctForScore > 70 ? 10 : 15;
           const healthScore = Math.round(syncScore + podScore + storageScore + cpuScore);
           const scoreColor = healthScore >= 90 ? "#22c55e" : healthScore >= 70 ? "#eab308" : "#ef4444";
           const STATUS: Record<string, { label: string; color: string; bg: string }> = {
@@ -243,12 +263,16 @@ export default function DetailPanel({
               ))}
             </div>
           )}
-          {nodeMetrics && (
+          {(nodeMetrics || (totalCpuRequestsM && totalCpuRequestsM > 0)) && (
             <>
               <div className="h-px bg-gray-800/60 mt-1" />
               {(() => {
-                const cpuPct = parseInt(nodeMetrics.cpuPct, 10) || 0;
-                const ramPct = parseInt(nodeMetrics.memPct, 10) || 0;
+                const allocCpuM = 15950;
+                const allocMemMi = Math.round(31753032 / 1024);
+                const cpuPct = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) || 0) : 0;
+                const ramPct = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
+                const cpuReqPct = totalCpuRequestsM ? Math.min(100, (totalCpuRequestsM / allocCpuM) * 100) : 0;
+                const memReqPct = totalMemRequestsMi ? Math.min(100, (totalMemRequestsMi / allocMemMi) * 100) : 0;
                 // Trend: compare last 3 points to first 3 points of metricsHistory
                 let cpuTrend = "→", ramTrend = "→";
                 let cpuTrendColor = "#6b7280", ramTrendColor = "#6b7280";
@@ -264,28 +288,40 @@ export default function DetailPanel({
                 }
                 return (
                   <>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-gray-600">CPU use</span>
-                      <span className="flex items-center gap-1">
-                        <span style={{ color: cpuTrendColor }}>{cpuTrend}</span>
-                        <span className="text-blue-400">{nodeMetrics.cpuCores}</span>
-                        <span className="text-gray-600">({nodeMetrics.cpuPct})</span>
-                      </span>
-                    </div>
-                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5 mb-1.5">
-                      <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${cpuPct}%` }} />
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-gray-600">RAM use</span>
-                      <span className="flex items-center gap-1">
-                        <span style={{ color: ramTrendColor }}>{ramTrend}</span>
-                        <span className="text-cyan-400">{nodeMetrics.memoryi}</span>
-                        <span className="text-gray-600">({nodeMetrics.memPct})</span>
-                      </span>
-                    </div>
-                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5" style={{ marginBottom: metricsHistory && metricsHistory.length >= 2 ? 0 : undefined }}>
-                      <div className="h-full rounded-full bg-cyan-500/60" style={{ width: `${ramPct}%` }} />
-                    </div>
+                    {nodeMetrics ? (
+                      <>
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="text-gray-600">CPU use</span>
+                          <span className="flex items-center gap-1">
+                            <span style={{ color: cpuTrendColor }}>{cpuTrend}</span>
+                            <span className="text-blue-400">{nodeMetrics.cpuCores}</span>
+                            <span className="text-gray-600">({nodeMetrics.cpuPct})</span>
+                          </span>
+                        </div>
+                        <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5 mb-1.5">
+                          <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${cpuPct}%` }} />
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="text-gray-600">RAM use</span>
+                          <span className="flex items-center gap-1">
+                            <span style={{ color: ramTrendColor }}>{ramTrend}</span>
+                            <span className="text-cyan-400">{nodeMetrics.memoryi}</span>
+                            <span className="text-gray-600">({nodeMetrics.memPct})</span>
+                          </span>
+                        </div>
+                        <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5" style={{ marginBottom: metricsHistory && metricsHistory.length >= 2 ? 0 : undefined }}>
+                          <div className="h-full rounded-full bg-cyan-500/60" style={{ width: `${ramPct}%` }} />
+                        </div>
+                      </>
+                    ) : totalCpuRequestsM && totalCpuRequestsM > 0 ? (
+                      <div className="flex items-center justify-between text-xs font-mono text-gray-600">
+                        <span>requests</span>
+                        <span className="flex items-center gap-3">
+                          <span><span className="text-blue-400">{(totalCpuRequestsM/1000).toFixed(1)}c</span> cpu ({cpuReqPct.toFixed(0)}%)</span>
+                          <span><span className="text-cyan-400">{totalMemRequestsMi ? (totalMemRequestsMi/1024).toFixed(0) : "0"}G</span> ram ({memReqPct.toFixed(0)}%)</span>
+                        </span>
+                      </div>
+                    ) : null}
                   </>
                 );
               })()}
@@ -333,40 +369,42 @@ export default function DetailPanel({
         <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4" />
 
         {/* Cluster capacity gauge: requests vs allocatable */}
-        {totalCpuRequestsM !== undefined && nodeMetrics && (() => {
-          // M2 has 10 physical cores = 10000m, allocatable ~9800m
-          const allocCpuM = 9800;
-          const allocMemMi = 16000; // ~15.6GiB allocatable
+        {totalCpuRequestsM !== undefined && totalCpuRequestsM > 0 && (() => {
+          // Use real allocatable values from data or fall back to known M2 values
+          const allocCpuM = 15950; // M2: 16 cores = 15950m allocatable
+          const allocMemMi = Math.round(31753032 / 1024); // ~31003 MiB
           const cpuReqPct = Math.min(100, (totalCpuRequestsM / allocCpuM) * 100);
           const memReqMi = totalMemRequestsMi ?? 0;
           const memReqPct = Math.min(100, (memReqMi / allocMemMi) * 100);
-          const cpuUsePct = parseInt(nodeMetrics.cpuPct, 10) || 0;
-          const memUsePct = parseInt(nodeMetrics.memPct, 10) || 0;
+          const cpuUsePct = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) || 0) : 0;
+          const memUsePct = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
+          const cpuReqColor = cpuReqPct > 80 ? "#ef4444" : cpuReqPct > 60 ? "#eab308" : "#58a6ff";
+          const memReqColor = memReqPct > 80 ? "#ef4444" : memReqPct > 60 ? "#eab308" : "#06b6d4";
           return (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Cluster Capacity</h3>
-                <span className="text-xs font-mono text-gray-700">req / use / alloc</span>
+                <span className="text-xs font-mono text-gray-700">{cpuReqPct.toFixed(0)}% · {memReqPct.toFixed(0)}% req'd</span>
               </div>
               <div className="space-y-1.5">
                 <div>
                   <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
                     <span>CPU</span>
-                    <span>{totalCpuRequestsM >= 1000 ? `${(totalCpuRequestsM/1000).toFixed(1)}c` : `${totalCpuRequestsM}m`} req · {cpuUsePct}% use</span>
+                    <span>{totalCpuRequestsM >= 1000 ? `${(totalCpuRequestsM/1000).toFixed(1)}c` : `${totalCpuRequestsM}m`} / {(allocCpuM/1000).toFixed(1)}c{cpuUsePct > 0 ? ` · ${cpuUsePct}% use` : ""}</span>
                   </div>
                   <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-blue-500/30" style={{ width: `${cpuReqPct}%` }} />
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-blue-400/60" style={{ width: `${cpuUsePct}%` }} />
+                    <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${cpuReqPct}%`, backgroundColor: cpuReqColor, opacity: 0.4 }} />
+                    {cpuUsePct > 0 && <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${cpuUsePct}%`, backgroundColor: cpuReqColor, opacity: 0.7 }} />}
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
                     <span>RAM</span>
-                    <span>{memReqMi >= 1024 ? `${(memReqMi/1024).toFixed(1)}G` : `${Math.round(memReqMi)}M`} req · {memUsePct}% use</span>
+                    <span>{memReqMi >= 1024 ? `${(memReqMi/1024).toFixed(1)}G` : `${Math.round(memReqMi)}M`} / {(allocMemMi/1024).toFixed(0)}G{memUsePct > 0 ? ` · ${memUsePct}% use` : ""}</span>
                   </div>
                   <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-500/30" style={{ width: `${memReqPct}%` }} />
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-400/60" style={{ width: `${memUsePct}%` }} />
+                    <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${memReqPct}%`, backgroundColor: memReqColor, opacity: 0.4 }} />
+                    {memUsePct > 0 && <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${memUsePct}%`, backgroundColor: memReqColor, opacity: 0.7 }} />}
                   </div>
                 </div>
               </div>
@@ -495,16 +533,13 @@ export default function DetailPanel({
 
         {/* Namespace resource allocation mini-charts (CPU + Memory) */}
         {(nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0) && (() => {
+          const allocCpuM = 15950;
+          const allocMemMi = Math.round(31753032 / 1024);
           const cpuEntries = Object.entries(nsCpuRequestsM)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-          const memEntries = nsMemRequestsMi ? Object.entries(nsMemRequestsMi)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5) : [];
-          const cpuMax = cpuEntries[0]?.[1] || 1;
-          const memMax = memEntries[0]?.[1] || 1;
-          const nsSet = new Set([...cpuEntries.map(e => e[0]), ...memEntries.map(e => e[0])]);
-          const allNs = Array.from(nsSet).slice(0, 5);
+            .slice(0, 7);
+          const nsSet = new Set(cpuEntries.map(e => e[0]));
+          const allNs = Array.from(nsSet);
           // Compute actual CPU per namespace from live podMetrics
           const nsCpuActual: Record<string, number> = {};
           if (podMetrics) {
@@ -516,29 +551,32 @@ export default function DetailPanel({
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Resource Requests</h3>
-                <div className="flex items-center gap-3 text-xs font-mono text-gray-700">
-                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-500/60 rounded inline-block" />req</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />mem</span>
+                <div className="flex items-center gap-2 text-xs font-mono text-gray-700">
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-500/60 rounded inline-block" />cpu</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />ram</span>
                 </div>
               </div>
               <div className="space-y-1.5">
                 {allNs.map(ns => {
                   const cpuM = nsCpuRequestsM[ns] || 0;
                   const memMi = (nsMemRequestsMi?.[ns]) || 0;
-                  const cpuPct = (cpuM / cpuMax) * 100;
-                  const memPct = (memMi / memMax) * 100;
+                  // Use absolute % of allocatable
+                  const cpuPct = Math.min(100, (cpuM / allocCpuM) * 100);
+                  const memPct = Math.min(100, (memMi / allocMemMi) * 100);
                   const cpuLabel = cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m`;
                   const memLabel = memMi >= 1024 ? `${(memMi/1024).toFixed(1)}G` : `${Math.round(memMi)}M`;
+                  const pods = nsPodCounts?.[ns] ?? 0;
                   // Efficiency: actual / requested
                   const actualM = nsCpuActual[ns] || 0;
-                  const effPct = cpuM > 0 ? Math.round((actualM / cpuM) * 100) : 0;
+                  const effPct = podMetrics && cpuM > 0 ? Math.round((actualM / cpuM) * 100) : 0;
                   const effColor = effPct > 120 ? "#ef4444" : effPct > 70 ? "#22c55e" : effPct > 30 ? "#eab308" : "#6b7280";
                   return (
                     <div key={ns}>
                       <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
                         <span className="truncate flex-1">{ns}</span>
                         <span className="shrink-0 ml-2 flex items-center gap-2">
-                          {podMetrics && cpuM > 0 && <span style={{ color: effColor }} title={`${actualM}m actual vs ${cpuM}m requested`}>{effPct}%</span>}
+                          {pods > 0 && <span className="text-gray-700">{pods}p</span>}
+                          {podMetrics && podMetrics.length > 0 && cpuM > 0 && <span style={{ color: effColor }} title={`${actualM}m actual vs ${cpuM}m req`}>{effPct}%</span>}
                           <span className="text-blue-400">{cpuLabel}</span>
                           <span className="text-violet-400">{memLabel}</span>
                         </span>
@@ -546,7 +584,7 @@ export default function DetailPanel({
                       <div className="flex gap-1 h-1">
                         <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden relative">
                           <div className="h-full rounded-full bg-blue-500/60 absolute inset-y-0 left-0" style={{ width: `${cpuPct}%` }} />
-                          {actualM > 0 && <div className="h-full rounded-full bg-green-400/50 absolute inset-y-0 left-0" style={{ width: `${Math.min(100, (actualM / cpuMax) * 100)}%`, mixBlendMode: "screen" }} />}
+                          {actualM > 0 && <div className="h-full rounded-full bg-green-400/50 absolute inset-y-0 left-0" style={{ width: `${Math.min(100, (actualM / allocCpuM) * 100)}%`, mixBlendMode: "screen" }} />}
                         </div>
                         <div className="flex-1 h-full bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-violet-500/60" style={{ width: `${memPct}%` }} />

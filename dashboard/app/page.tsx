@@ -373,33 +373,42 @@ export default function Home() {
                 </div>
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <div className="relative" data-pods-dropdown="1">
-                  <button
-                    onClick={() => setShowPods(v => !v)}
-                    className="flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer transition-colors hover:bg-gray-800/50"
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500 shadow-[0_0_4px_#22c55e]" : "bg-orange-500"}`} />
-                    <span className="hidden sm:inline text-gray-500">
-                      {cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}
-                      {cluster.totalPods ? ` · ${cluster.totalPods} pods` : ""}
-                    </span>
-                  </button>
+                  {(() => {
+                    const critical = cluster.unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
+                    const isCritical = critical.length > 0;
+                    return (
+                      <button
+                        onClick={() => setShowPods(v => !v)}
+                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer transition-colors ${isCritical ? "bg-red-500/10 border border-red-500/20 hover:bg-red-500/20" : "hover:bg-gray-800/50"}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500 shadow-[0_0_4px_#22c55e]" : isCritical ? "bg-red-500 animate-pulse shadow-[0_0_4px_#ef4444]" : "bg-orange-500"}`} />
+                        <span className={`hidden sm:inline ${isCritical ? "text-red-400" : "text-gray-500"}`}>
+                          {cluster.unhealthyPods.length > 0 ? (isCritical ? `${critical.length} critical` : `${cluster.unhealthyPods.length} issues`) : "healthy"}
+                          {cluster.totalPods ? ` · ${cluster.totalPods} pods` : ""}
+                        </span>
+                      </button>
+                    );
+                  })()}
                   {showPods && (
                     <div className="absolute top-full right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 min-w-64 max-h-72 overflow-y-auto">
                       <div className="px-3 py-2 text-xs font-mono text-gray-500 border-b border-gray-800">Pod Status</div>
                       {cluster.unhealthyPods.length === 0 ? (
                         <div className="px-3 py-2 text-xs font-mono text-green-400">● All pods healthy</div>
                       ) : (
-                        cluster.unhealthyPods.map((pod, i) => (
-                          <div key={i} className="px-3 py-1.5 text-xs font-mono hover:bg-gray-800/50 border-b border-gray-800/30">
-                            <div className="text-orange-400">{pod.name}</div>
+                        [...cluster.unhealthyPods].sort((a, b) => (b.restarts ?? 0) - (a.restarts ?? 0)).map((pod, i) => {
+                          const isCrit = pod.status === "CrashLoopBackOff" || pod.status === "Error" || (pod.restarts && pod.restarts > 50);
+                          return (
+                          <div key={i} className={`px-3 py-1.5 text-xs font-mono hover:bg-gray-800/50 border-b border-gray-800/30 ${isCrit ? "bg-red-500/5" : ""}`}>
+                            <div className={isCrit ? "text-red-400" : "text-orange-400"}>{pod.name}</div>
                             <div className="flex items-center gap-2 text-gray-600 mt-0.5">
                               <span>{pod.namespace}</span>
                               <span>·</span>
-                              <span className="text-red-400">{pod.status}</span>
-                              {pod.restarts > 0 && <span className="text-yellow-600">↺{pod.restarts}</span>}
+                              <span className={isCrit ? "text-red-400 font-semibold" : "text-yellow-500"}>{pod.status}</span>
+                              {pod.restarts > 0 && <span className={isCrit ? "text-red-400" : "text-yellow-600"}>↺{pod.restarts}</span>}
                             </div>
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   )}
