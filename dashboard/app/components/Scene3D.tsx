@@ -403,12 +403,31 @@ function CalloutPanel({
             </button>
           </div>
           <div style={{ borderTop: `1px solid ${color}18`, paddingTop: 7 }}>
-            {lines.map((l, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "2.5px 0", gap: 12 }}>
-                <span style={{ color: "#666", textTransform: "uppercase", letterSpacing: 1, flexShrink: 0, fontSize: 10 }}>{l.label}</span>
-                <span style={{ color: "#d4d4d8", textAlign: "right", fontSize: 11 }}>{l.value}</span>
-              </div>
-            ))}
+            {lines.map((l, i) => {
+              // Extract percentage for progress bar on CPU use / RAM use lines
+              const pctMatch = l.value.match(/\((\d+)%\)/);
+              const pct = pctMatch ? parseInt(pctMatch[1], 10) : null;
+              const isMetric = pct !== null && (l.label.toLowerCase().includes("cpu") || l.label.toLowerCase().includes("ram"));
+              return (
+                <div key={i}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2.5px 0", gap: 12 }}>
+                    <span style={{ color: "#666", textTransform: "uppercase", letterSpacing: 1, flexShrink: 0, fontSize: 10 }}>{l.label}</span>
+                    <span style={{ color: "#d4d4d8", textAlign: "right", fontSize: 11 }}>{l.value}</span>
+                  </div>
+                  {isMetric && (
+                    <div style={{ height: 3, background: `${color}18`, borderRadius: 2, marginBottom: 3, overflow: "hidden" }}>
+                      <div style={{
+                        height: "100%",
+                        width: `${Math.min(pct!, 100)}%`,
+                        background: pct! > 80 ? "#ef4444" : pct! > 60 ? "#eab308" : color,
+                        borderRadius: 2,
+                        transition: "width 0.5s ease",
+                      }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </Html>

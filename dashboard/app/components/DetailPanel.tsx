@@ -65,8 +65,8 @@ export default function DetailPanel({
           {nodeMetrics && (
             <>
               <div className="h-px bg-gray-800/60 mt-1" />
-              <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent />
-              <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} />
+              <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent bar />
+              <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} bar />
             </>
           )}
         </div>
@@ -196,11 +196,26 @@ export default function DetailPanel({
   );
 }
 
-function InfoRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function InfoRow({ label, value, accent, bar }: { label: string; value: string; accent?: boolean; bar?: boolean }) {
+  const pctMatch = bar ? value.match(/\((\d+)%\)/) : null;
+  const pct = pctMatch ? parseInt(pctMatch[1], 10) : null;
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-gray-600 text-xs uppercase tracking-wider font-mono">{label}</span>
-      <span className={"font-mono text-xs " + (accent ? "text-blue-400" : "text-gray-300")}>{value}</span>
+    <div>
+      <div className="flex justify-between items-center">
+        <span className="text-gray-600 text-xs uppercase tracking-wider font-mono">{label}</span>
+        <span className={"font-mono text-xs " + (accent ? "text-blue-400" : "text-gray-300")}>{value}</span>
+      </div>
+      {pct !== null && (
+        <div className="h-0.5 bg-gray-800 rounded-full mt-0.5 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${Math.min(pct, 100)}%`,
+              background: pct > 80 ? "#ef4444" : pct > 60 ? "#eab308" : "#58a6ff",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
