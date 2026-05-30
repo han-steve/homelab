@@ -1381,6 +1381,30 @@ function ServicesDisplay({
 
   return (
     <>
+      {/* Namespace heatmap floor patches */}
+      {visible && nsPodCounts && (() => {
+        const nsPositions: Record<string, [number, number, number][]> = {};
+        services.forEach((svc, i) => {
+          if (!nsPositions[svc.namespace]) nsPositions[svc.namespace] = [];
+          nsPositions[svc.namespace].push(positions[i]);
+        });
+        return Object.entries(nsPositions).map(([ns, pts]) => {
+          const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+          const cz = pts.reduce((s, p) => s + p[2], 0) / pts.length;
+          const podCount = nsPodCounts[ns] ?? 0;
+          const radius = Math.min(2.5, 0.4 + podCount * 0.08);
+          const isUnhealthy = unhealthyNamespaces?.has(ns);
+          const color = isUnhealthy ? "#ef4444" : "#58a6ff";
+          const opacity = Math.min(0.12, 0.03 + podCount * 0.005);
+          if (podCount === 0) return null;
+          return (
+            <mesh key={`ns-heat-${ns}`} position={[cx, nodePos[1] + 0.02, cz]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>
+              <circleGeometry args={[radius, 32]} />
+              <meshBasicMaterial color={color} transparent opacity={opacity} />
+            </mesh>
+          );
+        });
+      })()}
       {/* Namespace grouping arcs — shown between sibling services when one is selected */}
       {selectedSvc !== null && (() => {
         const selNs = services[selectedSvc]?.namespace;
