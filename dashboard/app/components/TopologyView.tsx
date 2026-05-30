@@ -616,6 +616,26 @@ export default function TopologyView({
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
                 >{isUnhealthyNs ? "⚠ " : ""}{isRecentlyActive ? "↑ " : ""}{ns}{nsFilter === ns ? " ✕" : ""}{nsPodCounts?.[ns] !== undefined ? ` · ${nsPodCounts[ns]}p` : ""}{nsMaxRestarts?.[ns] ? ` ↺${nsMaxRestarts[ns]}` : ""}</text>
+                {/* CPU usage sparkle: tiny circle scaled by CPU requests */}
+                {nsCpuRequestsM?.[ns] && (() => {
+                  const maxCpuM = Math.max(1, ...Object.values(nsCpuRequestsM!));
+                  const pct = nsCpuRequestsM![ns] / maxCpuM;
+                  const r2 = 2 + pct * 5;
+                  const cpuColor2 = pct > 0.6 ? "#f59e0b" : pct > 0.3 ? "#60a5fa" : "#4b5563";
+                  return (
+                    <circle
+                      cx={b.minX - pad + 6}
+                      cy={b.minY - pad - 8}
+                      r={r2}
+                      fill={cpuColor2}
+                      fillOpacity={0.18 + pct * 0.2}
+                      stroke={cpuColor2}
+                      strokeWidth={0.5}
+                      strokeOpacity={0.4 + pct * 0.3}
+                      style={{ pointerEvents: "none" }}
+                    />
+                  );
+                })()}
               </g>
             );
           });
