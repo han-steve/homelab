@@ -443,10 +443,23 @@ export default function Home() {
               const eventScore = !cluster.recentEvents || cluster.recentEvents.length === 0 ? 20 : Math.max(0, 20 - cluster.recentEvents.length * 2);
               const score = Math.round(syncScore + podScore + eventScore);
               const color = score >= 90 ? "#22c55e" : score >= 70 ? "#eab308" : "#ef4444";
+              // Compute trend from metricsHistory
+              const hist = metricsHistory.current;
+              let trendArrow: string | null = null;
+              let trendColor = "#6b7280";
+              if (hist.length >= 3) {
+                const prev = hist[hist.length - 2];
+                const prevScore = Math.round(
+                  (prev.appsTotal ? (prev.appsHealthy ?? 0) / prev.appsTotal * 40 : 40) +
+                  (prev.unhealthy === 0 ? 40 : Math.max(0, 40 - (prev.unhealthy ?? 0) * 5)) + 20
+                );
+                if (score > prevScore + 3) { trendArrow = "↑"; trendColor = "#22c55e"; }
+                else if (score < prevScore - 3) { trendArrow = "↓"; trendColor = "#ef4444"; }
+              }
               return (
                 <>
                   <span className="hidden md:inline font-semibold tabular-nums" style={{ color }} title="Cluster health score">
-                    {score}%
+                    {score}%{trendArrow && <span style={{ color: trendColor, fontSize: "0.65rem", marginLeft: 1 }}>{trendArrow}</span>}
                   </span>
                   <span className="hidden md:inline text-gray-800">|</span>
                 </>
