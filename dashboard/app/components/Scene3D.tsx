@@ -934,7 +934,13 @@ function ServicesDisplay({
 }
 
 /* ── ArgoCD floating glass object ─────────────────── */
-function ArgoCDObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
+function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: {
+  position: [number, number, number];
+  isSelected?: boolean;
+  onClick?: () => void;
+  appsSynced?: number;
+  appsTotal?: number;
+}) {
   const innerRef = useRef<THREE.Mesh>(null!);
   const outerRef = useRef<THREE.Mesh>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
@@ -981,7 +987,7 @@ function ArgoCDObject({ position, isSelected, onClick }: { position: [number, nu
             }}>
               <div style={{ color: "#ef7b4d", marginBottom: 5, fontWeight: 600 }}>ArgoCD v3.4.2</div>
               <div style={{ color: "#888", marginBottom: 3 }}>GitOps controller</div>
-              <div>Apps: 14 total · 13/14 synced</div>
+              <div>Apps: {appsTotal ?? 14} total · {appsSynced ?? 13}/{appsTotal ?? 14} synced</div>
               <div style={{ marginTop: 5 }}>
                 <a href="https://argocd.homelab" target="_blank" rel="noreferrer"
                   style={{ color: "#ef7b4d", textDecoration: "none", fontSize: 10 }}
@@ -1092,10 +1098,14 @@ export default function Scene3D({
   onSelect,
   selectedIdx,
   nodeMetrics,
+  appsSynced,
+  appsTotal,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
+  appsSynced?: number;
+  appsTotal?: number;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1301,7 +1311,7 @@ export default function Scene3D({
       />
 
       {/* Floating infra objects */}
-      <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} />
+      <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} />
 

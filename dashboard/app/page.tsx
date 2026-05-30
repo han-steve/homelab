@@ -97,7 +97,13 @@ export default function Home() {
           }
         >
           {view === "rack" ? (
-            <Scene3D onSelect={setSelectedIdx} selectedIdx={selectedIdx} nodeMetrics={cluster?.nodeMetrics} />
+            <Scene3D
+              onSelect={setSelectedIdx}
+              selectedIdx={selectedIdx}
+              nodeMetrics={cluster?.nodeMetrics}
+              appsSynced={cluster?.apps.filter(a => a.sync === "Synced").length}
+              appsTotal={cluster?.apps.length}
+            />
           ) : (
             <TopologyView onSelectService={setSelectedIdx} />
           )}
