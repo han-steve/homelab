@@ -1036,6 +1036,9 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: 
     if (ringRef.current) ringRef.current.rotation.z = t * 0.3;
   });
 
+  const isOutOfSync = appsTotal !== undefined && appsSynced !== undefined && appsSynced < appsTotal;
+  const argoColor = isOutOfSync ? "#eab308" : "#ef7b4d";
+
   return (
     <Float speed={2.5} rotationIntensity={0.2} floatIntensity={0.5}>
       <group position={position}
@@ -1045,17 +1048,17 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: 
       >
         <mesh ref={outerRef}>
           <icosahedronGeometry args={[0.55, 1]} />
-          <meshPhysicalMaterial color="#ef7b4d" metalness={0} roughness={0} transparent opacity={isSelected ? 0.25 : 0.15} clearcoat={1} clearcoatRoughness={0} emissive="#ef7b4d" emissiveIntensity={isSelected ? 0.25 : 0.12} />
+          <meshPhysicalMaterial color={argoColor} metalness={0} roughness={0} transparent opacity={isSelected ? 0.25 : 0.15} clearcoat={1} clearcoatRoughness={0} emissive={argoColor} emissiveIntensity={isSelected ? 0.25 : 0.12} />
         </mesh>
         <mesh ref={innerRef}>
           <octahedronGeometry args={[0.28, 0]} />
-          <meshPhysicalMaterial color="#ef7b4d" metalness={0.2} roughness={0.15} clearcoat={0.9} emissive="#ef7b4d" emissiveIntensity={isSelected ? 0.9 : 0.55} />
+          <meshPhysicalMaterial color={argoColor} metalness={0.2} roughness={0.15} clearcoat={0.9} emissive={argoColor} emissiveIntensity={isSelected ? 0.9 : 0.55} />
         </mesh>
         <mesh ref={ringRef} rotation-x={Math.PI / 4}>
           <torusGeometry args={[0.65, 0.013, 16, 64]} />
-          <meshBasicMaterial color="#ef7b4d" transparent opacity={isSelected ? 1.0 : 0.65} toneMapped={false} />
+          <meshBasicMaterial color={argoColor} transparent opacity={isSelected ? 1.0 : 0.65} toneMapped={false} />
         </mesh>
-        <Text position={[0, -0.85, 0]} fontSize={0.1} color="#ef7b4d" anchorX="center">ArgoCD</Text>
+        <Text position={[0, -0.85, 0]} fontSize={0.1} color={argoColor} anchorX="center">ArgoCD</Text>
         {isSelected && (
           <Html position={[0.9, 0.4, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
