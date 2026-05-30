@@ -202,6 +202,49 @@ function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
   );
 }
 
+/* ── partial arc ring showing CPU% around a node ─────── */
+function CpuArcRing({ position, cpuPct, memPct }: {
+  position: [number, number, number];
+  cpuPct: number;  // 0-100
+  memPct: number;  // 0-100
+}) {
+  const cpuRef = useRef<THREE.Mesh>(null!);
+  const memRef = useRef<THREE.Mesh>(null!);
+  const cpuColor = cpuPct > 80 ? "#ef4444" : cpuPct > 60 ? "#eab308" : "#22c55e";
+  const memColor = memPct > 80 ? "#f97316" : memPct > 60 ? "#a855f7" : "#06b6d4";
+
+  // Rebuild arc geometry when pct changes — using a lathe-based approach with ring sectors
+  const cpuGeo = useMemo(() => {
+    const segs = Math.max(2, Math.round((cpuPct / 100) * 64));
+    const geo = new THREE.RingGeometry(1.28, 1.35, segs, 1, 0, (cpuPct / 100) * Math.PI * 2);
+    return geo;
+  }, [cpuPct]);
+
+  const memGeo = useMemo(() => {
+    const segs = Math.max(2, Math.round((memPct / 100) * 64));
+    const geo = new THREE.RingGeometry(1.42, 1.49, segs, 1, 0, (memPct / 100) * Math.PI * 2);
+    return geo;
+  }, [memPct]);
+
+  useFrame(({ clock }) => {
+    const pulse = Math.sin(clock.getElapsedTime() * 1.5) * 0.05 + 0.7;
+    if (cpuRef.current) (cpuRef.current.material as THREE.MeshBasicMaterial).opacity = pulse;
+    if (memRef.current) (memRef.current.material as THREE.MeshBasicMaterial).opacity = pulse * 0.75;
+  });
+
+  if (cpuPct === 0 && memPct === 0) return null;
+  return (
+    <group position={[position[0], 0.03, position[2]]} rotation-x={-Math.PI / 2} raycast={() => {}}>
+      <mesh ref={cpuRef} geometry={cpuGeo}>
+        <meshBasicMaterial color={cpuColor} transparent opacity={0.7} toneMapped={false} />
+      </mesh>
+      <mesh ref={memRef} geometry={memGeo}>
+        <meshBasicMaterial color={memColor} transparent opacity={0.5} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
   from, to, color = "#58a6ff", active = true, speed = 0.18, bidir = false
@@ -1461,6 +1504,7 @@ export default function Scene3D({
       <HoloGrid />
       <Particles />
       <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} period={10} />
+      {nodeMetrics && <CpuArcRing position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} memPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
