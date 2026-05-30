@@ -104,6 +104,10 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-white">
+      {/* Loading progress bar — thin line at top */}
+      <div className={`fixed top-0 left-0 right-0 h-0.5 z-50 transition-opacity duration-300 ${isLoading ? "opacity-100" : "opacity-0"}`}>
+        <div className="h-full bg-blue-500/70 animate-pulse" style={{ boxShadow: "0 0 8px #3b82f6" }} />
+      </div>
       {/* Main view */}
       <div className="flex-1 relative min-w-0">
         <Suspense
