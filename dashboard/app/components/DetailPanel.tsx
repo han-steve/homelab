@@ -1020,14 +1020,18 @@ export default function DetailPanel({
               <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
               {longhornVolumes && longhornVolumes.length > 0 && (
                 <div className="mt-1.5 grid grid-cols-3 gap-1">
-                  {longhornVolumes.slice(0, 9).map((vol, i) => {
+                  {[...longhornVolumes].sort((a, b) => b.sizeGiB - a.sizeGiB).slice(0, 9).map((vol, i, sorted) => {
                     const robColor = vol.robustness === "healthy" ? "#22c55e" : vol.robustness === "degraded" ? "#eab308" : "#ef4444";
                     const shortName = (vol.pvc ?? vol.name).replace(/^pvc-[a-f0-9-]+$/, vol.name.slice(0, 8) + "…").slice(0, 18);
+                    const sizePct = (vol.sizeGiB / sorted[0].sizeGiB) * 100;
                     return (
-                      <div key={i} className="flex items-center gap-1 rounded px-1 py-0.5 bg-gray-900/60" title={`${vol.name}\n${vol.robustness} · ${vol.sizeGiB}G`}>
-                        <span className="w-1 h-1 rounded-full shrink-0 flex-none" style={{ backgroundColor: robColor }} />
-                        <span className="truncate text-gray-700 flex-1 text-[9px]">{shortName}</span>
-                        <span className="shrink-0 text-gray-800 text-[9px]">{vol.sizeGiB}G</span>
+                      <div key={i} className="rounded px-1 py-0.5 bg-gray-900/60 overflow-hidden relative" title={`${vol.pvc ?? vol.name}\n${vol.robustness} · ${vol.sizeGiB}G`}>
+                        <div className="absolute inset-0 bottom-0" style={{ width: `${sizePct}%`, backgroundColor: robColor, opacity: 0.04 }} />
+                        <div className="relative flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full shrink-0 flex-none" style={{ backgroundColor: robColor }} />
+                          <span className="truncate text-gray-700 flex-1 text-[9px]">{shortName}</span>
+                          <span className="shrink-0 text-gray-800 text-[9px]">{vol.sizeGiB}G</span>
+                        </div>
                       </div>
                     );
                   })}
