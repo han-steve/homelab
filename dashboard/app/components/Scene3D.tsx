@@ -35,6 +35,29 @@ function ResponsiveCamera() {
   return null;
 }
 
+/* ── Camera fly-in on mount ────────────────────────── */
+function CameraFlyIn() {
+  const { camera } = useThree();
+  const started = useRef(false);
+  const done = useRef(false);
+  useFrame(() => {
+    if (done.current) return;
+    if (!started.current) {
+      camera.position.set(0, 22, 32);
+      started.current = true;
+    }
+    const targetX = 0, targetY = 8, targetZ = 14;
+    const spd = 0.035;
+    camera.position.x += (targetX - camera.position.x) * spd;
+    camera.position.y += (targetY - camera.position.y) * spd;
+    camera.position.z += (targetZ - camera.position.z) * spd;
+    // Stop animating when close enough
+    const dist = Math.abs(camera.position.z - targetZ);
+    if (dist < 0.05) done.current = true;
+  });
+  return null;
+}
+
 /* ── GLSL holographic grid ─────────────────────────── */
 function HoloGrid() {
   const ref = useRef<THREE.Mesh>(null!);
@@ -1096,6 +1119,7 @@ export default function Scene3D({
       <color attach="background" args={["#05050e"]} />
       <fog attach="fog" args={["#07070f", 18, 38]} />
       <ResponsiveCamera />
+      <CameraFlyIn />
 
       {/* Lighting */}
       <ambientLight intensity={0.18} />
