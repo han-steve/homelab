@@ -1796,6 +1796,21 @@ export default function Scene3D({
       {refreshProgress !== undefined && refreshProgress > 0 && (
         <RefreshArc position={m2Pos} progress={refreshProgress} />
       )}
+      {/* Floating unhealthy pod warning near M2 */}
+      {unhealthyPodCount !== undefined && unhealthyPodCount > 0 && (
+        <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2}>
+          <Billboard position={[m2Pos[0] + 1.6, m2Pos[1] + 2.5, m2Pos[2]]}>
+            <Text
+              fontSize={0.18}
+              color="#ef4444"
+              anchorX="center"
+              anchorY="middle"
+              // @ts-expect-error
+              toneMapped={false}
+            >{`⚠ ${unhealthyPodCount} unhealthy`}</Text>
+          </Billboard>
+        </Float>
+      )}
 
       <HoloGrid />
       <Particles />
