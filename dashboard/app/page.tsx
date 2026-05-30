@@ -522,7 +522,15 @@ export default function Home() {
               {isLoading ? (
                 <span className="text-blue-500/60 animate-pulse">syncing...</span>
               ) : (
-                <span className="pointer-events-none">last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · {nextRefreshIn}s</span>
+                (() => {
+                  const dataAgeMs = cluster ? Date.now() - new Date(cluster.timestamp).getTime() : 0;
+                  const isStale = dataAgeMs > 120000; // 2 mins
+                  return (
+                    <span className={`pointer-events-none ${isStale ? "text-yellow-600/70" : ""}`}>
+                      {isStale && "⚠ "}last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · {nextRefreshIn}s
+                    </span>
+                  );
+                })()
               )}
               <button
                 onClick={() => fetchStatus.current()}
