@@ -135,7 +135,7 @@ export default function DetailPanel({
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
   metricsHistory?: { cpu: number; ram: number; pods: number; unhealthy?: number; appsHealthy?: number; appsTotal?: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
-  unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
+  unhealthyPods?: { namespace: string; name: string; status: string; restarts: number; lastRestartAt?: string }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
   apps?: { name: string; sync: string; health: string; syncedAt?: string | null }[];
   nsCpuRequestsM?: Record<string, number>;
@@ -2038,6 +2038,7 @@ export default function DetailPanel({
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
                           <span className="text-[9px] px-1 py-0 rounded font-mono" style={{ backgroundColor: (isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316") + "20", color: isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316" }}>{pod.status}</span>
                           {pod.restarts > 0 && <span style={{ color: restartColor }}>↺{pod.restarts}</span>}
+                          {pod.lastRestartAt && <span className="text-gray-700 text-[9px]">{relTime(pod.lastRestartAt, now)}</span>}
                         </div>
                       </div>
                       {pod.restarts > 0 && (

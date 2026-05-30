@@ -17,6 +17,7 @@ interface PodStatus {
   ready: string;
   status: string;
   restarts: number;
+  lastRestartAt?: string;
 }
 
 export async function GET() {
@@ -126,6 +127,7 @@ export async function GET() {
         const ready = cs?.ready ?? false;
         const restarts = cs?.restartCount ?? 0;
         const waiting = cs?.state?.waiting?.reason;
+        const lastRestartAt: string | undefined = cs?.lastState?.terminated?.finishedAt ?? undefined;
 
         if (!ready || restarts > 5 || waiting) {
           unhealthyPods.push({
@@ -134,6 +136,7 @@ export async function GET() {
             ready: ready ? "true" : "false",
             status: waiting ?? podPhase ?? "Unknown",
             restarts,
+            lastRestartAt,
           });
         }
       }

@@ -8,7 +8,7 @@ import { services } from "./data";
 interface ClusterStatus {
   timestamp: string;
   apps: { name: string; sync: string; health: string; syncedAt?: string | null }[];
-  unhealthyPods: { namespace: string; name: string; status: string; restarts: number }[];
+  unhealthyPods: { namespace: string; name: string; status: string; restarts: number; lastRestartAt?: string }[];
   totalPods?: number;
   podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
   nsPodCounts?: Record<string, number>;
