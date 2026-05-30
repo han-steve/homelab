@@ -1906,13 +1906,24 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
   const ringA = useRef<THREE.Mesh>(null!);
   const ringB = useRef<THREE.Mesh>(null!);
   const ringC = useRef<THREE.Mesh>(null!);
+  const pulseRef = useRef<THREE.Mesh>(null!);
+  const isUnhealthy = (unhealthyPodCount ?? 0) > 0;
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (ringA.current) ringA.current.rotation.y = t * 0.8;
     if (ringB.current) { ringB.current.rotation.x = t * 0.55; ringB.current.rotation.z = t * 0.3; }
     if (ringC.current) ringC.current.rotation.z = -t * 0.65;
+    if (pulseRef.current) {
+      const mat = pulseRef.current.material as THREE.MeshBasicMaterial;
+      // heartbeat pattern: fast double-pulse every 2 seconds
+      const phase = (t % 2) / 2;
+      const pulse = phase < 0.08 ? Math.sin((phase / 0.08) * Math.PI) :
+                    phase < 0.2 ? Math.sin(((phase - 0.12) / 0.08) * Math.PI) * 0.6 : 0;
+      mat.opacity = pulse * (isUnhealthy ? 0.45 : 0.25);
+    }
   });
   const k8sColor = "#326ce5";
+  const pulseColor = isUnhealthy ? "#ef4444" : "#22c55e";
   return (
     <Float speed={1.9} floatIntensity={0.4}>
       <group position={position}
@@ -1920,6 +1931,11 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
         onPointerOver={() => { document.body.style.cursor = "pointer"; }}
         onPointerOut={() => { document.body.style.cursor = "default"; }}
       >
+        {/* Health heartbeat pulse ring */}
+        <mesh ref={pulseRef} rotation-x={-Math.PI / 2}>
+          <torusGeometry args={[0.58, 0.02, 8, 48]} />
+          <meshBasicMaterial color={pulseColor} transparent opacity={0} toneMapped={false} />
+        </mesh>
         {/* Core sphere */}
         <mesh>
           <sphereGeometry args={[0.22, 16, 16]} />
