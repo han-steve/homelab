@@ -174,6 +174,7 @@ export default function DetailPanel({
   const [podLogsData, setPodLogsData] = useState<string[] | null>(null);
   const [podLogsLoading, setPodLogsLoading] = useState(false);
   const [podLogsFilter, setPodLogsFilter] = useState("");
+  const [showAllEvergreen, setShowAllEvergreen] = useState(false);
   const now = useNow();
 
   // Fetch pod logs when podLogsPod changes
@@ -2004,10 +2005,17 @@ export default function DetailPanel({
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Evergreen Pods</h3>
-                  <span className="text-[9px] font-mono px-1 py-0 rounded bg-blue-900/20 text-blue-500/50 border border-blue-800/20">{longRunningPods.length} pods &gt;7d</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono px-1 py-0 rounded bg-blue-900/20 text-blue-500/50 border border-blue-800/20">{longRunningPods.length} pods &gt;7d</span>
+                    {longRunningPods.length > 5 && (
+                      <button onClick={() => setShowAllEvergreen(v => !v)} className="text-[9px] font-mono text-gray-700 hover:text-gray-500 transition-colors">
+                        {showAllEvergreen ? "▲ less" : `▼ +${longRunningPods.length - 5}`}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  {longRunningPods.slice(0, 5).map((pod, i) => {
+                  {[...longRunningPods].sort((a, b) => b.ageDays - a.ageDays).slice(0, showAllEvergreen ? undefined : 5).map((pod, i) => {
                     const ageColor = pod.ageDays > 30 ? "#a78bfa" : pod.ageDays > 14 ? "#60a5fa" : "#6b7280";
                     return (
                       <div key={i} className="flex items-center text-xs font-mono gap-1.5">
