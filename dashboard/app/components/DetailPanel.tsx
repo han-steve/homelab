@@ -884,16 +884,26 @@ export default function DetailPanel({
                   const pct = (count / maxPods) * 100;
                   const issues = (unhealthyPods ?? []).filter(p => p.namespace === ns);
                   const hasCrit = issues.some(p => p.status === "CrashLoopBackOff");
-                  const barColor = hasCrit ? "#ef4444" : issues.length > 0 ? "#f97316" : "#22c55e";
+                  const badCount = issues.length;
+                  const goodCount = Math.max(0, count - badCount);
+                  const goodPct = (goodCount / maxPods) * 100;
+                  const badPct = (badCount / maxPods) * 100;
                   return (
                     <div key={ns} className="flex items-center gap-2 cursor-pointer rounded hover:bg-gray-800/30 px-0.5 py-0.5 transition-colors group"
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
-                      title={`Click to filter: ${ns}`}>
+                      title={`Click to filter: ${ns}${badCount > 0 ? ` · ${badCount} issues` : ""}`}>
                       <span className={`text-xs font-mono w-24 shrink-0 truncate transition-colors ${nsFilter === ns ? "text-blue-400" : "text-gray-700 group-hover:text-gray-500"}`} title={ns}>
                         {ns.startsWith("vc-") ? <span className="text-purple-700/70">⊕ </span> : null}{ns}
                       </span>
-                      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: nsFilter === ns ? "#60a5fa" : barColor, opacity: 0.6 }} />
+                      <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden flex">
+                        {nsFilter === ns ? (
+                          <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${pct}%` }} />
+                        ) : (
+                          <>
+                            <div className="h-full bg-green-500/50" style={{ width: `${goodPct}%` }} />
+                            {badCount > 0 && <div className="h-full" style={{ width: `${badPct}%`, backgroundColor: hasCrit ? "#ef4444aa" : "#f9731688" }} />}
+                          </>
+                        )}
                       </div>
                       <span className={`text-xs font-mono w-8 text-right shrink-0 ${nsFilter === ns ? "text-blue-400" : "text-gray-700"}`}>{count}p</span>
                       {hasCrit && <span className="text-xs text-red-500/70 shrink-0">⚠</span>}
