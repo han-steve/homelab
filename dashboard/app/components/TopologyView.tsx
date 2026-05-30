@@ -31,6 +31,7 @@ export default function TopologyView({
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0 });
   const mouseMoved = useRef(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const update = () => {
@@ -120,6 +121,20 @@ export default function TopologyView({
         <span className="text-green-500/60">{services.filter(s => s.status === "running").length}/{services.length} services running</span>
         <span className="text-gray-700">·</span>
         <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
+      </div>
+      {/* Search bar */}
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-1">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="search nodes..."
+          className="bg-gray-900/90 border border-gray-700 rounded px-2 py-1 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-500 w-36 transition-colors"
+          style={{ backdropFilter: "blur(8px)" }}
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="text-gray-600 hover:text-gray-400 text-xs px-1">✕</button>
+        )}
       </div>
       <svg
         ref={svgRef}
@@ -274,7 +289,8 @@ export default function TopologyView({
           const isSelected = selectedNode === node.id;
           const isNeighbor = selectedNode && selectedNode !== node.id &&
             topoLinks.some(l => (l.source === selectedNode && l.target === node.id) || (l.target === selectedNode && l.source === node.id));
-          const isDimmed = selectedNode && !isSelected && !isNeighbor;
+          const matchesSearch = !searchQuery || node.label.toLowerCase().includes(searchQuery.toLowerCase()) || node.id.toLowerCase().includes(searchQuery.toLowerCase());
+          const isDimmed = (selectedNode && !isSelected && !isNeighbor) || (searchQuery && !matchesSearch);
 
           return (
             <g
