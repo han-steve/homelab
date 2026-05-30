@@ -2100,12 +2100,14 @@ export default function DetailPanel({
             {nsDeployments[svc.namespace].map((dep, i) => {
               const healthy = dep.available >= dep.desired;
               const pct = dep.desired > 0 ? Math.round((dep.available / dep.desired) * 100) : 100;
+              const isPartial = !healthy && dep.available > 0 && dep.desired > 0;
               const barColor = healthy ? "#22c55e50" : pct > 50 ? "#eab30870" : "#ef444470";
               return (
                 <div key={i} className="text-xs font-mono">
                   <div className="flex items-center gap-2">
-                    <span className={healthy ? "text-green-500/70" : "text-red-400/80"}>●</span>
+                    <span className={healthy ? "text-green-500/70" : isPartial ? "text-yellow-400/80" : "text-red-400/80"}>●</span>
                     <span className="text-gray-500 truncate flex-1" title={dep.name}>{dep.name}</span>
+                    {isPartial && <span className="text-yellow-600/60 text-[9px] shrink-0">rolling</span>}
                     <span className={`shrink-0 ${healthy ? "text-green-500/60" : "text-red-400/70"}`}>
                       {dep.available}/{dep.desired}
                     </span>
@@ -2114,7 +2116,7 @@ export default function DetailPanel({
                   {dep.desired > 0 && dep.desired <= 12 && (
                     <div className="ml-4 mt-0.5 flex gap-0.5">
                       {Array.from({ length: dep.desired }).map((_, ri) => (
-                        <div key={ri} className="w-1.5 h-1.5 rounded-full"
+                        <div key={ri} className={`w-1.5 h-1.5 rounded-full ${isPartial && ri >= dep.available ? "animate-pulse" : ""}`}
                           style={{ backgroundColor: ri < dep.available ? (healthy ? "#22c55e88" : "#f97316aa") : "#1f2937" }}
                         />
                       ))}
