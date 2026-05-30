@@ -1151,6 +1151,7 @@ export default function DetailPanel({
                     </div>
                     <span className="flex items-center gap-2 normal-case tracking-normal">
                       {nsCpuRequestsM?.[ns] && <span className="text-gray-700">{nsCpuRequestsM[ns] >= 1000 ? `${(nsCpuRequestsM[ns]/1000).toFixed(1)}c` : `${nsCpuRequestsM[ns]}m`}cpu</span>}
+                      {nsMemRequestsMi?.[ns] && nsMemRequestsMi[ns] > 0 && <span className="text-gray-800">{nsMemRequestsMi[ns] >= 1024 ? `${(nsMemRequestsMi[ns]/1024).toFixed(0)}G` : `${nsMemRequestsMi[ns]}M`}</span>}
                       {nsPodCounts?.[ns] !== undefined && (() => {
                         const total = nsPodCounts![ns];
                         const bad = (unhealthyPods ?? []).filter(p => p.namespace === ns).length;
@@ -1177,6 +1178,10 @@ export default function DetailPanel({
                         <span className="text-gray-300 flex items-center gap-2">
                           <span>{svc.icon}</span>
                           <span className="text-xs">{svc.name}</span>
+                          {(() => {
+                            const freshPod = recentPods?.find(p => p.namespace === svc.namespace && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
+                            return freshPod ? <span className="w-1.5 h-1.5 rounded-full bg-green-400/70 animate-pulse shrink-0" title="pod started in last hour" /> : null;
+                          })()}
                         </span>
                         <div className="flex items-center gap-1.5">
                           {restarts > 0 && (
