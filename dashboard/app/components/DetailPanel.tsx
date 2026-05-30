@@ -65,12 +65,28 @@ function Sparkline({ data, color, height = 20 }: { data: number[]; color: string
   if (data.length < 2) return null;
   const w = 120, h = height;
   const max = Math.max(...data, 1);
+  const min = Math.min(...data);
   const xs = data.map((_, i) => (i / (data.length - 1)) * w);
   const ys = data.map(v => h - (v / max) * (h - 2) - 1);
   const d = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+  const areaD = d + ` L${xs[xs.length-1].toFixed(1)},${h} L${xs[0].toFixed(1)},${h} Z`;
+  const peakIdx = data.indexOf(max);
+  const latestVal = data[data.length - 1];
   return (
-    <svg width={w} height={h} className="block">
+    <svg width={w} height={h} className="block" style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#sg-${color.replace("#","")})`} />
       <polyline points={xs.map((x, i) => `${x},${ys[i]}`).join(" ")} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
+      {/* Peak point (only if not the last point) */}
+      {peakIdx !== data.length - 1 && max > min && (
+        <circle cx={xs[peakIdx]} cy={ys[peakIdx]} r={1.5} fill={color} opacity={0.5} />
+      )}
+      {/* Latest value dot */}
       <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={2} fill={color} opacity={0.9} />
     </svg>
   );
@@ -1399,7 +1415,15 @@ export default function DetailPanel({
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">TLS Certs</h3>
-              <span className="text-xs font-mono text-gray-700">{certificates.filter(c => c.ready).length}/{certificates.length}</span>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const nextExpiry = [...certificates].filter(c => c.daysLeft > 0 && c.daysLeft < 9999).sort((a, b) => a.daysLeft - b.daysLeft)[0];
+                  if (!nextExpiry) return null;
+                  const color = nextExpiry.daysLeft < 30 ? "#ef4444" : nextExpiry.daysLeft < 90 ? "#eab308" : "#22c55e";
+                  return <span className="text-[10px] font-mono" style={{ color }}>next {nextExpiry.daysLeft}d</span>;
+                })()}
+                <span className="text-xs font-mono text-gray-700">{certificates.filter(c => c.ready).length}/{certificates.length}</span>
+              </div>
             </div>
             {/* Expiry forecast mini-bar */}
             {(() => {
