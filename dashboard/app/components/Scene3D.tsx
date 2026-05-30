@@ -1381,6 +1381,35 @@ function ServicesDisplay({
 
   return (
     <>
+      {/* Namespace grouping arcs — shown between sibling services when one is selected */}
+      {selectedSvc !== null && (() => {
+        const selNs = services[selectedSvc]?.namespace;
+        if (!selNs) return null;
+        const nsServices = services.map((s, i) => ({ s, i })).filter(({ s }) => s.namespace === selNs && services.indexOf(s) !== selectedSvc);
+        return nsServices.map(({ i }) => {
+          const pts = [
+            new THREE.Vector3(...positions[selectedSvc]),
+            new THREE.Vector3(
+              (positions[selectedSvc][0] + positions[i][0]) / 2,
+              Math.max(positions[selectedSvc][1], positions[i][1]) + 0.5,
+              positions[selectedSvc][2]
+            ),
+            new THREE.Vector3(...positions[i]),
+          ];
+          return (
+            <Line key={`ns-arc-${i}`}
+              points={pts}
+              color={CATEGORY_COLORS[services[selectedSvc]?.category] || "#58a6ff"}
+              lineWidth={0.5}
+              transparent
+              opacity={0.2}
+              dashed
+              dashSize={0.12}
+              gapSize={0.07}
+            />
+          );
+        });
+      })()}
       {services.map((svc, i) => {
         const catColor = CATEGORY_COLORS[svc.category] || "#666";
         const linePoints = [
