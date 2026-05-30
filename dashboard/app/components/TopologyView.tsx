@@ -149,7 +149,11 @@ export default function TopologyView({
         <span className="text-gray-700">·</span>
         <span className="text-green-500/60">{services.filter(s => s.status === "running").length}/{services.length} services running</span>
         <span className="text-gray-700">·</span>
-        <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
+        {nsPodCounts ? (
+          <span className="text-cyan-500/60">{Object.values(nsPodCounts).reduce((a, b) => a + b, 0)} pods</span>
+        ) : (
+          <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
+        )}
       </div>
       {/* Search bar */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-1">
