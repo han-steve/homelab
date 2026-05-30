@@ -169,6 +169,24 @@ export default function TopologyView({
         ) : (
           <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
         )}
+        {apps && apps.length > 0 && (() => {
+          const synced = apps.filter(a => a.sync === "Synced").length;
+          const ok = synced === apps.length;
+          return (
+            <>
+              <span className="text-gray-700">·</span>
+              <span style={{ color: ok ? "#22c55e99" : "#eab30899" }}>{synced}/{apps.length} synced</span>
+            </>
+          );
+        })()}
+        {longhornStorage && (
+          <>
+            <span className="text-gray-700">·</span>
+            <span style={{ color: longhornStorage.pct > 80 ? "#ef444499" : "#8b5cf699" }}>
+              {longhornStorage.pct.toFixed(0)}% storage
+            </span>
+          </>
+        )}
       </div>
       {/* Search bar */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
