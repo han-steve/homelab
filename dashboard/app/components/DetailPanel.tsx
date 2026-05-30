@@ -446,25 +446,31 @@ export default function DetailPanel({
             </span>
           </div>
           <div className="grid grid-cols-8 gap-1">
-            {services.map((svc, i) => (
+            {services.map((svc, i) => {
+              const restarts = nsMaxRestarts[svc.namespace] || 0;
+              const nsIssues = (unhealthyPods ?? []).filter(p => p.namespace === svc.namespace);
+              const hasCritical = nsIssues.some(p => p.status === "CrashLoopBackOff");
+              const dotColor = hasCritical ? "#ef4444" : restarts > 0 ? "#f97316" : svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444";
+              return (
               <button
                 key={svc.name}
-                title={svc.name}
+                title={`${svc.name}${restarts > 0 ? ` · ↺${restarts}` : ""}${nsIssues.length > 0 ? ` · ${nsIssues.length} issue(s)` : ""}`}
                 onClick={() => onSelectService?.(i)}
                 className="group relative flex items-center justify-center rounded text-base transition-all hover:scale-110"
                 style={{
                   width: 28, height: 28,
-                  background: svc.status === "running" ? CATEGORY_COLORS[svc.category] + "20" : "#1a1a2e",
-                  border: "1px solid " + (svc.status === "running" ? CATEGORY_COLORS[svc.category] + "40" : "#333"),
+                  background: hasCritical ? "#ef444412" : restarts > 0 ? "#f9731612" : svc.status === "running" ? CATEGORY_COLORS[svc.category] + "20" : "#1a1a2e",
+                  border: "1px solid " + (hasCritical ? "#ef444430" : restarts > 0 ? "#f9731630" : svc.status === "running" ? CATEGORY_COLORS[svc.category] + "40" : "#333"),
                 }}
               >
                 <span className="text-sm leading-none">{svc.icon}</span>
                 <span
                   className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full"
-                  style={{ background: svc.status === "running" ? "#22c55e" : svc.status === "degraded" ? "#eab308" : "#ef4444" }}
+                  style={{ background: dotColor, boxShadow: hasCritical ? `0 0 3px ${dotColor}` : "none" }}
                 />
               </button>
-            ))}
+              );
+            })}
           </div>
           {/* Category breakdown bar */}
           <div className="mt-2 flex h-1 rounded-full overflow-hidden">

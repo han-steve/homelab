@@ -602,6 +602,7 @@ export default function TopologyView({
         const connCount = tooltip.nodeId ? topoLinks.filter(l => l.source === tooltip.nodeId || l.target === tooltip.nodeId).length : 0;
         const isM2 = tNode?.id === "m2";
         const podTotal = nsPodCounts ? Object.values(nsPodCounts).reduce((a, b) => a + b, 0) : null;
+        const totalCpuReqM = nsCpuRequestsM ? Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0) : null;
         const tService = tNode && tNode.serviceIdx !== undefined ? services[tNode.serviceIdx] : null;
         const svcPods = tService && nsPodCounts ? nsPodCounts[tService.namespace] : null;
         const svcCpuM = tService && nsCpuRequestsM ? nsCpuRequestsM[tService.namespace] : null;
@@ -649,6 +650,26 @@ export default function TopologyView({
                   <div className="flex justify-between gap-4">
                     <span className="text-gray-600">pods</span>
                     <span className="text-gray-400">{podTotal}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {isM2 && !nodeMetrics && totalCpuReqM !== null && (
+              <div className="mt-1.5 space-y-0.5">
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">CPU req</span>
+                  <span className="text-blue-400">{(totalCpuReqM/1000).toFixed(1)}c / 15.9c ({Math.round(totalCpuReqM/159)}%)</span>
+                </div>
+                {podTotal !== null && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">pods</span>
+                    <span className="text-gray-400">{podTotal}</span>
+                  </div>
+                )}
+                {longhornStorage && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">storage</span>
+                    <span className="text-violet-400">{longhornStorage.usedGiB}G / {longhornStorage.totalGiB}G ({longhornStorage.pct.toFixed(0)}%)</span>
                   </div>
                 )}
               </div>
