@@ -278,11 +278,12 @@ export default function TopologyView({
               const isUnhealthy = unhealthyNamespaces?.has(ns);
               const nsEvents = recentEvents?.filter(e => e.namespace === ns) ?? [];
               const hasEvent = nsEvents.length > 0;
+              const podCount = nsPodCounts?.[ns] ?? 0;
               const dotColor = isUnhealthy ? "#ef444480" : hasEvent ? "#f9731650" : "#22c55e30";
               const size = isUnhealthy ? "w-1.5 h-1.5" : hasEvent ? "w-1.5 h-1.5" : "w-1 h-1";
               return (
-                <div key={ns} title={`${ns}${nsEvents.length > 0 ? ` · ${nsEvents.length} events` : ""}`}
-                  className={`${size} rounded-full cursor-pointer transition-all hover:scale-150`}
+                <div key={ns} title={`${ns}${podCount > 0 ? ` · ${podCount} pods` : ""}${nsEvents.length > 0 ? ` · ${nsEvents.length} events` : ""}`}
+                  className={`${size} rounded-full cursor-pointer transition-all hover:scale-150 ${isUnhealthy ? "animate-pulse" : ""}`}
                   style={{ backgroundColor: dotColor }}
                   onClick={() => setNsFilter(f => f === ns ? null : ns)}
                 />
