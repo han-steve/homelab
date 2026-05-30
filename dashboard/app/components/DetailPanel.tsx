@@ -563,6 +563,7 @@ export default function DetailPanel({
           const helmCount = nsHelmReleases ? Object.values(nsHelmReleases).flat().length : 0;
           const svcCount = k8sServices ? k8sServices.filter(s => s.type === "LoadBalancer" || s.type === "NodePort").length : 0;
           const imageCount = nsImages ? Object.values(nsImages).reduce((a, b) => a + (b?.length ?? 0), 0) : 0;
+          const latestTagCount = nsImages ? Object.values(nsImages).flat().filter(img => typeof img === "string" && (img.endsWith(":latest") || img.includes(":latest@"))).length : 0;
           const ingressCount = nsIngress ? Object.values(nsIngress).reduce((a, b) => a + b.length, 0) : 0;
           if (nsCount + helmCount + svcCount === 0) return null;
           return (
@@ -579,9 +580,9 @@ export default function DetailPanel({
                 <div className="text-sm font-bold font-mono text-cyan-400/60">{ingressCount}</div>
                 <div className="text-[8px] font-mono text-gray-700">Ingresses</div>
               </div>}
-              {imageCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
-                <div className="text-sm font-bold font-mono text-emerald-400/60">{imageCount}</div>
-                <div className="text-[8px] font-mono text-gray-700">Images</div>
+              {imageCount > 0 && <div className={`flex-1 rounded px-1.5 py-1 bg-gray-900/60 border ${latestTagCount > 0 ? "border-yellow-700/40" : "border-gray-800/40"}`} title={latestTagCount > 0 ? `${latestTagCount} images use :latest tag` : undefined}>
+                <div className={`text-sm font-bold font-mono ${latestTagCount > 0 ? "text-yellow-500/70" : "text-emerald-400/60"}`}>{imageCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">Images{latestTagCount > 0 ? <span className="text-yellow-600/70 ml-0.5">⚠{latestTagCount}</span> : null}</div>
               </div>}
               {svcCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-sm font-bold font-mono text-purple-400/60">{svcCount}</div>
