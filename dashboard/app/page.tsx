@@ -19,6 +19,7 @@ interface ClusterStatus {
   nsImages?: Record<string, string[]>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
+  recentPods?: { namespace: string; name: string; startTime: string }[];
   node: { name: string; ready: boolean; kubeletVersion?: string; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null; pressures?: string[] } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
@@ -264,6 +265,7 @@ export default function Home() {
               recentEvents={cluster?.recentEvents}
               nsPodCounts={cluster?.nsPodCounts}
               nsCpuRequestsM={cluster?.nsCpuRequestsM}
+              unhealthyPodCount={cluster?.unhealthyPods.length}
             />
           ) : (
             <TopologyView
@@ -507,6 +509,7 @@ export default function Home() {
             nsMemRequestsMi={cluster?.nsMemRequestsMi}
             topCpuPods={cluster?.topCpuPods}
             podMetrics={cluster?.podMetrics}
+            recentPods={cluster?.recentPods}
             totalCpuRequestsM={cluster?.totalCpuRequestsM}
             totalMemRequestsMi={cluster?.totalMemRequestsMi}
             nsImages={cluster?.nsImages}

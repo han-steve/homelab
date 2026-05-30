@@ -294,6 +294,17 @@ export async function GET() {
       .sort((a, b) => b.cpuM - a.cpuM)
       .slice(0, 10);
 
+    // Recently started pods (from pods JSON start times, no metrics-server needed)
+    const now = Date.now();
+    const recentPods = Object.entries(podStartTimes)
+      .map(([key, startTime]) => {
+        const [namespace, ...nameParts] = key.split("/");
+        return { namespace, name: nameParts.join("/"), startTime };
+      })
+      .filter(p => now - new Date(p.startTime).getTime() < 7 * 24 * 3600 * 1000) // last 7 days
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(0, 20);
+
     // Parse Longhorn volumes
     interface LonghornVol { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }
     const longhornVolumes: LonghornVol[] = [];
@@ -469,6 +480,7 @@ export async function GET() {
       nsImages: nsImagesArr,
       topCpuPods,
       podMetrics: parsedPodMetrics,
+      recentPods,
       node: nodeInfo,
       nodeMetrics,
       recentEvents,

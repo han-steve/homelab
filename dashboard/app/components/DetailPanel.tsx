@@ -73,7 +73,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -90,6 +90,7 @@ export default function DetailPanel({
   nsMemRequestsMi?: Record<string, number>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
+  recentPods?: { namespace: string; name: string; startTime: string }[];
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
   nsImages?: Record<string, string[]>;
@@ -941,7 +942,7 @@ export default function DetailPanel({
           </>
         )}
 
-        {recentEvents && recentEvents.length > 0 && (
+        {(recentEvents?.length || unhealthyPods?.some(p => p.restarts > 0) || recentPods?.length) && (
           <>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-4" />
             {/* Top restarting pods */}
@@ -972,21 +973,22 @@ export default function DetailPanel({
                 </div>
               );
             })()}
-            {/* Recently started pods in the last hour */}
-            {podMetrics && (() => {
-              const fresh = podMetrics.filter(p => p.startTime && (Date.now() - new Date(p.startTime).getTime()) < 3600000).slice(0, 5);
+            {recentPods && recentPods.length > 0 && (() => {
+              const fresh = recentPods.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 7 * 24 * 3600000);
               if (fresh.length === 0) return null;
+              const recentFresh = fresh.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 3600000).length;
               return (
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Starts</h3>
-                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in last hour</span>
+                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in 7d{recentFresh > 0 ? ` · ${recentFresh} &lt;1h` : ""}</span>
                   </div>
                   <div className="space-y-1">
-                    {fresh.map((pod, i) => (
+                    {fresh.slice(0, 6).map((pod, i) => (
                       <div key={i} className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-green-400/50 shrink-0 mr-1 text-[9px]">NEW</span>
-                        <span className="text-gray-600 truncate flex-1" title={pod.namespace + "/" + pod.name}>{pod.name.replace(/-[a-z0-9]{5,}$/, "")}</span>
+                        <span className="text-green-400/50 shrink-0 mr-1 text-[9px]">↑</span>
+                        <span className="text-gray-600 truncate flex-1" title={pod.namespace + "/" + pod.name}>{pod.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 22)}</span>
+                        <span className="text-gray-500 shrink-0 ml-1 text-[10px]">{pod.namespace.slice(0, 10)}</span>
                         <span className="text-gray-700 shrink-0 ml-1">{relTime(pod.startTime, now)}</span>
                       </div>
                     ))}
@@ -994,6 +996,7 @@ export default function DetailPanel({
                 </div>
               );
             })()}
+            {recentEvents && recentEvents.length > 0 && (<>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
               <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
@@ -1013,6 +1016,7 @@ export default function DetailPanel({
                 </div>
               ))}
             </div>
+            </>)}
           </>
         )}
       </div>

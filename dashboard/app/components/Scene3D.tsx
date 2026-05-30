@@ -1617,6 +1617,7 @@ export default function Scene3D({
   recentEvents,
   nsPodCounts,
   nsCpuRequestsM,
+  unhealthyPodCount,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1630,6 +1631,7 @@ export default function Scene3D({
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   nsPodCounts?: Record<string, number>;
   nsCpuRequestsM?: Record<string, number>;
+  unhealthyPodCount?: number;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1897,7 +1899,7 @@ export default function Scene3D({
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
-      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={recentEvents?.length} />
+      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} />
       {/* Subtle upward data particles: M2 → infra objects */}
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(4.5, 4.2, -1)} color="#f0883e" count={2} />
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-4.5, 3.7, -1)} color="#f0c020" count={2} />
