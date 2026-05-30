@@ -265,6 +265,7 @@ export default function Home() {
               onSelectService={setSelectedIdx}
               nodeMetrics={cluster?.nodeMetrics}
               nsPodCounts={cluster?.nsPodCounts}
+              nsCpuRequestsM={cluster?.nsCpuRequestsM}
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
               apps={cluster?.apps}
               longhornStorage={cluster?.longhornStorage}

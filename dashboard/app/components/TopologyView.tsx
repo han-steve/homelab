@@ -15,6 +15,7 @@ export default function TopologyView({
   onSelectService,
   nodeMetrics,
   nsPodCounts,
+  nsCpuRequestsM,
   unhealthyNamespaces,
   apps,
   longhornStorage,
@@ -23,6 +24,7 @@ export default function TopologyView({
   onSelectService: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
+  nsCpuRequestsM?: Record<string, number>;
   unhealthyNamespaces?: Set<string>;
   apps?: { name: string; sync: string; health: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
@@ -556,6 +558,7 @@ export default function TopologyView({
         const podTotal = nsPodCounts ? Object.values(nsPodCounts).reduce((a, b) => a + b, 0) : null;
         const tService = tNode && tNode.serviceIdx !== undefined ? services[tNode.serviceIdx] : null;
         const svcPods = tService && nsPodCounts ? nsPodCounts[tService.namespace] : null;
+        const svcCpuM = tService && nsCpuRequestsM ? nsCpuRequestsM[tService.namespace] : null;
         const svcEvents = tService && recentEvents ? recentEvents.filter(e => e.namespace === tService.namespace).length : 0;
         const isUnhealthy = tService && unhealthyNamespaces?.has(tService.namespace);
         return (
@@ -574,6 +577,10 @@ export default function TopologyView({
                 {svcPods !== null && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">pods</span>
                   <span className="text-gray-400">{svcPods}</span>
+                </div>}
+                {svcCpuM !== null && svcCpuM !== undefined && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">cpu req</span>
+                  <span className="text-blue-400">{svcCpuM >= 1000 ? `${(svcCpuM/1000).toFixed(1)}c` : `${svcCpuM}m`}</span>
                 </div>}
                 {svcEvents > 0 && <div className="flex justify-between gap-4">
                   <span className="text-gray-600">events</span>
