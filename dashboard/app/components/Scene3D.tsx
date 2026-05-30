@@ -1599,6 +1599,11 @@ function KubernetesObject({ position, isSelected, onClick, totalPods }: {
           <meshBasicMaterial color={k8sColor} transparent opacity={isSelected ? 0.7 : 0.35} toneMapped={false} />
         </mesh>
         <Text position={[0, -0.72, 0]} fontSize={0.09} color={k8sColor} anchorX="center">Kubernetes</Text>
+        {totalPods !== undefined && (
+          <Text position={[0, 0.62, 0]} fontSize={0.12} color="#22c55e" anchorX="center" toneMapped={false}>
+            {totalPods}
+          </Text>
+        )}
         {isSelected && (
           <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
