@@ -724,12 +724,21 @@ export default function DetailPanel({
                   return (
                     <button key={ns}
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
-                      className={`relative flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-900/60 border ${borderClass} text-left transition-colors hover:bg-gray-800/60 cursor-pointer`}
+                      className={`relative flex flex-col gap-0 px-1.5 py-0.5 rounded bg-gray-900/60 border ${borderClass} text-left transition-colors hover:bg-gray-800/60 cursor-pointer overflow-hidden`}
                       title={`${ns} · ${pods} pods${isCrit ? " · CRITICAL" : isWarn ? " · WARNING" : ""}${evCount > 0 ? ` · ${evCount} events` : ""}`}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0 flex-none" style={{ backgroundColor: dotColor, boxShadow: isCrit ? `0 0 4px ${dotColor}` : "none" }} />
-                      <span className={`truncate text-[9px] font-mono flex-1 ${isCrit ? "text-red-400/70" : isWarn ? "text-orange-400/60" : isActive ? "text-blue-400/80" : "text-gray-600"}`}>{shortNs}</span>
-                      <span className="text-[9px] font-mono text-gray-700 shrink-0">{pods}</span>
+                      <div className="flex items-center gap-1 w-full">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0 flex-none" style={{ backgroundColor: dotColor, boxShadow: isCrit ? `0 0 4px ${dotColor}` : "none" }} />
+                        <span className={`truncate text-[9px] font-mono flex-1 ${isCrit ? "text-red-400/70" : isWarn ? "text-orange-400/60" : isActive ? "text-blue-400/80" : "text-gray-600"}`}>{shortNs}</span>
+                        <span className="text-[9px] font-mono text-gray-700 shrink-0">{pods}</span>
+                      </div>
+                      {nsCpuRequestsM?.[ns] && (() => {
+                        const cpuPct = Math.min(100, (nsCpuRequestsM[ns] / 15950) * 100);
+                        const cpuColor = cpuPct > 20 ? "#58a6ff30" : "#1f2937";
+                        return <div className="w-full h-0.5 rounded-full mt-0.5" style={{ background: "#1f2937" }}>
+                          <div className="h-full rounded-full" style={{ width: `${cpuPct}%`, backgroundColor: cpuColor.replace("30", "60") }} />
+                        </div>;
+                      })()}
                       {hasEvents && evCount > 0 && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-orange-400/60 animate-pulse" />}
                     </button>
                   );
