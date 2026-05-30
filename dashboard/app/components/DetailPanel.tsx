@@ -974,6 +974,18 @@ export default function DetailPanel({
                 <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Storage Alloc</h3>
                 <span className="text-xs font-mono text-gray-700">{totalGiB >= 1024 ? `${(totalGiB/1024).toFixed(1)}Ti` : `${totalGiB}Gi`} total</span>
               </div>
+              {/* Non-Bound PVC warning */}
+              {(() => {
+                const nonBound = Object.values(nsPvcs!).flat().filter((p: {status: string}) => p.status !== "Bound");
+                if (nonBound.length === 0) return null;
+                return (
+                  <div className="mb-1.5 flex items-center gap-1 text-[9px] font-mono text-yellow-500/70 px-1.5 py-0.5 rounded bg-yellow-900/10 border border-yellow-800/20">
+                    <span className="w-1 h-1 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+                    <span>{nonBound.length} PVC{nonBound.length !== 1 ? "s" : ""} not Bound</span>
+                    <span className="text-yellow-700/50 ml-0.5">{nonBound.map((p: {name: string; status: string}) => p.name.slice(0, 12)).join(", ")}</span>
+                  </div>
+                );
+              })()}
               <div className="space-y-1">
                 {entries.map(([ns, gib]) => {
                   const isExpanded = expandedPvcNs === ns;
