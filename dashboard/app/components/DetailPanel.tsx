@@ -111,14 +111,28 @@ export default function DetailPanel({
               <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent bar />
               <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} bar />
               {metricsHistory && metricsHistory.length >= 2 && (
-                <div className="flex items-end gap-3 mt-2">
-                  <div>
-                    <div className="text-xs text-gray-700 font-mono mb-0.5">CPU history</div>
-                    <Sparkline data={metricsHistory.map(m => m.cpu)} color="#58a6ff" height={18} />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-700 font-mono mb-0.5">RAM history</div>
-                    <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} />
+                <div className="mt-2">
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-700 font-mono">CPU history</span>
+                        <span className="text-xs font-mono text-gray-600">
+                          avg {Math.round(metricsHistory.reduce((s, m) => s + m.cpu, 0) / metricsHistory.length)}%
+                          · peak {Math.max(...metricsHistory.map(m => m.cpu))}%
+                        </span>
+                      </div>
+                      <Sparkline data={metricsHistory.map(m => m.cpu)} color="#58a6ff" height={18} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-700 font-mono">RAM history</span>
+                        <span className="text-xs font-mono text-gray-600">
+                          avg {Math.round(metricsHistory.reduce((s, m) => s + m.ram, 0) / metricsHistory.length)}%
+                          · peak {Math.max(...metricsHistory.map(m => m.ram))}%
+                        </span>
+                      </div>
+                      <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} />
+                    </div>
                   </div>
                 </div>
               )}
