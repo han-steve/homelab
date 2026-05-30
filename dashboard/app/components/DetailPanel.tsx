@@ -1923,7 +1923,18 @@ export default function DetailPanel({
           {svc.icon}
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-100">{svc.name}</h2>
+          <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+            {svc.name}
+            {svc.url && (
+              <a
+                href={svc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-mono px-1.5 py-0 rounded border border-blue-800/40 text-blue-500/60 hover:text-blue-400 hover:border-blue-600/60 transition-colors"
+                title={`Open ${svc.url}`}
+              >↗ open</a>
+            )}
+          </h2>
           <div className="flex items-center mt-1 flex-wrap gap-0.5">
             <StatusBadge status={svc.status} />
             <CategoryBadge category={svc.category} />
