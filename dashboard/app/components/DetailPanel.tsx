@@ -112,7 +112,7 @@ export default function DetailPanel({
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
-  metricsHistory?: { cpu: number; ram: number; pods: number; unhealthy?: number; ts: number }[];
+  metricsHistory?: { cpu: number; ram: number; pods: number; unhealthy?: number; appsHealthy?: number; appsTotal?: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
@@ -466,6 +466,17 @@ export default function DetailPanel({
                         </span>
                       </div>
                       <Sparkline data={metricsHistory.map(m => m.unhealthy ?? 0)} color="#ef4444" height={14} />
+                    </div>
+                  )}
+                  {metricsHistory.length >= 2 && metricsHistory.some(m => (m.appsTotal ?? 0) > 0) && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-700 font-mono">App health history</span>
+                        <span className="text-xs font-mono text-green-700/80">
+                          {metricsHistory[metricsHistory.length - 1]?.appsHealthy ?? 0}/{metricsHistory[metricsHistory.length - 1]?.appsTotal ?? 0} healthy
+                        </span>
+                      </div>
+                      <Sparkline data={metricsHistory.map(m => m.appsHealthy ?? 0)} color="#22c55e" height={14} />
                     </div>
                   )}
                 </div>
