@@ -61,6 +61,21 @@ export default function TopologyView({
       .filter(Boolean)
   )).sort() as string[];
 
+  // Auto-zoom to namespace when nsFilter changes
+  useEffect(() => {
+    if (!nsFilter || dims.w === 0) return;
+    const nsNodes = topoNodes.filter(n => n.serviceIdx !== undefined && services[n.serviceIdx!]?.namespace === nsFilter);
+    if (nsNodes.length === 0) return;
+    const xs = nsNodes.map(n => 60 + n.x * (dims.w - 120));
+    const ys = nsNodes.map(n => 40 + n.y * (dims.h - 80));
+    const minX = Math.min(...xs) - 60, maxX = Math.max(...xs) + 60;
+    const minY = Math.min(...ys) - 60, maxY = Math.max(...ys) + 60;
+    const cxRaw = (minX + maxX) / 2, cyRaw = (minY + maxY) / 2;
+    const zoomFit = Math.min(2.5, Math.min(dims.w / (maxX - minX + 120), dims.h / (maxY - minY + 120)));
+    setZoom(Math.max(1, zoomFit));
+    setPan({ x: dims.w / 2 - cxRaw * zoomFit, y: dims.h / 2 - cyRaw * zoomFit });
+  }, [nsFilter, dims]);
+
   useEffect(() => {
     const update = () => {
       setDims({ w: window.innerWidth, h: window.innerHeight - 52 });
