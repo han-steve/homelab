@@ -173,8 +173,49 @@ export default function DetailPanel({
           {nodeMetrics && (
             <>
               <div className="h-px bg-gray-800/60 mt-1" />
-              <InfoRow label="CPU use" value={nodeMetrics.cpuCores + " (" + nodeMetrics.cpuPct + ")"} accent bar />
-              <InfoRow label="RAM use" value={nodeMetrics.memoryi + " (" + nodeMetrics.memPct + ")"} bar />
+              {(() => {
+                const cpuPct = parseInt(nodeMetrics.cpuPct, 10) || 0;
+                const ramPct = parseInt(nodeMetrics.memPct, 10) || 0;
+                // Trend: compare last 3 points to first 3 points of metricsHistory
+                let cpuTrend = "→", ramTrend = "→";
+                let cpuTrendColor = "#6b7280", ramTrendColor = "#6b7280";
+                if (metricsHistory && metricsHistory.length >= 6) {
+                  const recent = metricsHistory.slice(-3);
+                  const older = metricsHistory.slice(0, 3);
+                  const cpuDiff = recent.reduce((s, m) => s + m.cpu, 0) / 3 - older.reduce((s, m) => s + m.cpu, 0) / 3;
+                  const ramDiff = recent.reduce((s, m) => s + m.ram, 0) / 3 - older.reduce((s, m) => s + m.ram, 0) / 3;
+                  cpuTrend = cpuDiff > 3 ? "↑" : cpuDiff < -3 ? "↓" : "→";
+                  ramTrend = ramDiff > 3 ? "↑" : ramDiff < -3 ? "↓" : "→";
+                  cpuTrendColor = cpuDiff > 3 ? "#ef4444" : cpuDiff < -3 ? "#22c55e" : "#6b7280";
+                  ramTrendColor = ramDiff > 3 ? "#ef4444" : ramDiff < -3 ? "#22c55e" : "#6b7280";
+                }
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-gray-600">CPU use</span>
+                      <span className="flex items-center gap-1">
+                        <span style={{ color: cpuTrendColor }}>{cpuTrend}</span>
+                        <span className="text-blue-400">{nodeMetrics.cpuCores}</span>
+                        <span className="text-gray-600">({nodeMetrics.cpuPct})</span>
+                      </span>
+                    </div>
+                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5 mb-1.5">
+                      <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${cpuPct}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-gray-600">RAM use</span>
+                      <span className="flex items-center gap-1">
+                        <span style={{ color: ramTrendColor }}>{ramTrend}</span>
+                        <span className="text-cyan-400">{nodeMetrics.memoryi}</span>
+                        <span className="text-gray-600">({nodeMetrics.memPct})</span>
+                      </span>
+                    </div>
+                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden mt-0.5" style={{ marginBottom: metricsHistory && metricsHistory.length >= 2 ? 0 : undefined }}>
+                      <div className="h-full rounded-full bg-cyan-500/60" style={{ width: `${ramPct}%` }} />
+                    </div>
+                  </>
+                );
+              })()}
               {metricsHistory && metricsHistory.length >= 2 && (
                 <div className="mt-2">
                   <div className="flex items-end gap-3">
