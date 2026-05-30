@@ -350,6 +350,11 @@ export default function DetailPanel({
           const cpuPct = totalCpuRequestsM ? Math.round((totalCpuRequestsM / 15950) * 100) : 0;
           const memPct = totalMemRequestsMi ? Math.round((totalMemRequestsMi / (31753032/1024)) * 100) : 0;
           const syncedApps = (apps ?? []).filter(a => a.sync === "Synced").length;
+          const now = Date.now();
+          const churnPods = recentPods?.filter(p => now - new Date(p.startTime).getTime() < 3600000).length ?? 0;
+          const churnPrev = recentPods?.filter(p => { const age = now - new Date(p.startTime).getTime(); return age >= 3600000 && age < 7200000; }).length ?? 0;
+          const churnTrend = churnPods > churnPrev ? "↑" : churnPods < churnPrev ? "↓" : "→";
+          const churnColor = churnPods > churnPrev ? "#f97316" : churnPods < churnPrev ? "#22c55e" : "#6b7280";
           return (
             <div className="mb-3 grid grid-cols-4 gap-1 text-center">
               {totalPods > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
@@ -357,6 +362,9 @@ export default function DetailPanel({
                 <div className="text-[9px] font-mono text-gray-700">pods</div>
                 {(unhealthyPods?.length ?? 0) > 0 && (
                   <div className="text-[8px] font-mono text-orange-500/60 animate-pulse">{unhealthyPods!.length}⚠</div>
+                )}
+                {churnPods > 0 && (
+                  <div className="text-[8px] font-mono" style={{ color: churnColor }} title={`${churnPods} pod starts in last hour (prev hr: ${churnPrev})`}>{churnTrend}{churnPods}↑</div>
                 )}
               </div>}
               {cpuPct > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
