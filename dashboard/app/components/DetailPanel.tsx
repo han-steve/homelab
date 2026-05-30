@@ -1774,14 +1774,30 @@ export default function DetailPanel({
             <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Storage</span>
             <span className="text-xs font-mono text-gray-700">{nsPvcs[svc.namespace].length} PVC{nsPvcs[svc.namespace].length !== 1 ? "s" : ""}</span>
           </div>
-          <div className="space-y-1">
-            {nsPvcs[svc.namespace].map((pvc, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                <span className={pvc.status === "Bound" ? "text-blue-500/60" : "text-yellow-400/70"}>⬡</span>
-                <span className="text-gray-500 truncate flex-1" title={pvc.name}>{pvc.name}</span>
-                <span className="shrink-0 text-blue-400/60">{pvc.capacity}</span>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            {nsPvcs[svc.namespace].map((pvc, i) => {
+              const capGiB = parseFloat(pvc.capacity) * (pvc.capacity.endsWith("Ti") ? 1024 : pvc.capacity.endsWith("Mi") ? 1/1024 : 1);
+              const longhornTotalGiB = longhornStorage?.totalGiB ?? 0;
+              const pctOfTotal = longhornTotalGiB > 0 ? (capGiB / longhornTotalGiB) * 100 : 0;
+              return (
+                <div key={i} className="text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className={pvc.status === "Bound" ? "text-blue-500/60" : "text-yellow-400/70"}>⬡</span>
+                    <span className="text-gray-500 truncate flex-1" title={pvc.name}>{pvc.name}</span>
+                    <span className="shrink-0 text-blue-400/60">{pvc.capacity}</span>
+                    {pctOfTotal > 0 && <span className="shrink-0 text-gray-700">{pctOfTotal.toFixed(1)}%</span>}
+                  </div>
+                  {pctOfTotal > 0 && (
+                    <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-blue-500/40 transition-all" style={{ width: `${Math.min(100, pctOfTotal * 4)}%` }} />
+                    </div>
+                  )}
+                  {pvc.storageClass && pvc.storageClass !== "longhorn" && (
+                    <div className="ml-4 text-[9px] text-gray-700">{pvc.storageClass}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
