@@ -552,6 +552,10 @@ export default function TopologyView({
         const connCount = tooltip.nodeId ? topoLinks.filter(l => l.source === tooltip.nodeId || l.target === tooltip.nodeId).length : 0;
         const isM2 = tNode?.id === "m2";
         const podTotal = nsPodCounts ? Object.values(nsPodCounts).reduce((a, b) => a + b, 0) : null;
+        const tService = tNode && tNode.serviceIdx !== undefined ? services[tNode.serviceIdx] : null;
+        const svcPods = tService && nsPodCounts ? nsPodCounts[tService.namespace] : null;
+        const svcEvents = tService && recentEvents ? recentEvents.filter(e => e.namespace === tService.namespace).length : 0;
+        const isUnhealthy = tService && unhealthyNamespaces?.has(tService.namespace);
         return (
           <div
             className="fixed z-50 pointer-events-none bg-gray-900/95 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-xl font-mono"
@@ -559,6 +563,23 @@ export default function TopologyView({
           >
             {tNode && <div className="font-bold text-sm mb-1" style={{ color: tNode.id === "m2" && m2DynamicColor ? m2DynamicColor : tNode.color }}>{tNode.icon} {tNode.label}</div>}
             <div className="text-gray-400">{tooltip.text}</div>
+            {tService && (
+              <div className="mt-1.5 space-y-0.5">
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">ns</span>
+                  <span className="text-gray-400">{tService.namespace}</span>
+                </div>
+                {svcPods !== null && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">pods</span>
+                  <span className="text-gray-400">{svcPods}</span>
+                </div>}
+                {svcEvents > 0 && <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">events</span>
+                  <span className="text-yellow-400">⚠ {svcEvents}</span>
+                </div>}
+                {isUnhealthy && <div className="text-red-400 mt-0.5">⚠ unhealthy pods detected</div>}
+              </div>
+            )}
             {isM2 && nodeMetrics && (
               <div className="mt-1.5 space-y-0.5">
                 <div className="flex justify-between gap-4">
