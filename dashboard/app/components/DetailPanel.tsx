@@ -2913,6 +2913,41 @@ export default function DetailPanel({
         </>
       )}
 
+      {/* TLS certificates relevant to this service */}
+      {certificates && (() => {
+        const relCerts = certificates.filter(c =>
+          c.name.toLowerCase().includes(svc.name.toLowerCase().slice(0, 6)) ||
+          c.name.toLowerCase().includes(svc.namespace.toLowerCase().slice(0, 6)) ||
+          (svc.url && c.name.toLowerCase().includes(new URL(svc.url).hostname.split(".")[0]))
+        );
+        if (relCerts.length === 0) return null;
+        return (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">TLS Certs</span>
+              <span className="text-xs font-mono text-gray-700">{relCerts.length}</span>
+            </div>
+            <div className="space-y-1">
+              {relCerts.map((cert, i) => {
+                const expiring = cert.daysLeft >= 0 && cert.daysLeft < 30;
+                const critical = cert.daysLeft >= 0 && cert.daysLeft < 7;
+                const certColor = critical ? "#ef4444" : expiring ? "#eab308" : "#22c55e";
+                return (
+                  <div key={i} className="flex items-center gap-2 text-xs font-mono rounded px-2 py-1 bg-gray-900/40 border border-gray-800/30">
+                    <span style={{ color: certColor }}>🔒</span>
+                    <span className="text-gray-500 truncate flex-1" title={cert.name}>{cert.name.replace(/^.*\//, "").slice(0, 22)}</span>
+                    <span className="shrink-0 text-[9px] px-1 rounded" style={{ color: certColor, backgroundColor: certColor + "15" }}>
+                      {cert.daysLeft < 0 ? "expired" : cert.daysLeft === 0 ? "today" : `${cert.daysLeft}d`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
+
       {/* Related warning events for this namespace */}
       {recentEvents && (() => {
         const nsEvents = recentEvents.filter(e => e.namespace === svc.namespace);
