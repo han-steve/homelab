@@ -1135,6 +1135,11 @@ export default function Scene3D({
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} />
 
+      {/* Subtle infra→M2 connection beams */}
+      <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(4.5, 4.0, -1)]} color="#f0883e" lineWidth={0.6} transparent opacity={selectedInfra === "argocd" ? 0.4 : 0.06} />
+      <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(-4.5, 3.5, -1)]} color="#f0c020" lineWidth={0.6} transparent opacity={selectedInfra === "cilium" ? 0.4 : 0.06} />
+      <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(0, 5.0, -2)]} color="#3b82f6" lineWidth={0.6} transparent opacity={selectedInfra === "longhorn" ? 0.4 : 0.06} />
+
       {/* Services display (above M2 when selected or toggled) */}
       <ServicesDisplay
         nodePos={m2Pos}
