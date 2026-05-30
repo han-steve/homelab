@@ -665,6 +665,17 @@ export default function Home() {
                 </>
               );
             })()}
+            {cluster?.podStatusCounts && (cluster.podStatusCounts.pending > 0 || cluster.podStatusCounts.failed > 0) && (
+              <>
+                <span className="hidden md:inline text-gray-800">|</span>
+                {cluster.podStatusCounts.pending > 0 && (
+                  <span className="hidden md:inline font-mono text-xs text-yellow-500/70 animate-pulse" title={`${cluster.podStatusCounts.pending} pod(s) stuck Pending`}>⏸{cluster.podStatusCounts.pending}</span>
+                )}
+                {cluster.podStatusCounts.failed > 0 && (
+                  <span className="hidden md:inline font-mono text-xs text-red-500/70 ml-1" title={`${cluster.podStatusCounts.failed} pod(s) Failed`}>✗{cluster.podStatusCounts.failed}</span>
+                )}
+              </>
+            )}
             {cluster?.longhornStorage && (
               <>
                 <span className="hidden md:inline text-gray-800">|</span>
