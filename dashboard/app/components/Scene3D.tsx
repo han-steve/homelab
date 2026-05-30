@@ -67,28 +67,53 @@ function HoloGrid() {
   );
 }
 
-/* ── floating particles ────────────────────────────── */
-function Particles({ count = 80 }: { count?: number }) {
-  const ref = useRef<THREE.Points>(null!);
-  const positions = useMemo(() => {
-    const p = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      p[i * 3] = (Math.random() - 0.5) * 20;
-      p[i * 3 + 1] = Math.random() * 8 - 2;
-      p[i * 3 + 2] = (Math.random() - 0.5) * 20;
+/* ── floating particles / starfield ────────────────────────────── */
+function Particles() {
+  const nearRef = useRef<THREE.Points>(null!);
+  const farRef = useRef<THREE.Points>(null!);
+
+  // Near particles — larger, visible dust
+  const nearPositions = useMemo(() => {
+    const p = new Float32Array(120 * 3);
+    for (let i = 0; i < 120; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 22;
+      p[i * 3 + 1] = Math.random() * 9 - 1.5;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 22;
     }
     return p;
-  }, [count]);
+  }, []);
+
+  // Far starfield — tiny, wide spread
+  const farPositions = useMemo(() => {
+    const p = new Float32Array(400 * 3);
+    for (let i = 0; i < 400; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 80;
+      p[i * 3 + 1] = Math.random() * 40 - 5;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 80;
+    }
+    return p;
+  }, []);
+
   useFrame(({ clock }) => {
-    ref.current.rotation.y = clock.getElapsedTime() * 0.01;
+    if (nearRef.current) nearRef.current.rotation.y = clock.getElapsedTime() * 0.008;
+    if (farRef.current) farRef.current.rotation.y = clock.getElapsedTime() * 0.003;
   });
+
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} count={count} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial size={0.03} color="#4488ff" transparent opacity={0.4} sizeAttenuation />
-    </points>
+    <>
+      <points ref={nearRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[nearPositions, 3]} count={120} itemSize={3} />
+        </bufferGeometry>
+        <pointsMaterial size={0.03} color="#5588ff" transparent opacity={0.45} sizeAttenuation />
+      </points>
+      <points ref={farRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[farPositions, 3]} count={400} itemSize={3} />
+        </bufferGeometry>
+        <pointsMaterial size={0.018} color="#aaccff" transparent opacity={0.25} sizeAttenuation />
+      </points>
+    </>
   );
 }
 
@@ -680,7 +705,7 @@ function ServicesDisplay({
 }
 
 /* ── ArgoCD floating glass object ─────────────────── */
-function ArgoCDObject({ position }: { position: [number, number, number] }) {
+function ArgoCDObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
   const innerRef = useRef<THREE.Mesh>(null!);
   const outerRef = useRef<THREE.Mesh>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
@@ -694,60 +719,140 @@ function ArgoCDObject({ position }: { position: [number, number, number] }) {
 
   return (
     <Float speed={2.5} rotationIntensity={0.2} floatIntensity={0.5}>
-      <group position={position}>
+      <group position={position}
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = "default"; }}
+      >
         <mesh ref={outerRef}>
           <icosahedronGeometry args={[0.55, 1]} />
-          <meshPhysicalMaterial color="#ef7b4d" metalness={0} roughness={0} transparent opacity={0.15} clearcoat={1} clearcoatRoughness={0} emissive="#ef7b4d" emissiveIntensity={0.12} />
+          <meshPhysicalMaterial color="#ef7b4d" metalness={0} roughness={0} transparent opacity={isSelected ? 0.25 : 0.15} clearcoat={1} clearcoatRoughness={0} emissive="#ef7b4d" emissiveIntensity={isSelected ? 0.25 : 0.12} />
         </mesh>
         <mesh ref={innerRef}>
           <octahedronGeometry args={[0.28, 0]} />
-          <meshPhysicalMaterial color="#ef7b4d" metalness={0.2} roughness={0.15} clearcoat={0.9} emissive="#ef7b4d" emissiveIntensity={0.55} />
+          <meshPhysicalMaterial color="#ef7b4d" metalness={0.2} roughness={0.15} clearcoat={0.9} emissive="#ef7b4d" emissiveIntensity={isSelected ? 0.9 : 0.55} />
         </mesh>
         <mesh ref={ringRef} rotation-x={Math.PI / 4}>
           <torusGeometry args={[0.65, 0.013, 16, 64]} />
-          <meshBasicMaterial color="#ef7b4d" transparent opacity={0.65} toneMapped={false} />
+          <meshBasicMaterial color="#ef7b4d" transparent opacity={isSelected ? 1.0 : 0.65} toneMapped={false} />
         </mesh>
         <Text position={[0, -0.85, 0]} fontSize={0.1} color="#ef7b4d" anchorX="center">ArgoCD</Text>
+        {isSelected && (
+          <Html position={[0.9, 0.4, 0]} style={{ pointerEvents: "none" }}>
+            <div style={{
+              background: "rgba(8,8,18,0.92)",
+              border: "1px solid #ef7b4d44",
+              borderRadius: 8,
+              padding: "8px 12px",
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: "#ccc",
+              width: 180,
+              whiteSpace: "nowrap",
+            }}>
+              <div style={{ color: "#ef7b4d", marginBottom: 5, fontWeight: 600 }}>ArgoCD v3.4.2</div>
+              <div style={{ color: "#888", marginBottom: 3 }}>GitOps controller</div>
+              <div>Apps: 14 total · 13/14 synced</div>
+              <div style={{ marginTop: 5 }}>
+                <a href="https://argocd.homelab" target="_blank" rel="noreferrer"
+                  style={{ color: "#ef7b4d", textDecoration: "none", fontSize: 10 }}
+                  onClick={(e) => e.stopPropagation()}
+                >↗ argocd.homelab</a>
+              </div>
+            </div>
+          </Html>
+        )}
       </group>
     </Float>
   );
 }
 
 /* ── Cilium CNI object ───────────────────────────────── */
-function CiliumObject({ position }: { position: [number, number, number] }) {
+function CiliumObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame(({ clock }) => { if (ref.current) ref.current.rotation.z = clock.getElapsedTime() * 0.55; });
   return (
     <Float speed={1.8} floatIntensity={0.4}>
-      <group position={position}>
+      <group position={position}
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = "default"; }}
+      >
         <mesh ref={ref}>
           <torusKnotGeometry args={[0.24, 0.07, 64, 8, 2, 3]} />
-          <meshPhysicalMaterial color="#f7a800" metalness={0.3} roughness={0.2} clearcoat={0.8} emissive="#f7a800" emissiveIntensity={0.45} />
+          <meshPhysicalMaterial color="#f7a800" metalness={0.3} roughness={0.2} clearcoat={0.8} emissive="#f7a800" emissiveIntensity={isSelected ? 0.8 : 0.45} />
         </mesh>
         <Text position={[0, -0.62, 0]} fontSize={0.09} color="#f7a800" anchorX="center">Cilium CNI</Text>
+        {isSelected && (
+          <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
+            <div style={{
+              background: "rgba(8,8,18,0.92)",
+              border: "1px solid #f7a80044",
+              borderRadius: 8,
+              padding: "8px 12px",
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: "#ccc",
+              width: 180,
+            }}>
+              <div style={{ color: "#f7a800", marginBottom: 5, fontWeight: 600 }}>Cilium v1.19.4</div>
+              <div style={{ color: "#888", marginBottom: 3 }}>CNI + LB-IPAM</div>
+              <div>LB pool: 192.168.1.11–30</div>
+              <div>Mode: native routing</div>
+            </div>
+          </Html>
+        )}
       </group>
     </Float>
   );
 }
 
 /* ── Longhorn storage object ─────────────────────────── */
-function LonghornObject({ position }: { position: [number, number, number] }) {
+function LonghornObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
   const ref = useRef<THREE.Group>(null!);
   useFrame(({ clock }) => {
     if (ref.current) ref.current.rotation.y = clock.getElapsedTime() * 0.35;
   });
   return (
     <Float speed={1.5} floatIntensity={0.35}>
-      <group position={position}>
+      <group position={position}
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = "default"; }}
+      >
         <group ref={ref}>
           {[0, 1, 2].map(i => (
             <mesh key={i} position={[0, (i - 1) * 0.25, 0]}>
               <cylinderGeometry args={[0.35 - i * 0.05, 0.35 - i * 0.05, 0.12, 32]} />
-              <meshPhysicalMaterial color="#3b82f6" metalness={0.5} roughness={0.3} clearcoat={0.6} emissive="#3b82f6" emissiveIntensity={0.3 - i * 0.08} />
+              <meshPhysicalMaterial color="#3b82f6" metalness={0.5} roughness={0.3} clearcoat={0.6} emissive="#3b82f6" emissiveIntensity={isSelected ? 0.6 : (0.3 - i * 0.08)} />
             </mesh>
           ))}
         </group>
         <Text position={[0, -0.75, 0]} fontSize={0.09} color="#3b82f6" anchorX="center">Longhorn</Text>
+        {isSelected && (
+          <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
+            <div style={{
+              background: "rgba(8,8,18,0.92)",
+              border: "1px solid #3b82f644",
+              borderRadius: 8,
+              padding: "8px 12px",
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: "#ccc",
+              width: 180,
+            }}>
+              <div style={{ color: "#3b82f6", marginBottom: 5, fontWeight: 600 }}>Longhorn v1.11.2</div>
+              <div style={{ color: "#888", marginBottom: 3 }}>Distributed block storage</div>
+              <div>Replicas: 1 (single node)</div>
+              <div style={{ marginTop: 5 }}>
+                <a href="https://longhorn.homelab" target="_blank" rel="noreferrer"
+                  style={{ color: "#3b82f6", textDecoration: "none", fontSize: 10 }}
+                  onClick={(e) => e.stopPropagation()}
+                >↗ longhorn.homelab</a>
+              </div>
+            </div>
+          </Html>
+        )}
       </group>
     </Float>
   );
@@ -765,13 +870,14 @@ export default function Scene3D({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [showAllServices, setShowAllServices] = useState(false);
   const [hoveredSvc, setHoveredSvc] = useState<number | null>(null);
+  const [selectedInfra, setSelectedInfra] = useState<"argocd" | "cilium" | "longhorn" | null>(null);
 
   // Keyboard shortcut: S = toggle services, Escape = deselect
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "s" || e.key === "S") setShowAllServices((v) => !v);
-      if (e.key === "Escape") { setSelectedNode(null); onSelect(null); }
+      if (e.key === "Escape") { setSelectedNode(null); setSelectedInfra(null); onSelect(null); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -825,7 +931,7 @@ export default function Scene3D({
       camera={{ position: [0, 8, 14], fov: 55 }}
       style={{ position: "absolute", inset: 0, background: "#07070e" }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-      onPointerMissed={() => { setSelectedNode(null); onSelect(null); }}
+      onPointerMissed={() => { setSelectedNode(null); setSelectedInfra(null); onSelect(null); }}
     >
       <color attach="background" args={["#07070e"]} />
       <fog attach="fog" args={["#07070e", 20, 40]} />
@@ -929,9 +1035,9 @@ export default function Scene3D({
       />
 
       {/* Floating infra objects */}
-      <ArgoCDObject position={[4.5, 4.5, -1]} />
-      <CiliumObject position={[-4.5, 4, -1]} />
-      <LonghornObject position={[0, 5.5, -2]} />
+      <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} />
+      <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
+      <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} />
 
       {/* Services display (above M2 when selected or toggled) */}
       <ServicesDisplay
@@ -1007,6 +1113,8 @@ export default function Scene3D({
         maxDistance={28}
         target={[0, 2.0, -0.5]}
         makeDefault
+        autoRotate={!selectedNode && !selectedInfra && selectedIdx === null}
+        autoRotateSpeed={0.35}
       />
 
       <EffectComposer>
