@@ -854,6 +854,7 @@ export default function TopologyView({
         const svcPods = tService && nsPodCounts ? nsPodCounts[tService.namespace] : null;
         const svcCpuM = tService && nsCpuRequestsM ? nsCpuRequestsM[tService.namespace] : null;
         const svcEvents = tService && recentEvents ? recentEvents.filter(e => e.namespace === tService.namespace).length : 0;
+        const svcRestarts = tService && nsMaxRestarts ? nsMaxRestarts[tService.namespace] : undefined;
         const isUnhealthy = tService && unhealthyNamespaces?.has(tService.namespace);
         return (
           <div
