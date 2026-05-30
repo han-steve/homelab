@@ -84,6 +84,8 @@ export async function GET() {
     const podStartTimes: Record<string, string> = {}; // "namespace/name" -> ISO timestamp
     // Track container images per namespace (first container of each pod)
     const nsImages: Record<string, Set<string>> = {};
+    // Track if any container uses "Always" pull policy (mutable image tags like :latest)
+    const nsHasLatestPull: Record<string, boolean> = {};
     if (podResult.status === "fulfilled") {
       const data = JSON.parse(podResult.value.stdout);
       totalPods = (data.items ?? []).length;
@@ -107,6 +109,10 @@ export async function GET() {
             // Strip registry prefix, keep repo:tag
             const img = (container.image as string).replace(/^[^/]+\.[^/]+\//, "");
             nsImages[ns].add(img);
+            // Detect mutable tag (latest or Always pull policy)
+            const isLatest = img.endsWith(":latest") || !img.includes(":");
+            const isAlwaysPull = container.imagePullPolicy === "Always";
+            if (isLatest || isAlwaysPull) nsHasLatestPull[ns] = true;
           }
         }
         // Aggregate resource requests
@@ -492,6 +498,7 @@ export async function GET() {
       totalCpuRequestsM: Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0),
       totalMemRequestsMi: Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0),
       nsImages: nsImagesArr,
+      nsHasLatestPull,
       topCpuPods,
       podMetrics: parsedPodMetrics,
       recentPods,

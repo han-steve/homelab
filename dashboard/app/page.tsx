@@ -17,6 +17,7 @@ interface ClusterStatus {
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
   nsImages?: Record<string, string[]>;
+  nsHasLatestPull?: Record<string, boolean>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   recentPods?: { namespace: string; name: string; startTime: string }[];
@@ -798,6 +799,7 @@ export default function Home() {
             totalCpuRequestsM={cluster?.totalCpuRequestsM}
             totalMemRequestsMi={cluster?.totalMemRequestsMi}
             nsImages={cluster?.nsImages}
+            nsHasLatestPull={cluster?.nsHasLatestPull}
             longhornVolumes={cluster?.longhornVolumes}
             nodePressures={cluster?.node?.pressures}
             kubeletVersion={cluster?.node?.kubeletVersion}

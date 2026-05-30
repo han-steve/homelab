@@ -125,7 +125,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets, restartHistory, longRunningPods,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, nsHasLatestPull, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets, restartHistory, longRunningPods,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -146,6 +146,7 @@ export default function DetailPanel({
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
   nsImages?: Record<string, string[]>;
+  nsHasLatestPull?: Record<string, boolean>;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   nodePressures?: string[];
   kubeletVersion?: string;
@@ -2367,6 +2368,11 @@ export default function DetailPanel({
                   {latestCount > 0 && (
                     <span className="text-[9px] font-mono px-1 rounded bg-yellow-900/30 text-yellow-600/70 border border-yellow-800/20" title={`${latestCount} image(s) using :latest tag`}>
                       ⚠{latestCount}:latest
+                    </span>
+                  )}
+                  {nsHasLatestPull?.[svc.namespace] && (
+                    <span className="text-[9px] font-mono px-1 rounded bg-orange-900/30 text-orange-500/70 border border-orange-800/20" title="Some containers use Always pull policy or :latest tag">
+                      ↓always
                     </span>
                   )}
                   <span className="text-xs font-mono text-gray-700">{imgs.length}</span>
