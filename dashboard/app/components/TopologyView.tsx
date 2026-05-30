@@ -743,6 +743,22 @@ export default function TopologyView({
                     <span className="text-violet-400">{longhornStorage.usedGiB}G / {longhornStorage.totalGiB}G ({longhornStorage.pct.toFixed(0)}%)</span>
                   </div>
                 )}
+                {apps && apps.length > 0 && (() => {
+                  const synced = apps.filter(a => a.sync === "Synced").length;
+                  const ok = synced === apps.length;
+                  return (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-gray-600">argocd</span>
+                      <span style={{ color: ok ? "#22c55e" : "#eab308" }}>{synced}/{apps.length} synced</span>
+                    </div>
+                  );
+                })()}
+                {unhealthyNamespaces && unhealthyNamespaces.size > 0 && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">health</span>
+                    <span className="text-red-400">⚠ {unhealthyNamespaces.size} ns degraded</span>
+                  </div>
+                )}
               </div>
             )}
             {connCount > 0 && <div className="text-gray-600 mt-1">{connCount} connection{connCount !== 1 ? "s" : ""}</div>}
