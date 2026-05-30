@@ -1448,9 +1448,16 @@ function CiliumObject({ position, isSelected, onClick }: { position: [number, nu
               width: 180,
             }}>
               <div style={{ color: "#f7a800", marginBottom: 5, fontWeight: 600 }}>Cilium v1.19.4</div>
-              <div style={{ color: "#888", marginBottom: 3 }}>CNI + LB-IPAM</div>
+              <div style={{ color: "#888", marginBottom: 3 }}>eBPF CNI + LB-IPAM + Hubble</div>
               <div>LB pool: 192.168.1.11–30</div>
               <div>Mode: native routing</div>
+              <div style={{ marginTop: 4, color: "#666" }}>Policies: network + L7</div>
+              <div style={{ marginTop: 4 }}>
+                <a href="https://hubble.homelab" target="_blank" rel="noreferrer"
+                  style={{ color: "#f7a800", textDecoration: "none", fontSize: 10 }}
+                  onClick={(e) => e.stopPropagation()}
+                >↗ hubble.homelab</a>
+              </div>
             </div>
           </Html>
         )}
