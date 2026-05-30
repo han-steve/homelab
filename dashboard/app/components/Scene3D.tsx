@@ -1214,18 +1214,21 @@ function ServiceSphere({
               background: "rgba(8,8,18,0.88)",
               border: `1px solid ${catColor}44`,
               borderRadius: 6,
-              padding: "4px 8px",
+              padding: "5px 9px",
               fontFamily: "monospace",
               fontSize: 10,
               color: "#ccc",
               whiteSpace: "nowrap",
               boxShadow: `0 0 8px ${catColor}22`,
+              minWidth: 120,
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: catColor }}>{service.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                <span style={{ color: catColor, fontWeight: 600 }}>{service.name}</span>
                 {isUnhealthy && <span style={{ color: "#ef4444" }}>⚠</span>}
               </div>
-              {nsPods !== undefined && <div style={{ color: "#555", marginTop: 2 }}>{nsPods} pod{nsPods !== 1 ? "s" : ""}{cpuM !== undefined ? ` · ${cpuM >= 1000 ? (cpuM/1000).toFixed(1) + "c" : cpuM + "m"} CPU` : ""}</div>}
+              <div style={{ color: "#444", fontSize: 9 }}>{service.namespace} · {service.category}</div>
+              {nsPods !== undefined && <div style={{ color: "#555", marginTop: 3 }}>{nsPods} pod{nsPods !== 1 ? "s" : ""}{cpuM !== undefined ? ` · ${cpuM >= 1000 ? (cpuM/1000).toFixed(1) + "c" : cpuM + "m"} CPU` : ""}</div>}
+              {service.url && <div style={{ color: "#333", marginTop: 3, fontSize: 9 }}>↗ {service.url.replace("https://", "")}</div>}
             </div>
           </Html>
         )}
