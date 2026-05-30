@@ -258,6 +258,21 @@ export default function Home() {
                 <span className="hidden md:inline text-gray-800">|</span>
               </>
             )}
+            {cluster && (() => {
+              const syncScore = cluster.apps.length > 0 ? (cluster.apps.filter(a => a.sync === "Synced").length / cluster.apps.length) * 40 : 40;
+              const podScore = cluster.unhealthyPods.length === 0 ? 40 : Math.max(0, 40 - cluster.unhealthyPods.length * 5);
+              const eventScore = !cluster.recentEvents || cluster.recentEvents.length === 0 ? 20 : Math.max(0, 20 - cluster.recentEvents.length * 2);
+              const score = Math.round(syncScore + podScore + eventScore);
+              const color = score >= 90 ? "#22c55e" : score >= 70 ? "#eab308" : "#ef4444";
+              return (
+                <>
+                  <span className="hidden md:inline font-semibold tabular-nums" style={{ color }} title="Cluster health score">
+                    {score}%
+                  </span>
+                  <span className="hidden md:inline text-gray-800">|</span>
+                </>
+              );
+            })()}
             <span className="hidden md:inline text-gray-600">Talos v1.13.2</span>
             <span className="hidden md:inline text-gray-800">|</span>
             <span className="hidden md:inline text-gray-600">K8s v1.36</span>
