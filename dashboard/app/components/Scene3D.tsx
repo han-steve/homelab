@@ -942,6 +942,26 @@ function ServiceSphere({
         </Text>
         {/* Unhealthy pod indicator — pulsing red dot at top-right of sphere */}
         {isUnhealthy && <UnhealthyDot />}
+        {/* Hover tooltip */}
+        {isHovered && !isSelected && (
+          <Html position={[0.55, 0.45, 0]} style={{ pointerEvents: "none" }} zIndexRange={[10, 20]}>
+            <div style={{
+              background: "rgba(8,8,18,0.88)",
+              border: `1px solid ${catColor}44`,
+              borderRadius: 6,
+              padding: "4px 8px",
+              fontFamily: "monospace",
+              fontSize: 10,
+              color: "#ccc",
+              whiteSpace: "nowrap",
+              boxShadow: `0 0 8px ${catColor}22`,
+            }}>
+              <span style={{ color: catColor }}>{service.name}</span>
+              <span style={{ color: "#555", marginLeft: 4 }}>· {service.namespace}</span>
+              {isUnhealthy && <span style={{ color: "#ef4444", marginLeft: 4 }}>⚠</span>}
+            </div>
+          </Html>
+        )}
       </Float>
     </group>
   );
