@@ -2101,24 +2101,29 @@ export default function Scene3D({
         {/* Bottom-left mini HUD */}
         <div style={{
           position: "absolute", bottom: 16, left: 16, zIndex: 50,
-          display: "flex", gap: 12, alignItems: "center",
+          display: "flex", flexDirection: "column", gap: 3,
           fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-          fontSize: 10, color: "#3a3a4a", pointerEvents: "none",
+          fontSize: 10, pointerEvents: "none",
         }}>
-          {totalPods !== undefined && (
-            <span style={{ color: (unhealthyPodCount ?? 0) > 0 ? "#f9731640" : "#22c55e30" }}>
-              {totalPods} pods{(unhealthyPodCount ?? 0) > 0 ? ` · ⚠${unhealthyPodCount}` : ""}
-            </span>
-          )}
-          {appsSynced !== undefined && appsTotal !== undefined && (
-            <span style={{ color: appsSynced < appsTotal ? "#eab30840" : "#22c55e30" }}>
-              {appsSynced}/{appsTotal} apps
-            </span>
-          )}
-          {longhornStorage && (
-            <span style={{ color: longhornStorage.pct > 80 ? "#ef444440" : "#a855f740" }}>
-              {longhornStorage.pct.toFixed(0)}% storage
-            </span>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", color: "#3a3a4a" }}>
+            {totalPods !== undefined && (
+              <span style={{ color: (unhealthyPodCount ?? 0) > 0 ? "#f9731640" : "#22c55e30" }}>
+                {totalPods} pods{(unhealthyPodCount ?? 0) > 0 ? ` · ⚠${unhealthyPodCount}` : ""}
+              </span>
+            )}
+            {appsSynced !== undefined && appsTotal !== undefined && (
+              <span style={{ color: appsSynced < appsTotal ? "#eab30840" : "#22c55e30" }}>
+                {appsSynced}/{appsTotal} apps
+              </span>
+            )}
+            {longhornStorage && (
+              <span style={{ color: longhornStorage.pct > 80 ? "#ef444440" : "#a855f740" }}>
+                {longhornStorage.pct.toFixed(0)}% storage
+              </span>
+            )}
+          </div>
+          {nodeUptime && (
+            <div style={{ color: "#2a2a38", fontSize: 9 }}>↑ {nodeUptime}</div>
           )}
         </div>
       </Html>
