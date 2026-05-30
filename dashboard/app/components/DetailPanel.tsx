@@ -1369,18 +1369,24 @@ export default function DetailPanel({
             </div>
             {/* Compact timeline */}
             <div className="relative pl-4 space-y-2 border-l border-gray-800/60 ml-1">
-              {recentEvents.slice(0, 5).map((ev, i) => (
+              {recentEvents.slice(0, 5).map((ev, i) => {
+                const isBackOff = ev.reason === "BackOff" || ev.reason === "CrashLoopBackOff";
+                const dotColor = isBackOff ? "#ef4444" : ev.count > 50 ? "#f97316" : "#f59e0b";
+                return (
                 <div key={i} className="relative text-xs font-mono">
                   {/* Timeline dot */}
-                  <div className="absolute -left-[1.2rem] top-1 w-1.5 h-1.5 rounded-full bg-orange-500/60 border border-orange-500/30" />
+                  <div className="absolute -left-[1.2rem] top-1 w-1.5 h-1.5 rounded-full border" style={{ backgroundColor: dotColor + "99", borderColor: dotColor + "50" }} />
                   <div className="flex items-center justify-between gap-1 mb-0.5">
-                    <span className="text-orange-400/80 truncate flex-1">{ev.reason}</span>
-                    <span className="text-gray-700 shrink-0 text-[10px]">{relTime(ev.lastTimestamp, now) || ev.age}</span>
+                    <span className="truncate flex-1" style={{ color: dotColor }}>{ev.reason}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ev.count > 1 && <span className="text-[9px] px-1 py-0 rounded font-mono" style={{ backgroundColor: dotColor + "20", color: dotColor }}>{ev.count}×</span>}
+                      <span className="text-gray-700 text-[10px]">{relTime(ev.lastTimestamp, now) || ev.age}</span>
+                    </div>
                   </div>
                   <div className="text-gray-600 truncate">{ev.name}<span className="text-gray-800 mx-1">·</span>{ev.namespace}</div>
                   <div className="text-gray-700/80 truncate mt-0.5 text-[10px]">{ev.message}</div>
                 </div>
-              ))}
+              )})}
             </div>
             </>)}
           </>
