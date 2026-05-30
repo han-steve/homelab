@@ -211,18 +211,19 @@ export async function GET() {
 
     // Parse pod-level metrics (kubectl top pods)
     // Output: NAMESPACE   NAME   CPU(cores)   MEMORY(bytes)
-    const topPods: { namespace: string; name: string; cpu: string; memory: string }[] = [];
+    const parsedPodMetrics: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[] = [];
     if (podMetricsResult.status === "fulfilled" && podMetricsResult.value.stdout.trim()) {
       for (const line of podMetricsResult.value.stdout.trim().split("\n")) {
         const parts = line.trim().split(/\s+/);
         if (parts.length >= 4) {
-          topPods.push({ namespace: parts[0], name: parts[1], cpu: parts[2], memory: parts[3] });
+          const cpuM = parts[2].endsWith("m") ? parseInt(parts[2]) : parseFloat(parts[2]) * 1000;
+          const memMi = parts[3].endsWith("Mi") ? parseInt(parts[3]) : parts[3].endsWith("Gi") ? parseFloat(parts[3]) * 1024 : parts[3].endsWith("Ki") ? parseFloat(parts[3]) / 1024 : 0;
+          parsedPodMetrics.push({ namespace: parts[0], name: parts[1], cpu: parts[2], memory: parts[3], cpuM: isNaN(cpuM) ? 0 : cpuM, memMi: isNaN(memMi) ? 0 : memMi });
         }
       }
     }
-    // Top 10 by CPU usage
-    const topCpuPods = topPods
-      .map(p => ({ ...p, cpuM: p.cpu.endsWith("m") ? parseInt(p.cpu) : parseFloat(p.cpu) * 1000 }))
+    // Top 10 by CPU usage (for overview chart)
+    const topCpuPods = parsedPodMetrics
       .sort((a, b) => b.cpuM - a.cpuM)
       .slice(0, 10);
 
@@ -235,6 +236,7 @@ export async function GET() {
       nsCpuRequestsM,
       nsMemRequestsMi,
       topCpuPods,
+      podMetrics: parsedPodMetrics,
       node: nodeInfo,
       nodeMetrics,
       recentEvents,

@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -69,6 +69,7 @@ export default function DetailPanel({
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
+  podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -591,29 +592,43 @@ export default function DetailPanel({
       )}
 
       {/* Live pod CPU for this namespace */}
-      {topCpuPods && (() => {
-        const nsPods = topCpuPods.filter(p => p.namespace === svc.namespace);
+      {podMetrics && (() => {
+        const nsPods = podMetrics.filter(p => p.namespace === svc.namespace);
         if (nsPods.length === 0) return null;
         const maxM = Math.max(...nsPods.map(p => p.cpuM), 1);
+        const maxMem = Math.max(...nsPods.map(p => p.memMi), 1);
         return (
           <>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Pod CPU (live)</span>
+              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Pod Usage (live)</span>
               <span className="text-xs font-mono text-gray-700">{nsPods.length} pod{nsPods.length !== 1 ? "s" : ""}</span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {nsPods.map((pod, i) => {
-                const pct = (pod.cpuM / maxM) * 100;
-                const label = pod.cpuM >= 1000 ? `${(pod.cpuM/1000).toFixed(1)}c` : `${pod.cpuM}m`;
-                const color = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
+                const cpuPct = (pod.cpuM / maxM) * 100;
+                const memPct = (pod.memMi / maxMem) * 100;
+                const cpuLabel = pod.cpuM >= 1000 ? `${(pod.cpuM/1000).toFixed(1)}c` : `${pod.cpuM}m`;
+                const memLabel = pod.memMi >= 1024 ? `${(pod.memMi/1024).toFixed(1)}G` : `${Math.round(pod.memMi)}M`;
+                const cpuColor = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
+                const shortName = pod.name.replace(/-[a-z0-9]{5}$/, "").replace(/-[a-z0-9]{10}$/, "");
                 return (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-gray-700 flex-1 truncate" title={pod.name}>{pod.name.split("-").slice(0, -2).join("-") || pod.name}</span>
-                    <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
+                      <span className="truncate flex-1" title={pod.name}>{shortName}</span>
+                      <span className="shrink-0 ml-1 flex items-center gap-2">
+                        <span style={{ color: cpuColor }}>{cpuLabel}</span>
+                        <span className="text-cyan-600">{memLabel}</span>
+                      </span>
                     </div>
-                    <span className="text-xs font-mono w-8 text-right shrink-0" style={{ color }}>{label}</span>
+                    <div className="flex gap-1 h-1">
+                      <div className="flex-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${cpuPct}%`, backgroundColor: cpuColor }} />
+                      </div>
+                      <div className="flex-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-cyan-600/60" style={{ width: `${memPct}%` }} />
+                      </div>
+                    </div>
                   </div>
                 );
               })}
