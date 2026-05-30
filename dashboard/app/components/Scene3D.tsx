@@ -1212,6 +1212,74 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
   );
 }
 
+/* ── Kubernetes cluster object ───────────────────────── */
+function KubernetesObject({ position, isSelected, onClick, totalPods }: {
+  position: [number, number, number];
+  isSelected?: boolean;
+  onClick?: () => void;
+  totalPods?: number;
+}) {
+  const ringA = useRef<THREE.Mesh>(null!);
+  const ringB = useRef<THREE.Mesh>(null!);
+  const ringC = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (ringA.current) ringA.current.rotation.y = t * 0.8;
+    if (ringB.current) { ringB.current.rotation.x = t * 0.55; ringB.current.rotation.z = t * 0.3; }
+    if (ringC.current) ringC.current.rotation.z = -t * 0.65;
+  });
+  const k8sColor = "#326ce5";
+  return (
+    <Float speed={1.9} floatIntensity={0.4}>
+      <group position={position}
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = "default"; }}
+      >
+        {/* Core sphere */}
+        <mesh>
+          <sphereGeometry args={[0.22, 16, 16]} />
+          <meshPhysicalMaterial color={k8sColor} metalness={0.3} roughness={0.2} clearcoat={0.9} emissive={k8sColor} emissiveIntensity={isSelected ? 0.9 : 0.5} />
+        </mesh>
+        {/* Three orbit rings at different angles */}
+        <mesh ref={ringA}>
+          <torusGeometry args={[0.42, 0.012, 12, 64]} />
+          <meshBasicMaterial color={k8sColor} transparent opacity={isSelected ? 0.9 : 0.55} toneMapped={false} />
+        </mesh>
+        <mesh ref={ringB} rotation={[Math.PI / 3, 0, 0]}>
+          <torusGeometry args={[0.42, 0.009, 12, 64]} />
+          <meshBasicMaterial color={k8sColor} transparent opacity={isSelected ? 0.7 : 0.4} toneMapped={false} />
+        </mesh>
+        <mesh ref={ringC} rotation={[-Math.PI / 3, 0, 0]}>
+          <torusGeometry args={[0.42, 0.009, 12, 64]} />
+          <meshBasicMaterial color={k8sColor} transparent opacity={isSelected ? 0.7 : 0.35} toneMapped={false} />
+        </mesh>
+        <Text position={[0, -0.72, 0]} fontSize={0.09} color={k8sColor} anchorX="center">Kubernetes</Text>
+        {isSelected && (
+          <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
+            <div style={{
+              background: "rgba(8,8,18,0.92)",
+              border: `1px solid ${k8sColor}44`,
+              borderRadius: 8,
+              padding: "8px 12px",
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: "#ccc",
+              width: 180,
+            }}>
+              <div style={{ color: k8sColor, marginBottom: 5, fontWeight: 600 }}>Kubernetes v1.36</div>
+              <div style={{ color: "#888", marginBottom: 3 }}>Talos Linux v1.13.2</div>
+              {totalPods !== undefined && <div>Pods running: {totalPods}</div>}
+              <div>Runtime: containerd</div>
+              <div>CNI: Cilium v1.19.4</div>
+            </div>
+          </Html>
+        )}
+      </group>
+    </Float>
+  );
+}
+
 /* ── Main Scene ────────────────────────────────────── */
 export default function Scene3D({
   onSelect,
@@ -1222,6 +1290,7 @@ export default function Scene3D({
   unhealthyNamespaces,
   refreshProgress,
   longhornStorage,
+  totalPods,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1231,12 +1300,13 @@ export default function Scene3D({
   unhealthyNamespaces?: Set<string>;
   refreshProgress?: number; // 0 = just refreshed, 1 = about to refresh
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  totalPods?: number;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [showAllServices, setShowAllServices] = useState(false);
   const [hoveredSvc, setHoveredSvc] = useState<number | null>(null);
-  const [selectedInfra, setSelectedInfra] = useState<"argocd" | "cilium" | "longhorn" | null>(null);
+  const [selectedInfra, setSelectedInfra] = useState<"argocd" | "cilium" | "longhorn" | "k8s" | null>(null);
 
   // Keyboard shortcut: S = toggle services, Escape = deselect, ←/→ navigate services
   useEffect(() => {
@@ -1456,11 +1526,13 @@ export default function Scene3D({
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
+      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} />
 
       {/* Subtle infra→M2 connection beams */}
       <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(4.5, 4.0, -1)]} color="#f0883e" lineWidth={0.6} transparent opacity={selectedInfra === "argocd" ? 0.4 : 0.06} />
       <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(-4.5, 3.5, -1)]} color="#f0c020" lineWidth={0.6} transparent opacity={selectedInfra === "cilium" ? 0.4 : 0.06} />
       <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(0, 5.0, -2)]} color="#3b82f6" lineWidth={0.6} transparent opacity={selectedInfra === "longhorn" ? 0.4 : 0.06} />
+      <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(-2.5, 5.0, -2)]} color="#326ce5" lineWidth={0.6} transparent opacity={selectedInfra === "k8s" ? 0.4 : 0.06} />
 
       {/* Services display (above M2 when selected or toggled) */}
       <ServicesDisplay
