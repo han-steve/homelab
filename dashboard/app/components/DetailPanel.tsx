@@ -370,6 +370,50 @@ export default function DetailPanel({
             </div>
           );
         })()}
+        {/* CPU + RAM trend sparklines from metricsHistory */}
+        {metricsHistory && metricsHistory.length >= 4 && (() => {
+          const recent = metricsHistory.slice(-24);
+          const cpuVals = recent.map(m => m.cpu ?? 0);
+          const memVals = recent.map(m => m.ram ?? 0);
+          const maxCpu = Math.max(...cpuVals, 1);
+          const maxMem = Math.max(...memVals, 1);
+          const w = 116, h = 14;
+          const sparkPath = (vals: number[], max: number) => {
+            return vals.map((v, i) => {
+              const x = (i / Math.max(vals.length - 1, 1)) * w;
+              const y = h - 2 - ((v / max) * (h - 4));
+              return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+          };
+          const cpuLast = cpuVals[cpuVals.length - 1];
+          const memLast = memVals[memVals.length - 1];
+          const cpuColor = cpuLast > 80 ? "#ef4444" : cpuLast > 60 ? "#eab308" : "#58a6ff";
+          const memColor = memLast > 80 ? "#ef4444" : memLast > 60 ? "#f97316" : "#06b6d4";
+          return (
+            <div className="mb-3 flex gap-1.5">
+              <div className="flex-1 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">cpu 24h</span>
+                  <span className="text-[9px] font-mono" style={{ color: cpuColor }}>{cpuLast?.toFixed(0)}%</span>
+                </div>
+                <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
+                  <path d={sparkPath(cpuVals, maxCpu)} fill="none" stroke={cpuColor} strokeWidth={1} opacity={0.6} />
+                  <circle cx={w} cy={h - 2 - (cpuLast / maxCpu) * (h - 4)} r={1.5} fill={cpuColor} opacity={0.9} />
+                </svg>
+              </div>
+              <div className="flex-1 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">ram 24h</span>
+                  <span className="text-[9px] font-mono" style={{ color: memColor }}>{memLast?.toFixed(0)}%</span>
+                </div>
+                <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
+                  <path d={sparkPath(memVals, maxMem)} fill="none" stroke={memColor} strokeWidth={1} opacity={0.6} />
+                  <circle cx={w} cy={h - 2 - (memLast / maxMem) * (h - 4)} r={1.5} fill={memColor} opacity={0.9} />
+                </svg>
+              </div>
+            </div>
+          );
+        })()}
         <div className="mb-4 grid grid-cols-4 gap-1">
           {[
             { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab", ns: "argocd" },
