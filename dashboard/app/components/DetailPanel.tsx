@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -73,6 +73,7 @@ export default function DetailPanel({
   totalCpuRequestsM?: number;
   totalMemRequestsMi?: number;
   nsImages?: Record<string, string[]>;
+  longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -568,6 +569,22 @@ export default function DetailPanel({
                 />
               </div>
               <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
+              {longhornVolumes && longhornVolumes.length > 0 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {longhornVolumes.slice(0, 6).map((vol, i) => {
+                    const robColor = vol.robustness === "healthy" ? "#22c55e" : vol.robustness === "degraded" ? "#eab308" : "#ef4444";
+                    const shortName = vol.pvc ?? vol.name.slice(0, 24);
+                    return (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: robColor }} />
+                        <span className="truncate flex-1 text-gray-700" title={vol.name}>{shortName}</span>
+                        <span className="shrink-0 text-gray-700/60">{vol.sizeGiB}G</span>
+                      </div>
+                    );
+                  })}
+                  {longhornVolumes.length > 6 && <div className="text-gray-700/50">+{longhornVolumes.length - 6} more</div>}
+                </div>
+              )}
             </div>
           ) : (
             <p>Storage: Longhorn</p>

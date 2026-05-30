@@ -22,6 +22,7 @@ interface ClusterStatus {
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+  longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -486,6 +487,7 @@ export default function Home() {
             totalCpuRequestsM={cluster?.totalCpuRequestsM}
             totalMemRequestsMi={cluster?.totalMemRequestsMi}
             nsImages={cluster?.nsImages}
+            longhornVolumes={cluster?.longhornVolumes}
           />
         )}
       </div>

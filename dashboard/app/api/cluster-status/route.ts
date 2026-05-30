@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -38,6 +38,8 @@ export async function GET() {
       execAsync(`kubectl get certificates -A -o json 2>/dev/null`),
       // Pod-level CPU/RAM metrics
       execAsync(`kubectl top pods -A --no-headers 2>/dev/null`),
+      // Longhorn volumes
+      execAsync(`kubectl get volumes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -263,6 +265,25 @@ export async function GET() {
       .sort((a, b) => b.cpuM - a.cpuM)
       .slice(0, 10);
 
+    // Parse Longhorn volumes
+    interface LonghornVol { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }
+    const longhornVolumes: LonghornVol[] = [];
+    if (longhornVolsResult.status === "fulfilled" && longhornVolsResult.value.stdout.trim()) {
+      try {
+        const volData = JSON.parse(longhornVolsResult.value.stdout);
+        for (const vol of volData.items ?? []) {
+          const sizeBytes = parseInt(vol.spec?.size ?? "0");
+          longhornVolumes.push({
+            name: vol.metadata?.name ?? "",
+            state: vol.status?.state ?? "unknown",
+            robustness: vol.status?.robustness ?? "unknown",
+            sizeGiB: Math.round(sizeBytes / (1024 ** 3) * 10) / 10,
+            pvc: vol.status?.kubernetesStatus?.pvcName,
+          });
+        }
+      } catch {}
+    }
+
     return Response.json({
       timestamp: new Date().toISOString(),
       apps,
@@ -280,6 +301,7 @@ export async function GET() {
       nodeMetrics,
       recentEvents,
       longhornStorage,
+      longhornVolumes,
       certificates,
     });
   } catch {
