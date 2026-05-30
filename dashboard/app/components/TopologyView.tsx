@@ -74,6 +74,7 @@ export default function TopologyView({
         ref={svgRef}
         viewBox={`0 0 ${dims.w} ${dims.h}`}
         className="w-full h-full"
+        onClick={() => setSelectedNode(null)}
       >
         <defs>
           <filter id="glow">
@@ -163,6 +164,7 @@ export default function TopologyView({
           const pathId = `link-path-${i}`;
           const dur = (2.5 + (i * 0.4) % 2.5).toFixed(1) + "s";
           const isActive = link.style === "solid";
+          const isHighlighted = !selectedNode || link.source === selectedNode || link.target === selectedNode;
 
           return (
             <g key={`link-${i}`}>
@@ -171,13 +173,14 @@ export default function TopologyView({
                 d={`M${s.x},${s.y} Q${cx},${cy} ${t.x},${t.y}`}
                 fill="none"
                 stroke={link.color}
-                strokeWidth={link.style === "solid" ? 1.5 : 1}
+                strokeWidth={isHighlighted ? 2.5 : (link.style === "solid" ? 1.5 : 1)}
                 strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
-                opacity={0.45}
+                opacity={selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45}
+                style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
               />
               {/* Animated data packet on active links */}
               {isActive && (
-                <circle r={3} fill={link.color} opacity={0.85} filter="url(#glow)">
+                <circle r={3} fill={link.color} opacity={isHighlighted ? 1.0 : 0.4} filter="url(#glow)">
                   <animateMotion
                     dur={dur}
                     repeatCount="indefinite"
@@ -210,13 +213,16 @@ export default function TopologyView({
           const isActive = node.type === "node";
           const isService = node.type === "service";
           const isSelected = selectedNode === node.id;
+          const isNeighbor = selectedNode && selectedNode !== node.id &&
+            topoLinks.some(l => (l.source === selectedNode && l.target === node.id) || (l.target === selectedNode && l.source === node.id));
+          const isDimmed = selectedNode && !isSelected && !isNeighbor;
 
           return (
             <g
               key={node.id}
               transform={`translate(${pos.x}, ${pos.y})`}
-              style={{ cursor: "pointer" }}
-              onClick={() => handleNodeClick(node)}
+              style={{ cursor: "pointer", transition: "opacity 0.2s", opacity: isDimmed ? 0.2 : 1 }}
+              onClick={(e) => { e.stopPropagation(); handleNodeClick(node); }}
               onMouseMove={(e) =>
                 setTooltip({
                   x: e.clientX + 14,
@@ -229,6 +235,11 @@ export default function TopologyView({
                 setTooltip((t) => ({ ...t, visible: false }))
               }
             >
+              {/* Neighbor highlight ring */}
+              {isNeighbor && (
+                <circle r={r + 4} fill="none" stroke="#ffffff" strokeWidth={1} opacity={0.25} />
+              )}
+
               {/* Active node outer ring */}
               {isActive && (
                 <circle
