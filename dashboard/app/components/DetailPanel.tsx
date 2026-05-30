@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, k8sServices,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -75,6 +75,7 @@ export default function DetailPanel({
   nsImages?: Record<string, string[]>;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   nodePressures?: string[];
+  k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -826,6 +827,21 @@ export default function DetailPanel({
         } accent />
         <InfoRow label="Access" value={svc.url ? "LAN (" + svc.url.replace("https://", "") + ")" : "Cluster-only"} />
         <InfoRow label="Category" value={svc.category} />
+        {/* Live K8s LoadBalancer/NodePort service endpoints */}
+        {k8sServices && (() => {
+          const nsEndpoints = k8sServices.filter(s => s.namespace === svc.namespace && s.externalIP);
+          if (nsEndpoints.length === 0) return null;
+          return (
+            <div className="space-y-0.5">
+              {nsEndpoints.slice(0, 3).map((ep, i) => (
+                <div key={i} className="flex items-center justify-between text-xs font-mono text-gray-700">
+                  <span className="text-gray-600 truncate">{ep.name}</span>
+                  <span className="shrink-0 ml-1 text-green-600/80">{ep.externalIP}:{ep.ports.split(",")[0]}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {svc.url && (

@@ -23,6 +23,7 @@ interface ClusterStatus {
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
+  k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
 }
 
@@ -489,6 +490,7 @@ export default function Home() {
             nsImages={cluster?.nsImages}
             longhornVolumes={cluster?.longhornVolumes}
             nodePressures={cluster?.node?.pressures}
+            k8sServices={cluster?.k8sServices}
           />
         )}
       </div>

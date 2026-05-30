@@ -20,7 +20,7 @@ interface PodStatus {
 
 export async function GET() {
   try {
-    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult] = await Promise.allSettled([
+    const [argoResult, podResult, nodeResult, metricsResult, eventsResult, longhornResult, certsResult, podMetricsResult, longhornVolsResult, svcResult] = await Promise.allSettled([
       execAsync(
         `kubectl get applications -n argocd -o json 2>/dev/null`
       ),
@@ -40,6 +40,8 @@ export async function GET() {
       execAsync(`kubectl top pods -A --no-headers 2>/dev/null`),
       // Longhorn volumes
       execAsync(`kubectl get volumes.longhorn.io -n longhorn-system -o json 2>/dev/null`),
+      // Services with LoadBalancer/NodePort IPs
+      execAsync(`kubectl get svc -A -o json 2>/dev/null`),
     ]);
 
     const apps: ArgoApp[] = [];
@@ -288,7 +290,29 @@ export async function GET() {
       } catch {}
     }
 
-    return Response.json({
+    // Parse services with external IPs (LoadBalancer)
+    interface K8sSvc { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }
+    const k8sServices: K8sSvc[] = [];
+    if (svcResult.status === "fulfilled" && svcResult.value.stdout.trim()) {
+      try {
+        const svcData = JSON.parse(svcResult.value.stdout);
+        for (const svc of svcData.items ?? []) {
+          const type = svc.spec?.type ?? "ClusterIP";
+          if (type === "ClusterIP") continue; // skip boring cluster-internal services
+          const lbIngress = svc.status?.loadBalancer?.ingress?.[0];
+          const externalIP = lbIngress?.ip ?? lbIngress?.hostname ?? svc.spec?.externalIPs?.[0];
+          const ports = (svc.spec?.ports ?? []).map((p: { port: number; targetPort: number | string; protocol: string }) => `${p.port}/${p.protocol ?? "TCP"}`).join(",");
+          k8sServices.push({
+            namespace: svc.metadata?.namespace ?? "",
+            name: svc.metadata?.name ?? "",
+            type,
+            clusterIP: svc.spec?.clusterIP ?? "",
+            externalIP,
+            ports,
+          });
+        }
+      } catch {}
+    }
       timestamp: new Date().toISOString(),
       apps,
       unhealthyPods: unhealthyPods.slice(0, 20),
@@ -306,6 +330,7 @@ export async function GET() {
       recentEvents,
       longhornStorage,
       longhornVolumes,
+      k8sServices,
       certificates,
     });
   } catch {
