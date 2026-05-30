@@ -203,7 +203,7 @@ function FloorHealthAura({ position, color = "#22d3ee" }: { position: [number, n
 }
 
 /* ── CPU arc gauge floating above M2 ──────────────────── */
-function CpuArcGauge({ position, cpuPct }: { position: [number, number, number]; cpuPct: number }) {
+function CpuArcGauge({ position, cpuPct, ramPct }: { position: [number, number, number]; cpuPct: number; ramPct?: number }) {
   const arcRef = useRef<THREE.Mesh>(null!);
   const glowRef = useRef<THREE.Mesh>(null!);
   const arcColor = cpuPct > 80 ? "#ef4444" : cpuPct > 50 ? "#eab308" : "#22c55e";
@@ -255,7 +255,48 @@ function CpuArcGauge({ position, cpuPct }: { position: [number, number, number];
   );
 }
 
-/* ── Lightning arc between two points ──────────────────── */
+/* ── RAM arc gauge ────────────────────────────────────── */
+function RamArcGauge({ position, ramPct }: { position: [number, number, number]; ramPct: number }) {
+  const arcRef = useRef<THREE.Line>(null!);
+  const ramColor = ramPct > 80 ? "#ef4444" : ramPct > 60 ? "#f97316" : "#06b6d4";
+  const arc = useMemo(() => {
+    const start = -Math.PI * 0.75;
+    const range = Math.PI * 1.5;
+    const end = start + range * (Math.max(0, Math.min(100, ramPct)) / 100);
+    const curve = new THREE.EllipseCurve(0, 0, 1.5, 1.5, start, end, false, 0);
+    const pts = curve.getSpacedPoints(64);
+    return new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0)));
+  }, [ramPct]);
+  const bgArc = useMemo(() => {
+    const start = -Math.PI * 0.75;
+    const end = start + Math.PI * 1.5;
+    const curve = new THREE.EllipseCurve(0, 0, 1.5, 1.5, start, end, false, 0);
+    const pts = curve.getSpacedPoints(64);
+    return new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0)));
+  }, []);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 0.6 + 0.4 * Math.sin(t * 1.7 + 1.2);
+    if (arcRef.current) (arcRef.current.material as THREE.LineBasicMaterial).opacity = 0.5 + pulse * 0.3;
+  });
+  return (
+    <group position={[position[0] + 3.5, position[1] + 1.8, position[2]]} rotation-x={Math.PI / 8}>
+      <lineSegments geometry={bgArc}>
+        <lineBasicMaterial color="#1f2937" transparent opacity={0.5} linewidth={2} toneMapped={false} />
+      </lineSegments>
+      <lineSegments ref={arcRef} geometry={arc}>
+        <lineBasicMaterial color={ramColor} transparent opacity={0.7} linewidth={2} toneMapped={false} />
+      </lineSegments>
+      <Text position={[0, 0, 0]} fontSize={0.32} color={ramColor} anchorX="center" anchorY="middle" toneMapped={false}>
+        {`${ramPct}%`}
+      </Text>
+      <Text position={[0, -0.45, 0]} fontSize={0.14} color="#374151" anchorX="center" anchorY="middle" toneMapped={false}>
+        RAM
+      </Text>
+    </group>
+  );
+}
+
 function LightningArc({ from, to, intensity = 1 }: { from: THREE.Vector3; to: THREE.Vector3; intensity?: number }) {
   const lineRef = useRef<THREE.Line>(null!);
   const segCount = 8;
@@ -1735,6 +1776,7 @@ export default function Scene3D({
       <FloorHealthAura position={m2Pos} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} />
       {nodeMetrics && <CpuArcRing position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} memPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
       {nodeMetrics && <CpuArcGauge position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} />}
+      {nodeMetrics && <RamArcGauge position={m2Pos} ramPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
       {/* Lightning arcs when CPU > 60% */}
       {nodeMetrics && parseInt(nodeMetrics.cpuPct, 10) > 60 && (
         <LightningArc from={new THREE.Vector3(m2Pos[0], m2Pos[1] + 1.5, m2Pos[2])} to={new THREE.Vector3(-2.5, 5.2, -2)} intensity={Math.min(1, (parseInt(nodeMetrics.cpuPct, 10) - 60) / 40)} />
