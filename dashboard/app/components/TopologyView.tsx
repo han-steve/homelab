@@ -155,6 +155,25 @@ export default function TopologyView({
     if (node.serviceIdx !== undefined) {
       onSelectService(node.serviceIdx);
     }
+    // Smoothly pan to center the clicked node
+    const pos = { x: 60 + node.x * (dims.w - 120), y: 40 + node.y * (dims.h - 80) };
+    const targetPan = { x: dims.w / 2 - pos.x * zoom, y: dims.h / 2 - pos.y * zoom };
+    const startPan = { ...pan };
+    const startZoom = zoom;
+    const targetZoom = Math.max(zoom, 1.4);
+    const duration = 350;
+    const startTime = performance.now();
+    const animatePan = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const interpZoom = startZoom + (targetZoom - startZoom) * ease;
+      const panX = startPan.x + (dims.w / 2 - pos.x * interpZoom - startPan.x) * ease;
+      const panY = startPan.y + (dims.h / 2 - pos.y * interpZoom - startPan.y) * ease;
+      setPan({ x: panX, y: panY });
+      setZoom(interpZoom);
+      if (t < 1) requestAnimationFrame(animatePan);
+    };
+    requestAnimationFrame(animatePan);
   };
 
   // Compute dynamic M2 color based on CPU load
