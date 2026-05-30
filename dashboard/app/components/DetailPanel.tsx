@@ -125,7 +125,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets, restartHistory,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, recentPods, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures, kubeletVersion, nodeUptime, k8sServices, nsIngress, nsDeployments, nsCronJobs, nsHelmReleases, nsPvcs, podStatusCounts, nsStatefulSets, totalDaemonSets, restartHistory, longRunningPods,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -160,6 +160,7 @@ export default function DetailPanel({
   nsStatefulSets?: Record<string, { name: string; desired: number; ready: number }[]>;
   totalDaemonSets?: number;
   restartHistory?: { ts: number; total: number }[];
+  longRunningPods?: { namespace: string; name: string; startTime: string; ageDays: number }[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -1821,6 +1822,29 @@ export default function DetailPanel({
                 </>
               );
             })() : null}
+
+            {/* Long-running pods section */}
+            {longRunningPods && longRunningPods.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Evergreen Pods</h3>
+                  <span className="text-[9px] font-mono px-1 py-0 rounded bg-blue-900/20 text-blue-500/50 border border-blue-800/20">{longRunningPods.length} pods &gt;7d</span>
+                </div>
+                <div className="space-y-1">
+                  {longRunningPods.slice(0, 5).map((pod, i) => {
+                    const ageColor = pod.ageDays > 30 ? "#a78bfa" : pod.ageDays > 14 ? "#60a5fa" : "#6b7280";
+                    return (
+                      <div key={i} className="flex items-center text-xs font-mono gap-1.5">
+                        <span className="text-[9px]" style={{ color: ageColor }}>⏱</span>
+                        <span className="text-gray-600 truncate flex-1" title={pod.namespace + "/" + pod.name}>{pod.name.replace(/-[a-z0-9]{5,}(-[a-z0-9]+)?$/, "").slice(0, 22)}</span>
+                        <span className="text-gray-800 text-[9px] shrink-0">{pod.namespace.slice(0, 10)}</span>
+                        <span className="font-bold shrink-0" style={{ color: ageColor + "cc" }}>{pod.ageDays}d</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {recentEvents && recentEvents.length > 0 && (<>
             <div className="flex items-center justify-between mb-2">

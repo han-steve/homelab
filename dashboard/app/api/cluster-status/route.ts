@@ -308,6 +308,17 @@ export async function GET() {
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
       .slice(0, 20);
 
+    // Long-running pods (running for >7 days)
+    const longRunningPods = Object.entries(podStartTimes)
+      .map(([key, startTime]) => {
+        const [namespace, ...nameParts] = key.split("/");
+        const ageDays = Math.floor((now - new Date(startTime).getTime()) / 86400000);
+        return { namespace, name: nameParts.join("/"), startTime, ageDays };
+      })
+      .filter(p => p.ageDays > 7)
+      .sort((a, b) => b.ageDays - a.ageDays)
+      .slice(0, 10);
+
     // Parse Longhorn volumes
     interface LonghornVol { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }
     const longhornVolumes: LonghornVol[] = [];
@@ -484,6 +495,7 @@ export async function GET() {
       topCpuPods,
       podMetrics: parsedPodMetrics,
       recentPods,
+      longRunningPods,
       node: nodeInfo,
       nodeMetrics,
       recentEvents,

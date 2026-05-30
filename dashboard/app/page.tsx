@@ -20,6 +20,7 @@ interface ClusterStatus {
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
   podMetrics?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number; memMi: number; startTime?: string }[];
   recentPods?: { namespace: string; name: string; startTime: string }[];
+  longRunningPods?: { namespace: string; name: string; startTime: string; ageDays: number }[];
   node: { name: string; ready: boolean; kubeletVersion?: string; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null; pressures?: string[] } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
@@ -795,6 +796,7 @@ export default function Home() {
             nsStatefulSets={cluster?.nsStatefulSets}
             totalDaemonSets={cluster?.totalDaemonSets}
             restartHistory={restartHistory.current}
+            longRunningPods={cluster?.longRunningPods}
           />
         )}
       </div>
