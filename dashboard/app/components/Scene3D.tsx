@@ -1730,24 +1730,25 @@ export default function Scene3D({
       {/* Accent from below — subtle up-light */}
       <pointLight position={[0, -0.5, 0]} intensity={0.08} color="#0066cc" />
       {/* M2 node breathing glow */}
-      {/* PulsingLight color reflects CPU load */}
+      {/* PulsingLight color reflects CPU load or cluster health */}
       <PulsingLight position={m2Pos} color={
         nodeMetrics ? (
           (parseInt(nodeMetrics.cpuPct, 10) || 0) > 80 ? "#ef4444" :
           (parseInt(nodeMetrics.cpuPct, 10) || 0) > 50 ? "#eab308" :
           "#58a6ff"
-        ) : "#58a6ff"
+        ) : unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : "#58a6ff"
       } />
       {/* Router accent */}
       <pointLight position={[routerPos[0], 0.5, routerPos[2]]} intensity={0.06} color="#8b949e" />
       {/* CPU/RAM arc ring around M2 */}
-      {nodeMetrics && (
-        <CpuArcRing
-          position={m2Pos}
-          cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0}
-          ramPct={parseInt(nodeMetrics.memPct, 10) || 0}
-        />
-      )}
+      {(() => {
+        const cpuReqPct = nsCpuRequestsM ? Math.min(100, (Object.values(nsCpuRequestsM).reduce((a,b)=>a+b,0) / 15950) * 100) : 0;
+        const cpuToShow = nodeMetrics ? (parseInt(nodeMetrics.cpuPct, 10) || 0) : cpuReqPct;
+        const ramToShow = nodeMetrics ? (parseInt(nodeMetrics.memPct, 10) || 0) : 0;
+        return cpuToShow > 0 ? (
+          <CpuArcRing position={m2Pos} cpuPct={cpuToShow} ramPct={ramToShow} />
+        ) : null;
+      })()}
       {/* Refresh countdown sweep arc — outermost ring */}
       {refreshProgress !== undefined && refreshProgress > 0 && (
         <RefreshArc position={m2Pos} progress={refreshProgress} />

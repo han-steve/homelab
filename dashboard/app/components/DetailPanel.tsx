@@ -493,10 +493,14 @@ export default function DetailPanel({
 
         {/* Workload summary row */}
         {(nsDeployments || nsStatefulSets || nsCronJobs) && (() => {
-          const totalDeploys = nsDeployments ? Object.values(nsDeployments).flat().length : 0;
-          const totalSS = nsStatefulSets ? Object.values(nsStatefulSets).flat().length : 0;
+          const allDeps = nsDeployments ? Object.values(nsDeployments).flat() : [];
+          const allSS = nsStatefulSets ? Object.values(nsStatefulSets).flat() : [];
+          const totalDeploys = allDeps.length;
+          const totalSS = allSS.length;
           const totalCJ = nsCronJobs ? Object.values(nsCronJobs).flat().length : 0;
           const totalDS = totalDaemonSets ?? 0;
+          const depAvail = allDeps.filter(d => (d as {available?: number}).available === (d as {desired?: number}).desired).length;
+          const ssAvail = allSS.filter(s => (s as {available?: number}).available === (s as {desired?: number}).desired).length;
           if (totalDeploys + totalSS + totalCJ + totalDS === 0) return null;
           return (
             <div className="mb-3 flex gap-2">
@@ -504,12 +508,14 @@ export default function DetailPanel({
                 <div className="flex-1 rounded px-2 py-1.5 bg-green-500/5 border border-green-500/15 text-center">
                   <div className="text-lg font-bold font-mono text-green-500/80">{totalDeploys}</div>
                   <div className="text-[9px] font-mono text-gray-600">Deploys</div>
+                  {depAvail < totalDeploys && <div className="text-[8px] font-mono text-yellow-500/70">{depAvail}/{totalDeploys}</div>}
                 </div>
               )}
               {totalSS > 0 && (
                 <div className="flex-1 rounded px-2 py-1.5 bg-cyan-500/5 border border-cyan-500/15 text-center">
                   <div className="text-lg font-bold font-mono text-cyan-500/80">{totalSS}</div>
                   <div className="text-[9px] font-mono text-gray-600">StatefulSets</div>
+                  {ssAvail < totalSS && <div className="text-[8px] font-mono text-yellow-500/70">{ssAvail}/{totalSS}</div>}
                 </div>
               )}
               {totalCJ > 0 && (
@@ -537,6 +543,8 @@ export default function DetailPanel({
           const nsCount = nsAll.size;
           const helmCount = nsHelmReleases ? Object.values(nsHelmReleases).flat().length : 0;
           const svcCount = k8sServices ? k8sServices.filter(s => s.type === "LoadBalancer" || s.type === "NodePort").length : 0;
+          const imageCount = nsImages ? Object.values(nsImages).reduce((a, b) => a + (b?.length ?? 0), 0) : 0;
+          const ingressCount = nsIngress ? Object.values(nsIngress).reduce((a, b) => a + b.length, 0) : 0;
           if (nsCount + helmCount + svcCount === 0) return null;
           return (
             <div className="mb-3 flex gap-1.5 text-center">
@@ -547,6 +555,14 @@ export default function DetailPanel({
               {helmCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-sm font-bold font-mono text-blue-400/60">{helmCount}</div>
                 <div className="text-[8px] font-mono text-gray-700">Helm Releases</div>
+              </div>}
+              {ingressCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-sm font-bold font-mono text-cyan-400/60">{ingressCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">Ingresses</div>
+              </div>}
+              {imageCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
+                <div className="text-sm font-bold font-mono text-emerald-400/60">{imageCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">Images</div>
               </div>}
               {svcCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-sm font-bold font-mono text-purple-400/60">{svcCount}</div>
@@ -947,15 +963,28 @@ export default function DetailPanel({
                 <span className="text-xs font-mono text-gray-700">{deployed}/{allReleases.length} deployed</span>
               </div>
               <div className="space-y-0.5">
-                {allReleases.map((rel, i) => (
+                {allReleases.map((rel, i) => {
+                  let updatedAgo = "";
+                  if (rel.updated) {
+                    try {
+                      const ms = Date.now() - new Date(rel.updated).getTime();
+                      const days = Math.floor(ms / 86400000);
+                      updatedAgo = days > 0 ? `${days}d` : `${Math.floor(ms/3600000)}h`;
+                    } catch {/* ignore */}
+                  }
+                  return (
                   <div key={i} className="flex items-center justify-between text-xs font-mono">
                     <div className="flex items-center gap-1.5 truncate flex-1">
                       <span className={rel.status === "deployed" ? "text-green-500/60" : "text-yellow-400/70"}>⎈</span>
                       <span className="text-gray-600 truncate">{rel.name}</span>
                     </div>
-                    <span className="shrink-0 text-gray-700 text-[10px] ml-2">{rel.chart.replace(/^[^-]+-/, "")}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-gray-700 text-[10px]">{rel.chart.replace(/^[^-]+-/, "")}</span>
+                      {updatedAgo && <span className="text-gray-800 text-[10px]">{updatedAgo}</span>}
+                    </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           );
@@ -977,13 +1006,20 @@ export default function DetailPanel({
                 const color = isExpired ? "#ef4444" : isUrgent ? "#ef4444" : isExpiring ? "#eab308" : "#22c55e";
                 const bgColor = isExpired ? "#1c0505" : isUrgent ? "#1c0505" : isExpiring ? "#1c1400" : "#052e16";
                 const label = isExpired ? "expired" : cert.daysLeft < 9999 ? `${cert.daysLeft}d` : "—";
+                const expiryDate = cert.daysLeft < 9999 ? (() => {
+                  const d = new Date(Date.now() + cert.daysLeft * 86400000);
+                  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                })() : "";
                 const maxDays = 90;
                 const pct = Math.min(100, Math.max(0, (cert.daysLeft / maxDays) * 100));
                 return (
                   <div key={i} className="rounded px-2 py-1.5" style={{ backgroundColor: bgColor, border: `1px solid ${color}18` }}>
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-[10px] font-mono text-gray-400 truncate flex-1 mr-2" title={cert.namespace + "/" + cert.name}>{cert.name}</span>
-                      <span className="text-[10px] font-mono font-bold shrink-0" style={{ color }}>{label}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {expiryDate && <span className="text-[9px] font-mono text-gray-700">{expiryDate}</span>}
+                        <span className="text-[10px] font-mono font-bold" style={{ color }}>{label}</span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="flex-1 h-0.5 bg-gray-800 rounded-full overflow-hidden">
