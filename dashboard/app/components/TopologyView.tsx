@@ -160,19 +160,33 @@ export default function TopologyView({
           const len = Math.sqrt(dx * dx + dy * dy) || 1;
           const cx = mx + (-dy / len) * 30;
           const cy = my + (dx / len) * 30;
+          const pathId = `link-path-${i}`;
+          const dur = (2.5 + (i * 0.4) % 2.5).toFixed(1) + "s";
+          const isActive = link.style === "solid";
 
           return (
             <g key={`link-${i}`}>
               <path
+                id={pathId}
                 d={`M${s.x},${s.y} Q${cx},${cy} ${t.x},${t.y}`}
                 fill="none"
                 stroke={link.color}
                 strokeWidth={link.style === "solid" ? 1.5 : 1}
-                strokeDasharray={
-                  link.style === "dashed" ? "6,4" : "none"
-                }
-                opacity={0.5}
+                strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
+                opacity={0.45}
               />
+              {/* Animated data packet on active links */}
+              {isActive && (
+                <circle r={3} fill={link.color} opacity={0.85} filter="url(#glow)">
+                  <animateMotion
+                    dur={dur}
+                    repeatCount="indefinite"
+                    calcMode="linear"
+                  >
+                    <mpath href={`#${pathId}`} />
+                  </animateMotion>
+                </circle>
+              )}
               {link.label && (
                 <text
                   x={mx}
