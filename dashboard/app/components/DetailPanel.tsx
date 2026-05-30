@@ -928,6 +928,7 @@ export default function DetailPanel({
           const imageCount = nsImages ? Object.values(nsImages).reduce((a, b) => a + (b?.length ?? 0), 0) : 0;
           const latestTagCount = nsImages ? Object.values(nsImages).flat().filter(img => typeof img === "string" && (img.endsWith(":latest") || img.includes(":latest@"))).length : 0;
           const ingressCount = nsIngress ? Object.values(nsIngress).reduce((a, b) => a + b.length, 0) : 0;
+          const scaledDownCount = nsDeployments ? Object.values(nsDeployments).flat().filter(d => (d as {desired?: number}).desired === 0).length : 0;
           if (nsCount + helmCount + svcCount === 0) return null;
           return (
             <div className="mb-3 flex gap-1.5 text-center">
@@ -950,6 +951,10 @@ export default function DetailPanel({
               {svcCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-sm font-bold font-mono text-purple-400/60">{svcCount}</div>
                 <div className="text-[8px] font-mono text-gray-700">LB/NodePort</div>
+              </div>}
+              {scaledDownCount > 0 && <div className="flex-1 rounded px-1.5 py-1 bg-gray-900/60 border border-gray-700/30" title={`${scaledDownCount} deployment(s) scaled to 0 replicas`}>
+                <div className="text-sm font-bold font-mono text-gray-600">{scaledDownCount}</div>
+                <div className="text-[8px] font-mono text-gray-700">idle ⬛</div>
               </div>}
             </div>
           );
