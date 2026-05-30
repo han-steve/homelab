@@ -2041,6 +2041,46 @@ export default function DetailPanel({
         )}
       </div>
 
+      {/* Namespace resource share mini-bars */}
+      {(nsCpuRequestsM?.[svc.namespace] || nsMemRequestsMi?.[svc.namespace]) && totalCpuRequestsM && totalCpuRequestsM > 0 && (
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
+          {nsCpuRequestsM?.[svc.namespace] && (() => {
+            const nsM = nsCpuRequestsM[svc.namespace];
+            const pct = Math.round((nsM / totalCpuRequestsM) * 100);
+            const cpuColor = pct > 30 ? "#ef4444" : pct > 15 ? "#eab308" : "#58a6ff";
+            return (
+              <div className="rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">CPU share</span>
+                  <span className="text-[8px] font-mono" style={{ color: cpuColor }}>{pct}%</span>
+                </div>
+                <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: cpuColor }} />
+                </div>
+                <div className="text-[7px] font-mono text-gray-800 mt-0.5">{nsM >= 1000 ? `${(nsM/1000).toFixed(1)}c` : `${nsM}m`}</div>
+              </div>
+            );
+          })()}
+          {nsMemRequestsMi?.[svc.namespace] && totalMemRequestsMi && totalMemRequestsMi > 0 && (() => {
+            const nsMi = nsMemRequestsMi[svc.namespace];
+            const pct = Math.round((nsMi / totalMemRequestsMi) * 100);
+            const memColor = pct > 30 ? "#a855f7" : pct > 15 ? "#8b5cf6" : "#7c3aed";
+            return (
+              <div className="rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">RAM share</span>
+                  <span className="text-[8px] font-mono" style={{ color: memColor }}>{pct}%</span>
+                </div>
+                <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: memColor }} />
+                </div>
+                <div className="text-[7px] font-mono text-gray-800 mt-0.5">{nsMi >= 1024 ? `${(nsMi/1024).toFixed(1)}Gi` : `${Math.round(nsMi)}Mi`}</div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {svc.url && (
         <a href={svc.url} target="_blank" rel="noopener noreferrer"
           className="mt-6 block w-full text-center py-2.5 px-4 rounded-lg text-sm font-medium transition-all hover:brightness-125"
