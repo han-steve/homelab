@@ -355,6 +355,9 @@ export default function DetailPanel({
               {totalPods > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-[11px] font-mono font-bold text-gray-400">{totalPods}</div>
                 <div className="text-[9px] font-mono text-gray-700">pods</div>
+                {(unhealthyPods?.length ?? 0) > 0 && (
+                  <div className="text-[8px] font-mono text-orange-500/60 animate-pulse">{unhealthyPods!.length}⚠</div>
+                )}
               </div>}
               {cpuPct > 0 && <div className="rounded px-1 py-1 bg-gray-900/60 border border-gray-800/40">
                 <div className="text-[11px] font-mono font-bold" style={{ color: cpuPct > 80 ? "#ef4444" : cpuPct > 60 ? "#eab308" : "#58a6ff" }}>{cpuPct}%</div>
