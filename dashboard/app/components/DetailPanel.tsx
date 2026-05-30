@@ -1940,27 +1940,29 @@ export default function DetailPanel({
             {/* Unified Recent Activity Feed */}
             {(recentPods && recentPods.length > 0) || (nsHelmReleases && Object.values(nsHelmReleases).flat().some(r => r.updated && (Date.now() - new Date(r.updated).getTime()) < 7 * 86400000)) ? (() => {
               type ActivityItem =
-                | { kind: "pod"; ts: number; name: string; namespace: string }
-                | { kind: "helm"; ts: number; name: string; namespace: string };
+                | { kind: "pod"; ts: number; name: string; namespace: string; restarts?: number }
+                | { kind: "helm"; ts: number; name: string; namespace: string; chart?: string; status?: string };
               const items: ActivityItem[] = [];
               // Pod starts (last 48h only to keep it relevant)
               if (recentPods) {
                 for (const pod of recentPods) {
                   const ts = pod.startTime ? new Date(pod.startTime).getTime() : 0;
                   if (ts > 0 && Date.now() - ts < 48 * 3600000) {
-                    items.push({ kind: "pod", ts, name: pod.name, namespace: pod.namespace });
+                    // find restart count from unhealthyPods
+                    const uPod = unhealthyPods?.find(u => u.name === pod.name && u.namespace === pod.namespace);
+                    items.push({ kind: "pod", ts, name: pod.name, namespace: pod.namespace, restarts: uPod?.restarts });
                   }
                 }
               }
               // Helm releases updated in last 7d
               if (nsHelmReleases) {
-                for (const rels of Object.values(nsHelmReleases)) {
+                for (const [ns, rels] of Object.entries(nsHelmReleases)) {
                   for (const rel of rels) {
                     if (rel.updated) {
                       try {
                         const ts = new Date(rel.updated).getTime();
                         if (Date.now() - ts < 7 * 86400000) {
-                          items.push({ kind: "helm", ts, name: rel.name, namespace: "" });
+                          items.push({ kind: "helm", ts, name: rel.name, namespace: ns, chart: rel.chart, status: rel.status });
                         }
                       } catch {/* ignore */}
                     }
@@ -1982,15 +1984,24 @@ export default function DetailPanel({
                     {recent.map((item, i) => {
                       const isPod = item.kind === "pod";
                       const isHelm = item.kind === "helm";
-                      const dotColor = isPod ? "#22c55e" : "#06b6d4";
+                      const isPod = item.kind === "pod";
+                      const isHelm = item.kind === "helm";
+                      const podRestarts = isPod ? (item as { restarts?: number }).restarts : undefined;
+                      const helmStatus = isHelm ? (item as { status?: string }).status : undefined;
+                      const helmChart = isHelm ? (item as { chart?: string }).chart : undefined;
+                      const hasIssue = (podRestarts ?? 0) > 0 || (helmStatus && helmStatus !== "deployed");
+                      const dotColor = isPod ? (hasIssue ? "#f97316" : "#22c55e") : (helmStatus && helmStatus !== "deployed" ? "#eab308" : "#06b6d4");
                       const ageMs = Date.now() - item.ts;
                       const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h` : `${Math.floor(ageMs / 86400000)}d`;
                       return (
                         <div key={i} className="relative text-xs font-mono flex items-center gap-1.5">
                           <div className="absolute -left-[1.2rem] top-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dotColor + "80" }} />
                           <span style={{ color: dotColor + "60" }}>{isPod ? "↑" : "⎈"}</span>
-                          <span className="text-gray-600 truncate flex-1" title={(item.namespace ? item.namespace + "/" : "") + item.name}>{item.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 24)}</span>
-                          {item.namespace && <span className="text-gray-800 text-[9px] shrink-0">{item.namespace.slice(0, 8)}</span>}
+                          <span className="text-gray-600 truncate flex-1" title={(item.namespace ? item.namespace + "/" : "") + item.name}>{item.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 22)}</span>
+                          {helmChart && <span className="text-gray-800 text-[9px] shrink-0 hidden sm:inline">{helmChart.split("-")[0].slice(0, 8)}</span>}
+                          {(podRestarts ?? 0) > 0 && <span className="text-orange-600/60 text-[9px] shrink-0">↺{podRestarts}</span>}
+                          {helmStatus && helmStatus !== "deployed" && <span className="text-yellow-600/60 text-[9px] shrink-0">{helmStatus}</span>}
+                          {item.namespace && !helmChart && <span className="text-gray-800 text-[9px] shrink-0">{item.namespace.slice(0, 8)}</span>}
                           <span className="text-gray-700 text-[10px] shrink-0">{ageStr}</span>
                         </div>
                       );
