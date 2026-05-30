@@ -1550,6 +1550,7 @@ function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCou
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const sphereRefs = useRef<THREE.Mesh[]>([]);
+  const unhealthyFlags = useRef<boolean[]>([]);
   const NS_COLORS: Record<string, string> = {
     argocd: "#ef7b4d", "kube-system": "#326ce5", longhorn: "#3b82f6",
     monitoring: "#8b5cf6", "cert-manager": "#22c55e", "actual-budget": "#f59e0b",
@@ -1564,13 +1565,21 @@ function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCou
     const t = clock.getElapsedTime();
     sphereRefs.current.forEach((mesh, i) => {
       if (!mesh) return;
-      const angle = (i / count) * Math.PI * 2 + t * (0.12 + i * 0.003);
+      const isU = unhealthyFlags.current[i];
+      // Unhealthy namespaces orbit ~2.5x faster for visual urgency
+      const baseSpeed = isU ? 0.30 : 0.12;
+      const angle = (i / count) * Math.PI * 2 + t * (baseSpeed + i * 0.003);
       mesh.position.set(
         center[0] + Math.cos(angle) * radius,
         center[1] + 3.0 + Math.sin(angle) * yTilt,
         center[2] + Math.sin(angle) * radius * 0.5
       );
       mesh.rotation.y = t * 0.8 + i;
+      // Pulse opacity for unhealthy spheres
+      if (isU) {
+        const mat = mesh.material as THREE.MeshPhysicalMaterial;
+        mat.opacity = 0.55 + 0.45 * Math.abs(Math.sin(t * 2.5 + i * 0.7));
+      }
     });
   });
 
@@ -1585,7 +1594,7 @@ function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCou
         const color = isUnhealthy ? "#ef4444" : NS_COLORS[ns] ?? "#58a6ff";
         const scale = 0.04 + Math.min(0.06, pods / 300) + cpuRatio * 0.04;
         return (
-          <mesh key={ns} ref={el => { if (el) sphereRefs.current[i] = el; }} scale={scale}>
+          <mesh key={ns} ref={el => { if (el) { sphereRefs.current[i] = el; unhealthyFlags.current[i] = !!isUnhealthy; } }} scale={scale}>
             <sphereGeometry args={[1, 8, 8]} />
             <meshPhysicalMaterial
               color={color}
