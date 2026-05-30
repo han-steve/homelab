@@ -779,6 +779,17 @@ export default function DetailPanel({
                 <div className="flex-1 rounded px-2 py-1.5 bg-purple-500/5 border border-purple-500/15 text-center">
                   <div className="text-lg font-bold font-mono text-purple-500/80">{totalCJ}</div>
                   <div className="text-[9px] font-mono text-gray-600">CronJobs</div>
+                  {nsCronJobs && (() => {
+                    const allCJ = Object.values(nsCronJobs).flat();
+                    // Find the next scheduled job
+                    let nextName = "", nextEta = "";
+                    for (const cj of allCJ) {
+                      const eta = nextCronRun(cj.schedule, cj.lastSchedule);
+                      if (eta && (!nextEta || eta < nextEta)) { nextEta = eta; nextName = cj.name; }
+                    }
+                    if (!nextEta) return null;
+                    return <div className="text-[8px] font-mono text-purple-400/50" title={nextName}>{nextEta}</div>;
+                  })()}
                 </div>
               )}
               {totalDS > 0 && (
