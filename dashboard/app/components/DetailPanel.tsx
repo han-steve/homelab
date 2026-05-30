@@ -1279,6 +1279,34 @@ export default function DetailPanel({
                     })}
                     {longhornVolumes.length > 9 && <div className="text-gray-700/50 text-[9px] col-span-3 text-center">+{longhornVolumes.length - 9} more</div>}
                   </div>
+                  {/* Storage by namespace chart */}
+                  {nsPvcs && Object.keys(nsPvcs).length > 0 && (() => {
+                    const nsTotals: Record<string, number> = {};
+                    for (const [ns, pvcs] of Object.entries(nsPvcs)) {
+                      nsTotals[ns] = pvcs.reduce((s, p) => {
+                        const v = parseFloat(p.capacity);
+                        const mult = p.capacity.endsWith("Ti") ? 1024 : p.capacity.endsWith("Mi") ? 1/1024 : 1;
+                        return s + (isNaN(v) ? 0 : v * mult);
+                      }, 0);
+                    }
+                    const sorted = Object.entries(nsTotals).filter(([,v]) => v > 0).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+                    if (sorted.length === 0) return null;
+                    const maxGiB = sorted[0][1];
+                    return (
+                      <div className="mt-2">
+                        <div className="text-[9px] font-mono text-gray-700 mb-1">Storage by namespace</div>
+                        {sorted.map(([ns, giB]) => (
+                          <div key={ns} className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-mono text-gray-700 w-20 truncate shrink-0">{ns}</span>
+                            <div className="flex-1 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-blue-500/50" style={{ width: `${(giB/maxGiB)*100}%` }} />
+                            </div>
+                            <span className="text-[9px] font-mono text-gray-700 shrink-0">{giB.toFixed(0)}G</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
