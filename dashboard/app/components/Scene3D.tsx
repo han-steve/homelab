@@ -2141,6 +2141,8 @@ export default function Scene3D({
       )}
       {/* Data sync particles: ArgoCD → M2 (visible right after refresh, i.e. refreshProgress < 0.15) */}
       <SyncDataStream from={[4.5, 4.5, -1]} to={m2Pos} active={refreshProgress !== undefined && refreshProgress < 0.15} />
+      {/* Storage I/O stream: Longhorn → M2 (always active, shows persistent storage I/O) */}
+      <SyncDataStream from={[0, 5.5, -2]} to={m2Pos} active={true} />
       {/* Floating unhealthy pod warning near M2 */}
       {unhealthyPodCount !== undefined && unhealthyPodCount > 0 && (
         <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2}>
