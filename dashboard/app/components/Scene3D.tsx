@@ -202,6 +202,52 @@ function FloorHealthAura({ position, color = "#22d3ee" }: { position: [number, n
   );
 }
 
+/* ── CPU arc gauge floating above M2 ──────────────────── */
+function CpuArcGauge({ position, cpuPct }: { position: [number, number, number]; cpuPct: number }) {
+  const arcRef = useRef<THREE.Mesh>(null!);
+  const glowRef = useRef<THREE.Mesh>(null!);
+  const arcColor = cpuPct > 80 ? "#ef4444" : cpuPct > 50 ? "#eab308" : "#22c55e";
+  // Build arc geometry from 0 to cpuPct%
+  const arc = useMemo(() => {
+    const start = -Math.PI * 0.75; // -135 degrees
+    const range = Math.PI * 1.5;  // 270 degree sweep
+    const end = start + range * (Math.max(0, Math.min(100, cpuPct)) / 100);
+    const curve = new THREE.EllipseCurve(0, 0, 1.5, 1.5, start, end, false, 0);
+    const pts = curve.getSpacedPoints(64);
+    const geom = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0)));
+    return geom;
+  }, [cpuPct]);
+  const bgArc = useMemo(() => {
+    const start = -Math.PI * 0.75;
+    const end = start + Math.PI * 1.5;
+    const curve = new THREE.EllipseCurve(0, 0, 1.5, 1.5, start, end, false, 0);
+    const pts = curve.getSpacedPoints(64);
+    return new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0)));
+  }, []);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 0.6 + 0.4 * Math.sin(t * 2);
+    if (arcRef.current) (arcRef.current.material as THREE.LineBasicMaterial).opacity = 0.6 + pulse * 0.3;
+    if (glowRef.current) (glowRef.current.material as THREE.LineBasicMaterial).opacity = 0.15 + pulse * 0.15;
+  });
+  return (
+    <group position={[position[0], position[1] + 1.8, position[2]]} rotation-x={Math.PI / 8}>
+      {/* BG arc track */}
+      <lineSegments geometry={bgArc} renderOrder={1}>
+        <lineBasicMaterial color="#1f2937" transparent opacity={0.5} linewidth={2} toneMapped={false} />
+      </lineSegments>
+      {/* Glow wider arc */}
+      <lineSegments ref={glowRef} geometry={arc} renderOrder={2}>
+        <lineBasicMaterial color={arcColor} transparent opacity={0.2} linewidth={4} toneMapped={false} />
+      </lineSegments>
+      {/* Main arc */}
+      <lineSegments ref={arcRef} geometry={arc} renderOrder={3}>
+        <lineBasicMaterial color={arcColor} transparent opacity={0.8} linewidth={2} toneMapped={false} />
+      </lineSegments>
+    </group>
+  );
+}
+
 function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
   origin: [number, number, number];
   color?: string;
@@ -1623,6 +1669,7 @@ export default function Scene3D({
       <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} period={10} />
       <FloorHealthAura position={m2Pos} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} />
       {nodeMetrics && <CpuArcRing position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} memPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
+      {nodeMetrics && <CpuArcGauge position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} />}
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
