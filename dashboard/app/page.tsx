@@ -201,9 +201,20 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-white">
-      {/* Loading progress bar — thin line at top */}
-      <div className={`fixed top-0 left-0 right-0 h-0.5 z-50 transition-opacity duration-300 ${isLoading ? "opacity-100" : "opacity-0"}`}>
-        <div className="h-full bg-blue-500/70 animate-pulse" style={{ boxShadow: "0 0 8px #3b82f6" }} />
+      {/* Loading progress bar — thin line at top (loading: blue; countdown: dim) */}
+      <div className="fixed top-0 left-0 right-0 h-0.5 z-50">
+        {isLoading
+          ? <div className="h-full bg-blue-500/80 animate-pulse" style={{ boxShadow: "0 0 8px #3b82f6" }} />
+          : <div className="h-full bg-gray-800/50 overflow-hidden">
+              <div
+                className="h-full transition-none"
+                style={{
+                  width: `${((30 - nextRefreshIn) / 30) * 100}%`,
+                  background: "linear-gradient(90deg, #22c55e20, #22c55e40)",
+                }}
+              />
+            </div>
+        }
       </div>
       {/* Critical alert banner */}
       {cluster && (() => {
