@@ -929,19 +929,19 @@ export default function DetailPanel({
               </div>
               <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
               {longhornVolumes && longhornVolumes.length > 0 && (
-                <div className="mt-1.5 space-y-0.5">
-                  {longhornVolumes.slice(0, 6).map((vol, i) => {
+                <div className="mt-1.5 grid grid-cols-3 gap-1">
+                  {longhornVolumes.slice(0, 9).map((vol, i) => {
                     const robColor = vol.robustness === "healthy" ? "#22c55e" : vol.robustness === "degraded" ? "#eab308" : "#ef4444";
-                    const shortName = vol.pvc ?? vol.name.slice(0, 24);
+                    const shortName = (vol.pvc ?? vol.name).replace(/^pvc-[a-f0-9-]+$/, vol.name.slice(0, 8) + "…").slice(0, 18);
                     return (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: robColor }} />
-                        <span className="truncate flex-1 text-gray-700" title={vol.name}>{shortName}</span>
-                        <span className="shrink-0 text-gray-700/60">{vol.sizeGiB}G</span>
+                      <div key={i} className="flex items-center gap-1 rounded px-1 py-0.5 bg-gray-900/60" title={`${vol.name}\n${vol.robustness} · ${vol.sizeGiB}G`}>
+                        <span className="w-1 h-1 rounded-full shrink-0 flex-none" style={{ backgroundColor: robColor }} />
+                        <span className="truncate text-gray-700 flex-1 text-[9px]">{shortName}</span>
+                        <span className="shrink-0 text-gray-800 text-[9px]">{vol.sizeGiB}G</span>
                       </div>
                     );
                   })}
-                  {longhornVolumes.length > 6 && <div className="text-gray-700/50">+{longhornVolumes.length - 6} more</div>}
+                  {longhornVolumes.length > 9 && <div className="text-gray-700/50 text-[9px] col-span-3 text-center">+{longhornVolumes.length - 9} more</div>}
                 </div>
               )}
             </div>
@@ -1462,6 +1462,29 @@ export default function DetailPanel({
           </div>
         </>
       )}
+
+      {/* Recent pod starts for this namespace */}
+      {recentPods && recentPods.filter(p => p.namespace === svc.namespace).length > 0 && (() => {
+        const nsPods = recentPods.filter(p => p.namespace === svc.namespace);
+        return (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-3" />
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Recent Starts</span>
+              <span className="text-xs font-mono text-green-500/50">{nsPods.length} in 7d</span>
+            </div>
+            <div className="space-y-0.5">
+              {nsPods.slice(0, 4).map((pod, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-xs font-mono">
+                  <span className="text-green-400/40 shrink-0">↑</span>
+                  <span className="text-gray-600 truncate flex-1" title={pod.name}>{pod.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 25)}</span>
+                  <span className="shrink-0 text-gray-700">{relTime(pod.startTime, now)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Helm releases for this namespace */}
       {nsHelmReleases && nsHelmReleases[svc.namespace] && nsHelmReleases[svc.namespace].length > 0 && (
