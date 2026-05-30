@@ -371,7 +371,18 @@ export default function DetailPanel({
                     <span>{ns}</span>
                     <span className="flex items-center gap-2 normal-case tracking-normal">
                       {nsCpuRequestsM?.[ns] && <span className="text-gray-700">{nsCpuRequestsM[ns] >= 1000 ? `${(nsCpuRequestsM[ns]/1000).toFixed(1)}c` : `${nsCpuRequestsM[ns]}m`}cpu</span>}
-                      {nsPodCounts?.[ns] && <span className="text-gray-800">{nsPodCounts[ns]}p</span>}
+                      {nsPodCounts?.[ns] !== undefined && (() => {
+                        const total = nsPodCounts![ns];
+                        const bad = (unhealthyPods ?? []).filter(p => p.namespace === ns).length;
+                        const good = Math.max(0, total - bad);
+                        if (bad > 0) {
+                          return <span className="flex items-center gap-1">
+                            <span className="text-green-700">{good}✓</span>
+                            <span className="text-red-600">{bad}✗</span>
+                          </span>;
+                        }
+                        return <span className="text-green-800">{total}p</span>;
+                      })()}
                     </span>
                   </div>
                   {grouped[ns].map(svc => {
