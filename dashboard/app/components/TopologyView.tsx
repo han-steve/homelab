@@ -450,6 +450,28 @@ export default function TopologyView({
                 />
               )}
 
+              {/* M2 node CPU + RAM inline bars */}
+              {node.id === "m2" && nodeMetrics && (() => {
+                const cpu = parseInt(nodeMetrics.cpuPct, 10) || 0;
+                const mem = parseInt(nodeMetrics.memPct, 10) || 0;
+                const cpuColor = cpu > 80 ? "#ef4444" : cpu > 60 ? "#eab308" : "#22c55e";
+                const memColor = mem > 80 ? "#f97316" : mem > 60 ? "#a855f7" : "#06b6d4";
+                const bw = r * 1.4;
+                const bh = 3;
+                const bx = -bw / 2;
+                const by = r * 0.72;
+                return (
+                  <g>
+                    {/* CPU bar */}
+                    <rect x={bx} y={by} width={bw} height={bh} rx={1.5} fill="#1c2128" opacity={0.7} />
+                    <rect x={bx} y={by} width={bw * cpu / 100} height={bh} rx={1.5} fill={cpuColor} opacity={0.9} />
+                    {/* RAM bar */}
+                    <rect x={bx} y={by + bh + 2} width={bw} height={bh} rx={1.5} fill="#1c2128" opacity={0.7} />
+                    <rect x={bx} y={by + bh + 2} width={bw * mem / 100} height={bh} rx={1.5} fill={memColor} opacity={0.9} />
+                  </g>
+                );
+              })()}
+
               {/* Pod count badge on service nodes */}
               {isService && node.serviceIdx !== undefined && nsPodCounts && (() => {
                 const svc = services[node.serviceIdx];
