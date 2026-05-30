@@ -1004,6 +1004,26 @@ export default function DetailPanel({
                   );
                 })}
               </div>
+              {/* Stacked CPU distribution bar */}
+              {nsCpuRequestsM && (() => {
+                const nsWithCpu = Object.entries(nsCpuRequestsM).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                const total = nsWithCpu.reduce((s, [, v]) => s + v, 0);
+                if (total === 0) return null;
+                const NS_COLORS_BAR: Record<string, string> = {
+                  argocd: "#ef7b4d", "kube-system": "#326ce5", longhorn: "#3b82f6",
+                  monitoring: "#8b5cf6", "cert-manager": "#22c55e", "actual-budget": "#f59e0b",
+                  apitable: "#06b6d4", "vc-prod": "#10b981",
+                };
+                return (
+                  <div className="mt-1.5">
+                    <div className="flex h-1.5 rounded-full overflow-hidden" title="CPU requests distribution by namespace">
+                      {nsWithCpu.map(([ns, v]) => (
+                        <div key={ns} style={{ width: `${(v / total) * 100}%`, backgroundColor: (NS_COLORS_BAR[ns] ?? "#58a6ff") + "70", minWidth: 2 }} title={`${ns}: ${Math.round(v)}m`} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
