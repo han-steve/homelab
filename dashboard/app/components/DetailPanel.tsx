@@ -1431,13 +1431,21 @@ export default function DetailPanel({
           <div className="space-y-1">
             {nsDeployments[svc.namespace].map((dep, i) => {
               const healthy = dep.available >= dep.desired;
+              const pct = dep.desired > 0 ? Math.round((dep.available / dep.desired) * 100) : 100;
               return (
-                <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                  <span className={healthy ? "text-green-500/70" : "text-red-400/80"}>●</span>
-                  <span className="text-gray-500 truncate flex-1" title={dep.name}>{dep.name}</span>
-                  <span className={`shrink-0 ${healthy ? "text-green-500/60" : "text-red-400/70"}`}>
-                    {dep.available}/{dep.desired}
-                  </span>
+                <div key={i} className="text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className={healthy ? "text-green-500/70" : "text-red-400/80"}>●</span>
+                    <span className="text-gray-500 truncate flex-1" title={dep.name}>{dep.name}</span>
+                    <span className={`shrink-0 ${healthy ? "text-green-500/60" : "text-red-400/70"}`}>
+                      {dep.available}/{dep.desired}
+                    </span>
+                  </div>
+                  {!healthy && (
+                    <div className="ml-4 mt-0.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-red-500/60 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1509,18 +1517,21 @@ export default function DetailPanel({
             <span className="text-xs font-mono text-gray-700">{nsCronJobs[svc.namespace].length}</span>
           </div>
           <div className="space-y-1">
-            {nsCronJobs[svc.namespace].map((cj, i) => (
-              <div key={i} className="text-xs font-mono bg-gray-900/50 border border-gray-800/50 rounded px-2 py-1">
+            {nsCronJobs[svc.namespace].map((cj, i) => {
+              const ranRecently = cj.lastSchedule && (Date.now() - new Date(cj.lastSchedule).getTime()) < 3600000;
+              return (
+              <div key={i} className={`text-xs font-mono rounded px-2 py-1 border ${ranRecently ? "bg-cyan-900/10 border-cyan-800/30" : "bg-gray-900/50 border-gray-800/50"}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`shrink-0 ${cj.active > 0 ? "text-cyan-400/70" : "text-gray-600"}`}>●</span>
+                  <span className={`shrink-0 ${cj.active > 0 ? "text-cyan-400/70" : ranRecently ? "text-cyan-600/60" : "text-gray-600"}`}>●</span>
                   <span className="text-gray-500 truncate flex-1" title={cj.name}>{cj.name}</span>
-                  <span className="shrink-0 text-gray-700 font-mono">{cj.schedule}</span>
+                  <span className="shrink-0 text-gray-700 font-mono text-[9px]">{cj.schedule}</span>
                 </div>
                 {cj.lastSchedule && (
-                  <div className="text-gray-700 mt-0.5 pl-4">last: {relTime(cj.lastSchedule, now)}</div>
+                  <div className={`mt-0.5 pl-4 ${ranRecently ? "text-cyan-600/60" : "text-gray-700"}`}>last: {relTime(cj.lastSchedule, now)}</div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
