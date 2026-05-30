@@ -1884,6 +1884,17 @@ export default function Scene3D({
       {nodeMetrics && parseInt(nodeMetrics.cpuPct, 10) > 60 && (
         <LightningArc from={new THREE.Vector3(m2Pos[0], m2Pos[1] + 1.5, m2Pos[2])} to={new THREE.Vector3(-2.5, 5.2, -2)} intensity={Math.min(1, (parseInt(nodeMetrics.cpuPct, 10) - 60) / 40)} />
       )}
+      {/* CrashLoop storm: extra scan rings + lightning when any ns has >100 restarts */}
+      {nsMaxRestarts && Object.values(nsMaxRestarts).some(r => r > 100) && (() => {
+        const maxR = Math.max(...Object.values(nsMaxRestarts));
+        const intensity = Math.min(1, maxR / 500);
+        return (
+          <>
+            <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color="#ef4444" period={3 - intensity * 1.5} />
+            <LightningArc from={new THREE.Vector3(m2Pos[0], m2Pos[1] + 2.0, m2Pos[2])} to={new THREE.Vector3(m2Pos[0] + 2, 5.5, m2Pos[2] - 1)} intensity={intensity} />
+          </>
+        );
+      })()}
 
       {/* Floor cables (at ground level) */}
       <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir
