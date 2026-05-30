@@ -1516,6 +1516,14 @@ export default function DetailPanel({
                 {lastSyncAgo && (
                   <div className="text-xs mt-0.5 text-gray-700">last sync {lastSyncAgo} · {lastSynced.name}</div>
                 )}
+                {(() => {
+                  const staleApps = apps.filter(a => {
+                    if (!a.syncedAt) return false;
+                    try { return (Date.now() - new Date(a.syncedAt).getTime()) >= 7 * 86400000; } catch { return false; }
+                  });
+                  if (staleApps.length === 0) return null;
+                  return <div className="text-[9px] font-mono text-orange-700/60 mt-0.5">⏰ {staleApps.length} app{staleApps.length !== 1 ? "s" : ""} stale (&gt;7d)</div>;
+                })()}
                 <button
                   className="text-[9px] font-mono text-gray-700 hover:text-gray-500 mt-0.5 transition-colors"
                   onClick={() => setShowArgoApps(v => !v)}
@@ -1527,12 +1535,14 @@ export default function DetailPanel({
                       const isHealthy = a.health === "Healthy";
                       const dotColor = !isSynced ? "#eab308" : !isHealthy ? "#ef4444" : "#22c55e";
                       let syncedAgo = "";
+                      let isStale = false;
                       if (a.syncedAt) {
                         try {
                           const ms = Date.now() - new Date(a.syncedAt).getTime();
                           const days = Math.floor(ms / 86400000);
                           const hrs = Math.floor(ms / 3600000);
                           syncedAgo = days > 0 ? `${days}d` : `${hrs}h`;
+                          isStale = days >= 7;
                         } catch {/* ignore */}
                       }
                       return (
@@ -1544,7 +1554,8 @@ export default function DetailPanel({
                           <div className="flex items-center gap-1.5 shrink-0">
                             {!isSynced && <span className="text-yellow-600/70">OutOfSync</span>}
                             {!isHealthy && isSynced && <span className="text-red-500/70">{a.health}</span>}
-                            {syncedAgo && <span className="text-gray-800">{syncedAgo}</span>}
+                            {isStale && <span className="text-orange-700/60 border border-orange-800/30 px-0.5 rounded text-[8px]">stale</span>}
+                            {syncedAgo && <span className={isStale ? "text-orange-700/50" : "text-gray-800"}>{syncedAgo}</span>}
                           </div>
                         </div>
                       );
