@@ -981,6 +981,7 @@ export default function DetailPanel({
                   const hasLatestImg = nsImages?.[ns]?.some(img => typeof img === "string" && (img.endsWith(":latest") || img.includes(":latest@")));
                   const ssDegraded = nsStatefulSets?.[ns]?.some(ss => ss.ready < ss.desired);
                   const helmNotDeployed = nsHelmReleases?.[ns]?.some(r => r.status !== "deployed");
+                  const hasRecentPod = recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 1800000);
                   return (
                     <button key={ns}
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
@@ -1008,6 +1009,7 @@ export default function DetailPanel({
                       {hasLatestImg && !hasEvents && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-yellow-500/50" title=":latest image tag" />}
                       {ssDegraded && <span className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full bg-violet-500/60" title="StatefulSet not ready" />}
                       {helmNotDeployed && !ssDegraded && <span className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full bg-yellow-600/50" title="Helm release not deployed" />}
+                      {hasRecentPod && !isCrit && !isWarn && <span className="absolute bottom-0.5 left-0.5 w-1 h-1 rounded-full bg-blue-400/60 animate-pulse" title="Pod started in last 30m" />}
                     </button>
                   );
                 })}
