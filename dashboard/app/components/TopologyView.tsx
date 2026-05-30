@@ -364,6 +364,14 @@ export default function TopologyView({
           const dur = (2.5 + (i * 0.4) % 2.5).toFixed(1) + "s";
           const isActive = link.style === "solid";
           const isHighlighted = !selectedNode || link.source === selectedNode || link.target === selectedNode;
+          // Namespace filter: dim links if neither endpoint is a service in the selected ns
+          const nsFilteredOut = nsFilter && (() => {
+            const sNode = topoNodes.find(n => n.id === link.source);
+            const tNodeN = topoNodes.find(n => n.id === link.target);
+            const sNs = sNode?.serviceIdx !== undefined ? services[sNode.serviceIdx]?.namespace : null;
+            const tNs = tNodeN?.serviceIdx !== undefined ? services[tNodeN.serviceIdx]?.namespace : null;
+            return sNs !== nsFilter && tNs !== nsFilter;
+          })();
 
           return (
             <g key={`link-${i}`}>
@@ -374,7 +382,7 @@ export default function TopologyView({
                 stroke={link.color}
                 strokeWidth={isHighlighted ? 2.5 : (link.style === "solid" ? 1.5 : 1)}
                 strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
-                opacity={selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45}
+                opacity={nsFilteredOut ? 0.04 : (selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45)}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
               />
               {/* Animated data packets on active links — two staggered particles */}
