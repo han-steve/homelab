@@ -735,11 +735,22 @@ export default function DetailPanel({
         );
       })()}
 
-      {/* kubectl command hint */}
+      {/* kubectl command hints */}
       <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
-      <div className="text-xs font-mono text-gray-700 break-all select-all cursor-text px-2 py-1.5 rounded bg-gray-900/50 border border-gray-800/50" title="Click to select all">
-        kubectl -n {svc.namespace} get pods
-      </div>
+      {[
+        `kubectl -n ${svc.namespace} get pods`,
+        `kubectl -n ${svc.namespace} describe pods`,
+        `kubectl -n ${svc.namespace} logs -f --tail=50`,
+      ].map(cmd => (
+        <div key={cmd} className="group flex items-center justify-between text-xs font-mono text-gray-700 mb-1 px-2 py-1 rounded bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-colors">
+          <span className="truncate select-all cursor-text">{cmd}</span>
+          <button
+            className="ml-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-gray-400 px-1"
+            onClick={() => navigator.clipboard.writeText(cmd).catch(() => {})}
+            title="Copy to clipboard"
+          >⎘</button>
+        </div>
+      ))}
     </div>
   );
 }
