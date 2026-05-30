@@ -1733,7 +1733,7 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal, ap
 }
 
 /* ── Cilium CNI object ───────────────────────────────── */
-function CiliumObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
+function CiliumObject({ position, isSelected, onClick, nsCount }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void; nsCount?: number }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame(({ clock }) => { if (ref.current) ref.current.rotation.z = clock.getElapsedTime() * 0.55; });
   return (
@@ -1748,6 +1748,14 @@ function CiliumObject({ position, isSelected, onClick }: { position: [number, nu
           <meshPhysicalMaterial color="#f7a800" metalness={0.3} roughness={0.2} clearcoat={0.8} emissive="#f7a800" emissiveIntensity={isSelected ? 0.8 : 0.45} />
         </mesh>
         <Text position={[0, -0.62, 0]} fontSize={0.09} color="#f7a800" anchorX="center">Cilium CNI</Text>
+        {nsCount !== undefined && (
+          <Billboard position={[0.65, 0.5, 0]}>
+            <Text fontSize={0.1} color="#f7a80099" anchorX="center" anchorY="middle"
+              // @ts-expect-error
+              toneMapped={false}
+            >{`${nsCount}ns`}</Text>
+          </Billboard>
+        )}
         {isSelected && (
           <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
@@ -2428,7 +2436,7 @@ export default function Scene3D({
 
       {/* Floating infra objects */}
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} apps={apps} />
-      <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
+      <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} nsCount={nsPodCounts ? Object.keys(nsPodCounts).length : undefined} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
       <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} podStatusCounts={undefined} appsSynced={appsSynced} appsTotal={appsTotal} kubeletVersion={kubeletVersion} />
       {/* Ambient namespace count billboard near M2 */}
