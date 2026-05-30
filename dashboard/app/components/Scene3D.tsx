@@ -2056,6 +2056,13 @@ export default function Scene3D({
       {/* Glow rings at floor level (fixed, don't hover with models) */}
       <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
       <GlowRing position={[m2Pos[0], 0.01, m2Pos[2]]} color="#58a6ff" online isSelected={selectedNode === "m2"} isHovered={hoveredNode === "m2"} />
+      {/* Node pressure warning ring: pulsing orange torus if memory/disk/pid pressure */}
+      {nodePressures && nodePressures.length > 0 && (
+        <mesh position={[m2Pos[0], 0.015, m2Pos[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[1.6, 0.025, 8, 64]} />
+          <meshBasicMaterial color="#f97316" transparent opacity={0.5} toneMapped={false} />
+        </mesh>
+      )}
       <GlowRing position={[gpuPos[0], 0.01, gpuPos[2]]} color="#d29922" online={false} isSelected={selectedNode === "gpu"} isHovered={hoveredNode === "gpu"} />
 
       {/* Router */}
