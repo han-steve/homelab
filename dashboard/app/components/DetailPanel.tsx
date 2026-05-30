@@ -479,6 +479,42 @@ export default function DetailPanel({
           Open {svc.name} {"\u2192"}
         </a>
       )}
+
+      {/* Namespace pod status */}
+      {nsPodCounts && nsPodCounts[svc.namespace] !== undefined && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Namespace Pods</span>
+            <span className="text-xs font-mono text-gray-500">{nsPodCounts[svc.namespace]} running</span>
+          </div>
+          {(() => {
+            const nsIssues = unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
+            if (nsIssues.length === 0) {
+              return <div className="text-xs font-mono text-green-500/70">● All pods healthy</div>;
+            }
+            return (
+              <div className="space-y-1">
+                {nsIssues.map((pod, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-orange-400 truncate flex-1" title={pod.name}>{pod.name}</span>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <span className="text-red-400">{pod.status}</span>
+                      {pod.restarts > 0 && <span className="text-yellow-500">↺{pod.restarts}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </>
+      )}
+
+      {/* kubectl command hint */}
+      <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
+      <div className="text-xs font-mono text-gray-700 break-all select-all cursor-text px-2 py-1.5 rounded bg-gray-900/50 border border-gray-800/50" title="Click to select all">
+        kubectl -n {svc.namespace} get pods
+      </div>
     </div>
   );
 }
