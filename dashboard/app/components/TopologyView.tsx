@@ -159,33 +159,48 @@ export default function TopologyView({
   return (
     <div className="relative w-full h-full" style={{ background: "#0d1117" }}>
       {/* Quick stats bar */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs font-mono text-gray-600 pointer-events-none z-10">
-        <span className="text-blue-500/60">{topoNodes.filter(n => n.type === "node").length} k8s nodes</span>
-        <span className="text-gray-700">·</span>
-        <span className="text-green-500/60">{services.filter(s => s.status === "running").length}/{services.length} services running</span>
-        <span className="text-gray-700">·</span>
-        {nsPodCounts ? (
-          <span className="text-cyan-500/60">{Object.values(nsPodCounts).reduce((a, b) => a + b, 0)} pods</span>
-        ) : (
-          <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
-        )}
-        {apps && apps.length > 0 && (() => {
-          const synced = apps.filter(a => a.sync === "Synced").length;
-          const ok = synced === apps.length;
-          return (
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10">
+        <div className="flex items-center gap-4 text-xs font-mono text-gray-600 pointer-events-none">
+          <span className="text-blue-500/60">{topoNodes.filter(n => n.type === "node").length} k8s nodes</span>
+          <span className="text-gray-700">·</span>
+          <span className="text-green-500/60">{services.filter(s => s.status === "running").length}/{services.length} services running</span>
+          <span className="text-gray-700">·</span>
+          {nsPodCounts ? (
+            <span className="text-cyan-500/60">{Object.values(nsPodCounts).reduce((a, b) => a + b, 0)} pods</span>
+          ) : (
+            <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
+          )}
+          {apps && apps.length > 0 && (() => {
+            const synced = apps.filter(a => a.sync === "Synced").length;
+            const ok = synced === apps.length;
+            return (
+              <>
+                <span className="text-gray-700">·</span>
+                <span style={{ color: ok ? "#22c55e99" : "#eab30899" }}>{synced}/{apps.length} synced</span>
+              </>
+            );
+          })()}
+          {longhornStorage && (
             <>
               <span className="text-gray-700">·</span>
-              <span style={{ color: ok ? "#22c55e99" : "#eab30899" }}>{synced}/{apps.length} synced</span>
+              <span style={{ color: longhornStorage.pct > 80 ? "#ef444499" : "#8b5cf699" }}>
+                {longhornStorage.pct.toFixed(0)}% storage
+              </span>
             </>
-          );
-        })()}
-        {longhornStorage && (
-          <>
-            <span className="text-gray-700">·</span>
-            <span style={{ color: longhornStorage.pct > 80 ? "#ef444499" : "#8b5cf699" }}>
-              {longhornStorage.pct.toFixed(0)}% storage
-            </span>
-          </>
+          )}
+        </div>
+        {/* Namespace health dots */}
+        {uniqueNamespaces.length > 0 && (
+          <div className="flex items-center gap-0.5 pointer-events-none">
+            {uniqueNamespaces.map(ns => {
+              const isUnhealthy = unhealthyNamespaces?.has(ns);
+              const hasEvent = recentEvents?.some(e => e.namespace === ns);
+              const dotColor = isUnhealthy ? "#ef444480" : hasEvent ? "#f9731650" : "#22c55e30";
+              return (
+                <div key={ns} title={ns} className="w-1 h-1 rounded-full" style={{ backgroundColor: dotColor }} />
+              );
+            })}
+          </div>
         )}
       </div>
       {/* Search bar */}
