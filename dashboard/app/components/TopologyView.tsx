@@ -628,6 +628,20 @@ export default function TopologyView({
                 </circle>
               )}
 
+              {/* Warning event orange glow for nodes with recent events */}
+              {isService && node.serviceIdx !== undefined && !unhealthyNamespaces?.has(services[node.serviceIdx]?.namespace ?? "") && (() => {
+                const ns = services[node.serviceIdx]?.namespace;
+                const nsEvents = recentEvents?.filter(e => e.namespace === ns && e.type === "Warning") ?? [];
+                if (nsEvents.length === 0) return null;
+                const intensity = Math.min(1, nsEvents.length / 5);
+                const dur = intensity > 0.6 ? "1.8s" : "3s";
+                return (
+                  <circle r={r + 4} fill="none" stroke="#f97316" strokeWidth={1} opacity={0.45} filter="url(#glow)">
+                    <animate attributeName="opacity" values={`${0.45 * intensity};0.05;${0.45 * intensity}`} dur={dur} repeatCount="indefinite" />
+                  </circle>
+                );
+              })()}
+
               {/* Neighbor highlight ring */}
               {isNeighbor && (
                 <circle r={r + 4} fill="none" stroke="#ffffff" strokeWidth={1} opacity={0.25} />
