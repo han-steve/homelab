@@ -1427,6 +1427,33 @@ export default function DetailPanel({
               {nsMemRequestsMi?.[svc.namespace] !== undefined && <span className="text-violet-500/60">{nsMemRequestsMi[svc.namespace] >= 1024 ? `${(nsMemRequestsMi[svc.namespace]/1024).toFixed(1)}G` : `${Math.round(nsMemRequestsMi[svc.namespace])}M`}</span>}
             </div>
           </div>
+          {/* Cluster share bars */}
+          {(nsCpuRequestsM?.[svc.namespace] !== undefined || nsMemRequestsMi?.[svc.namespace] !== undefined) && totalCpuRequestsM && (() => {
+            const nsCpuM = nsCpuRequestsM?.[svc.namespace] ?? 0;
+            const nsMemMi = nsMemRequestsMi?.[svc.namespace] ?? 0;
+            const cpuSharePct = totalCpuRequestsM > 0 ? Math.round((nsCpuM / totalCpuRequestsM) * 100) : 0;
+            const totalMemMi = totalMemRequestsMi ?? 1;
+            const memSharePct = totalMemMi > 0 ? Math.round((nsMemMi / totalMemMi) * 100) : 0;
+            if (cpuSharePct + memSharePct === 0) return null;
+            return (
+              <div className="mb-2 text-xs font-mono">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-gray-700 w-16 shrink-0">cpu share</span>
+                  <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-blue-500/50" style={{ width: `${cpuSharePct}%` }} />
+                  </div>
+                  <span className="text-blue-400/60 w-7 text-right shrink-0">{cpuSharePct}%</span>
+                </div>
+                {memSharePct > 0 && <div className="flex items-center gap-2">
+                  <span className="text-gray-700 w-16 shrink-0">mem share</span>
+                  <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-violet-500/50" style={{ width: `${memSharePct}%` }} />
+                  </div>
+                  <span className="text-violet-400/60 w-7 text-right shrink-0">{memSharePct}%</span>
+                </div>}
+              </div>
+            );
+          })()}
           {(() => {
             const nsIssues = unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
             if (nsIssues.length === 0) {
