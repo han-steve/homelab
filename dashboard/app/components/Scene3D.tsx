@@ -172,6 +172,36 @@ function DataPacket({ curve, color, speed = 0.2, reverse = false, offset = 0 }: 
 }
 
 /* ── radar scan ring emanating from origin ───────────── */
+/* ── Pulsing floor health aura under M2 ───────────────── */
+function FloorHealthAura({ position, color = "#22d3ee" }: { position: [number, number, number]; color?: string }) {
+  const innerRef = useRef<THREE.Mesh>(null!);
+  const outerRef = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.2);
+    if (innerRef.current) {
+      (innerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.10 + pulse * 0.08;
+    }
+    if (outerRef.current) {
+      (outerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.04 + pulse * 0.04;
+    }
+  });
+  return (
+    <group position={[position[0], 0.005, position[2]]}>
+      {/* Inner bright core */}
+      <mesh ref={innerRef} rotation-x={-Math.PI / 2} raycast={() => {}}>
+        <circleGeometry args={[1.2, 48]} />
+        <meshBasicMaterial color={color} transparent opacity={0.12} toneMapped={false} />
+      </mesh>
+      {/* Outer soft halo */}
+      <mesh ref={outerRef} rotation-x={-Math.PI / 2} raycast={() => {}}>
+        <circleGeometry args={[2.6, 48]} />
+        <meshBasicMaterial color={color} transparent opacity={0.05} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
 function ScanRing({ origin, color = "#22d3ee", period = 8 }: {
   origin: [number, number, number];
   color?: string;
@@ -1536,6 +1566,7 @@ export default function Scene3D({
       <HoloGrid />
       <Particles />
       <ScanRing origin={[m2Pos[0], 0, m2Pos[2]]} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} period={10} />
+      <FloorHealthAura position={m2Pos} color={unhealthyNamespaces && unhealthyNamespaces.size > 0 ? "#ef4444" : (appsSynced !== undefined && appsTotal !== undefined && appsSynced < appsTotal) ? "#eab308" : "#22d3ee"} />
       {nodeMetrics && <CpuArcRing position={m2Pos} cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0} memPct={parseInt(nodeMetrics.memPct, 10) || 0} />}
 
       {/* Floor cables (at ground level) */}
