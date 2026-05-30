@@ -115,36 +115,39 @@ export default function Home() {
           </div>
 
           {/* Stack info */}
-          <div className="ml-auto flex items-center gap-2 sm:gap-4 text-xs text-gray-600 font-mono">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3 text-xs text-gray-600 font-mono">
             {cluster && (
               <>
                 <span className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.node?.ready ? "bg-green-500" : "bg-red-500"}`} />
-                  <span className="hidden md:inline">node</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cluster.node?.ready ? "bg-green-500 shadow-[0_0_4px_#22c55e]" : "bg-red-500"}`} />
+                  <span className="hidden md:inline text-gray-500">node</span>
                 </span>
                 <span className="hidden sm:inline text-gray-800">|</span>
-                <span className="flex items-center gap-1.5" title={cluster.apps.map(a => `${a.name}: ${a.sync}`).join("\n")}>
+                <span
+                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded ${cluster.apps.every(a => a.sync === "Synced") ? "" : "bg-yellow-500/10 text-yellow-400"}`}
+                  title={cluster.apps.map(a => `${a.name}: ${a.sync}`).join("\n")}
+                >
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.apps.every(a => a.sync === "Synced") ? "bg-green-500" : "bg-yellow-500"}`} />
                   <span className="hidden sm:inline">{cluster.apps.filter(a => a.sync === "Synced").length}/{cluster.apps.length} synced</span>
                 </span>
                 <span className="hidden sm:inline text-gray-800">|</span>
                 <span className="flex items-center gap-1.5" title={cluster.unhealthyPods.map(p => `${p.namespace}/${p.name}: ${p.status}`).join("\n")}>
                   <span className={`w-1.5 h-1.5 rounded-full ${cluster.unhealthyPods.length === 0 ? "bg-green-500" : "bg-orange-500"}`} />
-                  <span className="hidden sm:inline">{cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}</span>
+                  <span className="hidden sm:inline text-gray-500">{cluster.unhealthyPods.length > 0 ? `${cluster.unhealthyPods.length} issues` : "healthy"}</span>
                 </span>
                 <span className="hidden md:inline text-gray-800">|</span>
               </>
             )}
-            <span className="hidden md:inline">Talos v1.13.2</span>
+            <span className="hidden md:inline text-gray-600">Talos v1.13.2</span>
             <span className="hidden md:inline text-gray-800">|</span>
-            <span className="hidden md:inline">K8s v1.36</span>
+            <span className="hidden md:inline text-gray-600">K8s v1.36</span>
           </div>
         </div>
 
         {/* Footer hints */}
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
-            click service · drag rotate · scroll zoom
+            click node/service · drag to rotate · scroll to zoom · [S] services · [Esc] deselect
           </div>
         )}
         {cluster && (

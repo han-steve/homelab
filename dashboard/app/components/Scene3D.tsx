@@ -29,7 +29,7 @@ function ResponsiveCamera() {
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     // Wider FOV on narrow viewports so the scene fits
-    cam.fov = size.width < 640 ? 70 : 50;
+    cam.fov = size.width < 640 ? 72 : size.width < 1024 ? 62 : 55;
     cam.updateProjectionMatrix();
   }, [camera, size.width]);
   return null;
@@ -92,6 +92,29 @@ function Particles({ count = 80 }: { count?: number }) {
   );
 }
 
+/* ── data packet travelling along a cable ─────────────────────── */
+function DataPacket({ curve, color, speed = 0.2 }: {
+  curve: THREE.QuadraticBezierCurve3;
+  color: string;
+  speed?: number;
+}) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const t = (clock.getElapsedTime() * speed) % 1;
+      const pos = curve.getPoint(t);
+      ref.current.position.copy(pos);
+      ref.current.position.y = 0.1;
+    }
+  });
+  return (
+    <mesh ref={ref} raycast={() => {}}>
+      <sphereGeometry args={[0.06, 8, 8]} />
+      <meshBasicMaterial color={color} toneMapped={false} />
+    </mesh>
+  );
+}
+
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
   from, to, color = "#58a6ff", active = true
@@ -151,6 +174,8 @@ function FloorCable({
           <meshBasicMaterial color={color} transparent opacity={0.85} map={flowTex} toneMapped={false} />
         </mesh>
       )}
+      {/* Data packet: a tiny glowing sphere that travels the cable */}
+      {active && <DataPacket curve={curve} color={color} speed={0.18} />}
     </group>
   );
 }
@@ -443,12 +468,30 @@ function HardwareNode({
         opacity={isOnline ? 1 : 0.55}
       />
 
-      {/* Wireframe engraved overlay for offline */}
+      {/* Wireframe overlay for offline/planned nodes */}
       {!isOnline && (
         <mesh>
-          <boxGeometry args={[2.5, 2.5, 2.5]} />
-          <meshBasicMaterial color={color} wireframe transparent opacity={0.055} />
+          <boxGeometry args={[2.2, 2.8, 2.2]} />
+          <meshBasicMaterial color={color} wireframe transparent opacity={status === "planned" ? 0.25 : 0.06} />
         </mesh>
+      )}
+      {/* Extra holographic scan for planned nodes */}
+      {status === "planned" && (
+        <>
+          <mesh>
+            <boxGeometry args={[2.22, 2.82, 2.22]} />
+            <meshBasicMaterial color={color} transparent opacity={0.03} side={THREE.DoubleSide} />
+          </mesh>
+          <Text
+            position={[0, 2.45, 0.5]}
+            fontSize={0.10}
+            color={color}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {"[ COMING SOON ]"}
+          </Text>
+        </>
       )}
 
       {/* Point light when online */}
@@ -487,11 +530,11 @@ function HardwareNode({
       <Text
         position={[0, 1.82, 0.5]}
         fontSize={0.11}
-        color={isOnline ? "#22c55e" : "#554444"}
+        color={isOnline ? "#22c55e" : status === "planned" ? "#d29922" : "#554444"}
         anchorX="center"
         anchorY="middle"
       >
-        {isOnline ? "● ONLINE" : "○ OFFLINE"}
+        {isOnline ? "● ONLINE" : status === "planned" ? "◈ PLANNED" : "○ OFFLINE"}
       </Text>
 
       {sublabel && (
@@ -723,6 +766,17 @@ export default function Scene3D({
   const [showAllServices, setShowAllServices] = useState(false);
   const [hoveredSvc, setHoveredSvc] = useState<number | null>(null);
 
+  // Keyboard shortcut: S = toggle services, Escape = deselect
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "s" || e.key === "S") setShowAllServices((v) => !v);
+      if (e.key === "Escape") { setSelectedNode(null); onSelect(null); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onSelect]);
+
   // Hardware positions (on the floor)
   const m2Pos: [number, number, number] = [-3.5, 0, 2];
   const gpuPos: [number, number, number] = [3.5, 0, 2];
@@ -768,7 +822,7 @@ export default function Scene3D({
 
   return (
     <Canvas
-      camera={{ position: [0, 7, 13], fov: 55 }}
+      camera={{ position: [0, 8, 14], fov: 55 }}
       style={{ position: "absolute", inset: 0, background: "#07070e" }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       onPointerMissed={() => { setSelectedNode(null); onSelect(null); }}
@@ -778,9 +832,11 @@ export default function Scene3D({
       <ResponsiveCamera />
 
       {/* Lighting */}
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[6, 10, 6]} intensity={0.5} color="#cce0ff" />
-      <pointLight position={[0, 6, 0]} intensity={0.25} color="#3355ff" />
+      <ambientLight intensity={0.18} />
+      <directionalLight position={[6, 10, 6]} intensity={0.6} color="#cce0ff" castShadow={false} />
+      <pointLight position={[0, 6, 0]} intensity={0.3} color="#2244ff" />
+      {/* Accent from below — subtle up-light */}
+      <pointLight position={[0, -0.5, 0]} intensity={0.08} color="#0066cc" />
 
       <HoloGrid />
       <Particles />
@@ -915,19 +971,30 @@ export default function Scene3D({
           <button
             onClick={() => setShowAllServices((v) => !v)}
             style={{
-              background: showAllServices ? "rgba(88,166,255,0.18)" : "rgba(10,10,20,0.75)",
-              border: `1px solid ${showAllServices ? "#58a6ff" : "#333"}`,
-              borderRadius: 8,
-              color: showAllServices ? "#58a6ff" : "#777",
-              padding: "7px 14px",
-              fontSize: 12,
+              background: showAllServices ? "rgba(88,166,255,0.15)" : "rgba(10,10,20,0.82)",
+              border: `1px solid ${showAllServices ? "#58a6ff55" : "#2a2a2a"}`,
+              borderRadius: 6,
+              color: showAllServices ? "#58a6ff" : "#555",
+              padding: "6px 12px",
+              fontSize: 11,
               cursor: "pointer",
               fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
               backdropFilter: "blur(8px)",
               letterSpacing: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              transition: "all 0.2s",
             }}
           >
-            {showAllServices ? "◉ SERVICES ON" : "○ SERVICES OFF"}
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: showAllServices ? "#58a6ff" : "#333",
+              boxShadow: showAllServices ? "0 0 8px #58a6ff" : "none",
+              display: "inline-block",
+              flexShrink: 0,
+            }} />
+            <span>{showAllServices ? `SERVICES  ${services.length}` : "SERVICES"}</span>
           </button>
         </div>
       </Html>
@@ -937,8 +1004,8 @@ export default function Scene3D({
         enableZoom
         enableRotate
         minDistance={4}
-        maxDistance={24}
-        target={[0, 1.5, 0]}
+        maxDistance={28}
+        target={[0, 2.0, -0.5]}
         makeDefault
       />
 
