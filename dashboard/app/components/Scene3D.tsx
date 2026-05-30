@@ -487,6 +487,64 @@ function CalloutPanel({
   );
 }
 
+/* ── CPU usage arc ring near M2 ─────────────────────── */
+function CpuArcRing({ position, cpuPct, ramPct }: {
+  position: [number, number, number];
+  cpuPct: number;
+  ramPct: number;
+}) {
+  const cpuRef = useRef<THREE.Mesh>(null!);
+  const ramRef = useRef<THREE.Mesh>(null!);
+
+  const buildArc = (pct: number, radius: number) => {
+    const points: THREE.Vector3[] = [];
+    const end = (pct / 100) * Math.PI * 2;
+    const segments = Math.max(4, Math.floor(pct / 2));
+    for (let i = 0; i <= segments; i++) {
+      const a = -Math.PI / 2 + (i / segments) * end;
+      points.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+    }
+    return new THREE.CatmullRomCurve3(points);
+  };
+
+  const cpuCurve = useMemo(() => buildArc(cpuPct, 1.45), [cpuPct]);
+  const ramCurve = useMemo(() => buildArc(ramPct, 1.65), [ramPct]);
+
+  const cpuGeo = useMemo(() => cpuPct > 0 ? new THREE.TubeGeometry(cpuCurve, Math.max(4, Math.floor(cpuPct / 2)), 0.015, 6, false) : null, [cpuCurve, cpuPct]);
+  const ramGeo = useMemo(() => ramPct > 0 ? new THREE.TubeGeometry(ramCurve, Math.max(4, Math.floor(ramPct / 2)), 0.015, 6, false) : null, [ramCurve, ramPct]);
+
+  if (!cpuGeo && !ramGeo) return null;
+
+  const cpuColor = cpuPct > 80 ? "#ef4444" : cpuPct > 60 ? "#eab308" : "#58a6ff";
+  const ramColor = ramPct > 80 ? "#ef4444" : ramPct > 60 ? "#eab308" : "#06b6d4";
+
+  return (
+    <group position={[position[0], 0.06, position[2]]}>
+      {/* Background rings */}
+      <mesh rotation-x={-Math.PI / 2}>
+        <torusGeometry args={[1.45, 0.008, 4, 64]} />
+        <meshBasicMaterial color="#1a2030" transparent opacity={0.5} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2}>
+        <torusGeometry args={[1.65, 0.008, 4, 64]} />
+        <meshBasicMaterial color="#1a2030" transparent opacity={0.5} />
+      </mesh>
+      {/* CPU arc */}
+      {cpuGeo && (
+        <mesh ref={cpuRef} geometry={cpuGeo} rotation-x={-Math.PI / 2}>
+          <meshBasicMaterial color={cpuColor} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+      )}
+      {/* RAM arc */}
+      {ramGeo && (
+        <mesh ref={ramRef} geometry={ramGeo} rotation-x={-Math.PI / 2}>
+          <meshBasicMaterial color={ramColor} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
 /* ── GPU holographic scan line ──────────────────────── */
 function GpuScanLine({ position }: { position: [number, number, number] }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -1131,6 +1189,14 @@ export default function Scene3D({
       <PulsingLight position={m2Pos} color="#58a6ff" />
       {/* Router accent */}
       <pointLight position={[routerPos[0], 0.5, routerPos[2]]} intensity={0.06} color="#8b949e" />
+      {/* CPU/RAM arc ring around M2 */}
+      {nodeMetrics && (
+        <CpuArcRing
+          position={m2Pos}
+          cpuPct={parseInt(nodeMetrics.cpuPct, 10) || 0}
+          ramPct={parseInt(nodeMetrics.memPct, 10) || 0}
+        />
+      )}
 
       <HoloGrid />
       <Particles />
