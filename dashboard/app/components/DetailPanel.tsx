@@ -161,6 +161,7 @@ export default function DetailPanel({
   const [nsFilter, setNsFilter] = useState<string | null>(null);
   const [expandedPvcNs, setExpandedPvcNs] = useState<string | null>(null);
   const [showArgoApps, setShowArgoApps] = useState(false);
+  const [copiedSnapshot, setCopiedSnapshot] = useState(false);
   const now = useNow();
 
   // Map namespace → max restart count from unhealthy pods
@@ -208,6 +209,26 @@ export default function DetailPanel({
                 {outOfSyncApps > 0 && <span className="text-yellow-600/70">⎈{outOfSyncApps}</span>}
                 {storageWarn && <span className="text-violet-500/70">⬡{longhornStorage!.pct}%</span>}
                 {certWarn && <span className="text-yellow-600/70">🔒</span>}
+                <button
+                  title="Copy cluster snapshot to clipboard"
+                  onClick={() => {
+                    const snapshot = {
+                      timestamp: new Date().toISOString(),
+                      status,
+                      totalPods: apps ? undefined : undefined,
+                      unhealthyPods: (unhealthyPods ?? []).map(p => ({ ns: p.namespace, name: p.name, status: p.status, restarts: p.restarts })),
+                      apps: (apps ?? []).map(a => ({ name: a.name, sync: a.sync, health: a.health })),
+                      storage: longhornStorage ? { pct: longhornStorage.pct } : undefined,
+                      certs: (certificates ?? []).map(c => ({ name: c.name, daysLeft: c.daysLeft })),
+                    };
+                    navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2)).then(() => {
+                      setCopiedSnapshot(true);
+                      setTimeout(() => setCopiedSnapshot(false), 2000);
+                    });
+                  }}
+                  className="ml-1 px-1 py-0 rounded text-[9px] font-mono border border-gray-800/60 hover:border-gray-600 transition-colors"
+                  style={{ color: copiedSnapshot ? "#22c55e" : "#374151" }}
+                >{copiedSnapshot ? "✓" : "⎘"}</button>
               </div>
             </div>
           );
