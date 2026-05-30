@@ -1443,7 +1443,7 @@ export default function DetailPanel({
               return nsKeys.map(ns => (
                 <div key={ns}>
                   <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-1">
                       {(() => {
                         const hasRecent = recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
                         return hasRecent ? <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 animate-pulse shrink-0" title="pod started in last hour" /> : null;
@@ -1453,6 +1453,19 @@ export default function DetailPanel({
                         const evCount = recentEvents?.filter(e => e.namespace === ns).length ?? 0;
                         if (evCount === 0) return null;
                         return <span className={`text-[9px] normal-case tracking-normal font-mono ${evCount > 3 ? "text-orange-500/80" : "text-yellow-600/60"}`} title={`${evCount} warning event${evCount !== 1 ? "s" : ""} in this namespace`}>⚠{evCount}</span>;
+                      })()}
+                      {/* Pod density bar */}
+                      {nsPodCounts?.[ns] !== undefined && (() => {
+                        const total = nsPodCounts![ns];
+                        const maxP = nsPodCounts ? Math.max(1, ...Object.values(nsPodCounts)) : 1;
+                        const bad = (unhealthyPods ?? []).filter(p => p.namespace === ns).length;
+                        const pct = (total / maxP) * 100;
+                        const barColor = bad > 0 ? "#ef444430" : "#22c55e20";
+                        return (
+                          <div className="flex-1 h-0.5 bg-gray-900 rounded-full overflow-hidden mx-1 max-w-[32px]">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                          </div>
+                        );
                       })()}
                     </div>
                     <span className="flex items-center gap-2 normal-case tracking-normal">
