@@ -116,6 +116,17 @@ export default function TopologyView({
     }
   };
 
+  // Compute dynamic M2 color based on CPU load
+  const m2CpuPct = nodeMetrics ? parseInt(nodeMetrics.cpuPct, 10) || 0 : null;
+  const m2DynamicColor = m2CpuPct !== null
+    ? (m2CpuPct > 80 ? "#ef4444" : m2CpuPct > 50 ? "#eab308" : "#58a6ff")
+    : null;
+
+  const getNodeColor = (node: TopoNode) => {
+    if (node.id === "m2" && m2DynamicColor) return m2DynamicColor;
+    return node.color;
+  };
+
   return (
     <div className="relative w-full h-full" style={{ background: "#0d1117" }}>
       {/* Quick stats bar */}
@@ -290,6 +301,7 @@ export default function TopologyView({
           const r = nodeRadius(node.type);
           const isActive = node.type === "node";
           const isService = node.type === "service";
+          const nodeColor = getNodeColor(node);
           const isSelected = selectedNode === node.id;
           const isNeighbor = selectedNode && selectedNode !== node.id &&
             topoLinks.some(l => (l.source === selectedNode && l.target === node.id) || (l.target === selectedNode && l.source === node.id));
@@ -325,7 +337,7 @@ export default function TopologyView({
                 <circle
                   r={r + 8}
                   fill="none"
-                  stroke={node.color}
+                  stroke={nodeColor}
                   strokeWidth={1}
                   opacity={0.3}
                   filter="url(#glow)"
@@ -361,7 +373,7 @@ export default function TopologyView({
               <circle
                 r={r}
                 fill="#161b22"
-                stroke={node.color}
+                stroke={nodeColor}
                 strokeWidth={isActive ? 2 : 1.5}
               />
 
@@ -406,8 +418,8 @@ export default function TopologyView({
                 if (connCount === 0) return null;
                 return (
                   <g transform={`translate(${r * 0.7}, ${-r * 0.7})`}>
-                    <circle r={8} fill="#1c2128" stroke={node.color} strokeWidth={1} opacity={0.9} />
-                    <text textAnchor="middle" dominantBaseline="middle" fontSize={8} fill={node.color} fontFamily="monospace" fontWeight="bold">{connCount}</text>
+                    <circle r={8} fill="#1c2128" stroke={nodeColor} strokeWidth={1} opacity={0.9} />
+                    <text textAnchor="middle" dominantBaseline="middle" fontSize={8} fill={nodeColor} fontFamily="monospace" fontWeight="bold">{connCount}</text>
                   </g>
                 );
               })()}
@@ -430,7 +442,7 @@ export default function TopologyView({
             className="fixed z-50 pointer-events-none bg-gray-900/95 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-xl font-mono"
             style={{ left: tooltip.x, top: tooltip.y, backdropFilter: "blur(8px)", minWidth: 160 }}
           >
-            {tNode && <div className="font-bold text-sm mb-1" style={{ color: tNode.color }}>{tNode.icon} {tNode.label}</div>}
+            {tNode && <div className="font-bold text-sm mb-1" style={{ color: tNode.id === "m2" && m2DynamicColor ? m2DynamicColor : tNode.color }}>{tNode.icon} {tNode.label}</div>}
             <div className="text-gray-400">{tooltip.text}</div>
             {isM2 && nodeMetrics && (
               <div className="mt-1.5 space-y-0.5">
