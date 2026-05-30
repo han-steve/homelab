@@ -331,7 +331,6 @@ export default function TopologyView({
                   </g>
                 );
               })()}
-              )}
             </g>
           );
         })}
