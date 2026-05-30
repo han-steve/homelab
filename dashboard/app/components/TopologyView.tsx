@@ -773,6 +773,59 @@ export default function TopologyView({
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
         </div>
       </div>
+
+      {/* Mini-map (bottom right) */}
+      <div className="absolute bottom-5 right-5 bg-gray-950/90 border border-gray-800/60 rounded-lg overflow-hidden" style={{ width: 126, height: 94 }}>
+        <svg width={126} height={94} viewBox="0 0 126 94">
+          <rect width={126} height={94} fill="#05050e" />
+          {/* Links */}
+          {topoLinks.map((link, li) => {
+            const src = topoNodes.find(n => n.id === link.source);
+            const tgt = topoNodes.find(n => n.id === link.target);
+            if (!src || !tgt) return null;
+            return (
+              <line key={li}
+                x1={src.x * 126} y1={src.y * 94}
+                x2={tgt.x * 126} y2={tgt.y * 94}
+                stroke={link.color}
+                strokeWidth={0.6}
+                opacity={link.style === "dashed" ? 0.15 : 0.3}
+                strokeDasharray={link.style === "dashed" ? "2,1" : undefined}
+              />
+            );
+          })}
+          {/* Nodes */}
+          {topoNodes.map((n, ni) => {
+            const r = (n.type === "node" || n.type === "node-planned") ? 3 : n.type === "service" ? 2 : 1.8;
+            const isFiltered = nsFilter && n.serviceIdx !== undefined && services[n.serviceIdx]?.namespace !== nsFilter;
+            return (
+              <circle key={ni}
+                cx={n.x * 126} cy={n.y * 94}
+                r={r}
+                fill={n.color}
+                opacity={isFiltered ? 0.12 : selectedNode === n.id ? 1 : 0.55}
+              />
+            );
+          })}
+          {/* Viewport rectangle */}
+          {dims.w > 0 && (() => {
+            const vpLeft = (-dims.w / 2 - pan.x) / zoom + dims.w / 2;
+            const vpRight = (dims.w / 2 - pan.x) / zoom + dims.w / 2;
+            const vpTop = (-dims.h / 2 - pan.y) / zoom + dims.h / 2;
+            const vpBot = (dims.h / 2 - pan.y) / zoom + dims.h / 2;
+            const mmX = (vpLeft / dims.w) * 126;
+            const mmY = (vpTop / dims.h) * 94;
+            const mmW = ((vpRight - vpLeft) / dims.w) * 126;
+            const mmH = ((vpBot - vpTop) / dims.h) * 94;
+            return (
+              <rect x={mmX} y={mmY} width={mmW} height={mmH}
+                fill="#58a6ff" fillOpacity={0.05}
+                stroke="#58a6ff" strokeWidth={0.8} strokeOpacity={0.5} rx={1} />
+            );
+          })()}
+        </svg>
+        <div className="absolute bottom-0.5 right-1.5 text-[7px] font-mono text-gray-700 pointer-events-none">minimap</div>
+      </div>
     </div>
   );
 }
