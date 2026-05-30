@@ -407,6 +407,7 @@ export default function Home() {
               nsCpuRequestsM={cluster?.nsCpuRequestsM}
               unhealthyPodCount={cluster?.unhealthyPods.length}
               nodeUptime={cluster?.node?.uptime}
+              kubeletVersion={cluster?.node?.kubeletVersion}
               nsMaxRestarts={cluster ? (() => {
                 const m: Record<string, number> = {};
                 for (const p of cluster.unhealthyPods) {

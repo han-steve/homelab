@@ -1827,6 +1827,7 @@ export default function Scene3D({
   nsCpuRequestsM,
   unhealthyPodCount,
   nodeUptime,
+  kubeletVersion,
   nsMaxRestarts,
   nodePressures,
   apps,
@@ -1846,6 +1847,7 @@ export default function Scene3D({
   nsCpuRequestsM?: Record<string, number>;
   unhealthyPodCount?: number;
   nodeUptime?: string;
+  kubeletVersion?: string;
   nsMaxRestarts?: Record<string, number>;
   nodePressures?: string[];
   apps?: { name: string; sync: string; health: string }[];
@@ -1904,6 +1906,8 @@ export default function Scene3D({
     ...(totalPods !== undefined ? [
       { label: "Pods", value: `${totalPods} running${unhealthyPodCount && unhealthyPodCount > 0 ? ` · ${unhealthyPodCount} issue(s)` : ""}` },
     ] : []),
+    ...(nodeUptime ? [{ label: "Uptime", value: nodeUptime }] : []),
+    ...(kubeletVersion ? [{ label: "kubelet", value: kubeletVersion }] : []),
   ];
   const gpuInfoLines = [
     { label: "IP", value: gpuNode.ip },
