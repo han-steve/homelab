@@ -156,23 +156,29 @@ export default function DetailPanel({
         {/* Quick access links */}
         <div className="mb-4 grid grid-cols-4 gap-1">
           {[
-            { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab" },
-            { icon: "📊", label: "Grafana", url: "https://grafana.homelab" },
-            { icon: "💾", label: "Longhorn", url: "https://longhorn.homelab" },
-            { icon: "🏠", label: "HA", url: "https://ha.homelab" },
-            { icon: "🎬", label: "Jellyfin", url: "https://jellyfin.homelab" },
-            { icon: "💰", label: "Budget", url: "https://budget.homelab" },
-            { icon: "☁️", label: "oCIS", url: "https://ocis.homelab" },
-            { icon: "🗄️", label: "MinIO", url: "https://minio.homelab" },
-          ].map(({ icon, label, url }) => (
+            { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab", ns: "argocd" },
+            { icon: "📊", label: "Grafana", url: "https://grafana.homelab", ns: "monitoring" },
+            { icon: "💾", label: "Longhorn", url: "https://longhorn.homelab", ns: "longhorn-system" },
+            { icon: "🏠", label: "HA", url: "https://ha.homelab", ns: "home-assistant" },
+            { icon: "🎬", label: "Jellyfin", url: "https://jellyfin.homelab", ns: "media" },
+            { icon: "💰", label: "Budget", url: "https://budget.homelab", ns: "actual-budget" },
+            { icon: "☁️", label: "oCIS", url: "https://ocis.homelab", ns: "ocis" },
+            { icon: "🗄️", label: "MinIO", url: "https://minio.homelab", ns: "backup" },
+          ].map(({ icon, label, url, ns }) => {
+            const hasIssue = (unhealthyPods ?? []).some(p => p.namespace === ns && (p.status === "CrashLoopBackOff" || p.restarts > 20));
+            const hasPods = nsPodCounts?.[ns] !== undefined && (nsPodCounts[ns] ?? 0) > 0;
+            const dotColor = hasIssue ? "#ef4444" : hasPods ? "#22c55e" : "#374151";
+            return (
             <a key={label} href={url} target="_blank" rel="noopener noreferrer"
-              className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded bg-gray-900/60 border border-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 transition-colors text-center"
+              className="relative flex flex-col items-center gap-0.5 px-1 py-1.5 rounded bg-gray-900/60 border border-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 transition-colors text-center"
               title={url}
             >
               <span className="text-sm">{icon}</span>
               <span className="text-[9px] font-mono text-gray-600 truncate w-full text-center">{label}</span>
+              <span className="absolute top-1 right-1 w-1 h-1 rounded-full" style={{ backgroundColor: dotColor, boxShadow: hasPods && !hasIssue ? `0 0 3px ${dotColor}` : "none" }} />
             </a>
-          ))}
+            );
+          })}
         </div>
         {/* Quick status ribbon */}
         {(apps || unhealthyPods || longhornStorage || certificates) && (() => {
@@ -664,6 +670,38 @@ export default function DetailPanel({
                   })}
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* Namespace pod distribution (when no live CPU metrics) */}
+        {(!topCpuPods || topCpuPods.length === 0) && nsPodCounts && Object.keys(nsPodCounts).length > 0 && (() => {
+          const maxPods = Math.max(...Object.values(nsPodCounts));
+          const entries = Object.entries(nsPodCounts).sort((a, b) => b[1] - a[1]).slice(0, 7);
+          return (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Pod Distribution</h3>
+                <span className="text-xs font-mono text-gray-700">{Object.values(nsPodCounts).reduce((a,b)=>a+b,0)} total</span>
+              </div>
+              <div className="space-y-1">
+                {entries.map(([ns, count]) => {
+                  const pct = (count / maxPods) * 100;
+                  const issues = (unhealthyPods ?? []).filter(p => p.namespace === ns);
+                  const hasCrit = issues.some(p => p.status === "CrashLoopBackOff");
+                  const barColor = hasCrit ? "#ef4444" : issues.length > 0 ? "#f97316" : "#22c55e";
+                  return (
+                    <div key={ns} className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
+                      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor, opacity: 0.6 }} />
+                      </div>
+                      <span className="text-xs font-mono w-8 text-right shrink-0 text-gray-700">{count}p</span>
+                      {hasCrit && <span className="text-xs text-red-500/70 shrink-0">⚠</span>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })()}
