@@ -907,9 +907,11 @@ function LonghornObject({ position, isSelected, onClick }: { position: [number, 
 export default function Scene3D({
   onSelect,
   selectedIdx,
+  nodeMetrics,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
+  nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -917,16 +919,22 @@ export default function Scene3D({
   const [hoveredSvc, setHoveredSvc] = useState<number | null>(null);
   const [selectedInfra, setSelectedInfra] = useState<"argocd" | "cilium" | "longhorn" | null>(null);
 
-  // Keyboard shortcut: S = toggle services, Escape = deselect
+  // Keyboard shortcut: S = toggle services, Escape = deselect, ←/→ navigate services
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "s" || e.key === "S") setShowAllServices((v) => !v);
       if (e.key === "Escape") { setSelectedNode(null); setSelectedInfra(null); onSelect(null); }
+      if (showAllServices && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        const dir = e.key === "ArrowRight" ? 1 : -1;
+        const cur = selectedIdx === null ? (dir === 1 ? -1 : services.length) : selectedIdx;
+        const next = (cur + dir + services.length) % services.length;
+        onSelect(next);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSelect]);
+  }, [onSelect, showAllServices, selectedIdx]);
 
   // Hardware positions (on the floor)
   const m2Pos: [number, number, number] = [-3.5, 0, 2];
@@ -943,6 +951,10 @@ export default function Scene3D({
     { label: "OS", value: node.os },
     { label: "K8s", value: node.k8sVersion },
     { label: "Storage", value: node.storage },
+    ...(nodeMetrics ? [
+      { label: "CPU use", value: `${nodeMetrics.cpuCores} (${nodeMetrics.cpuPct})` },
+      { label: "RAM use", value: `${nodeMetrics.memoryi} (${nodeMetrics.memPct})` },
+    ] : []),
   ];
   const gpuInfoLines = [
     { label: "IP", value: gpuNode.ip },

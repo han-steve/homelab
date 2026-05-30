@@ -64,7 +64,7 @@ export default function Home() {
           }
         >
           {view === "rack" ? (
-            <Scene3D onSelect={setSelectedIdx} selectedIdx={selectedIdx} />
+            <Scene3D onSelect={setSelectedIdx} selectedIdx={selectedIdx} nodeMetrics={cluster?.nodeMetrics} />
           ) : (
             <TopologyView onSelectService={setSelectedIdx} />
           )}
@@ -148,7 +148,7 @@ export default function Home() {
         {/* Footer hints */}
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
-            click node/service · drag to rotate · scroll to zoom · [S] services · [Esc] deselect
+            click node/service · drag to rotate · scroll to zoom · [S] services · [←/→] navigate · [Esc] deselect
           </div>
         )}
         {cluster && (
