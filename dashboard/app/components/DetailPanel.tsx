@@ -53,7 +53,7 @@ function CategoryBadge({ category }: { category: Service["category"] }) {
 }
 
 export default function DetailPanel({
-  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes,
+  selectedIdx, onClose, onSelectService, nodeMetrics, nsPodCounts, recentEvents, metricsHistory, longhornStorage, unhealthyPods, certificates, apps, nsCpuRequestsM, nsMemRequestsMi, topCpuPods, podMetrics, totalCpuRequestsM, totalMemRequestsMi, nsImages, longhornVolumes, nodePressures,
 }: {
   selectedIdx: number | null;
   onClose: () => void;
@@ -74,6 +74,7 @@ export default function DetailPanel({
   totalMemRequestsMi?: number;
   nsImages?: Record<string, string[]>;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
+  nodePressures?: string[];
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -161,6 +162,14 @@ export default function DetailPanel({
           <InfoRow label="RAM" value={node.ram} />
           <InfoRow label="Storage" value={node.storage} />
           <InfoRow label="K8s" value={node.k8sVersion} />
+          {/* Node pressure conditions */}
+          {nodePressures && nodePressures.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {nodePressures.map((p, i) => (
+                <span key={i} className="text-xs font-mono px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/20">{p}</span>
+              ))}
+            </div>
+          )}
           {nodeMetrics && (
             <>
               <div className="h-px bg-gray-800/60 mt-1" />

@@ -146,6 +146,10 @@ export async function GET() {
           allocatableCpu: n.status?.allocatable?.cpu,
           allocatableMemory: n.status?.allocatable?.memory,
           uptime,
+          // Active pressure conditions (MemoryPressure, DiskPressure, PIDPressure)
+          pressures: conditions
+            .filter((c: { type: string; status: string }) => c.type !== "Ready" && c.status === "True")
+            .map((c: { type: string }) => c.type),
         };
       }
     }
