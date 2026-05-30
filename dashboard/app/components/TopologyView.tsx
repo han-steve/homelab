@@ -49,6 +49,7 @@ export default function TopologyView({
   const mouseMoved = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [nsFilter, setNsFilter] = useState<string | null>(null);
+  const [heatmapMode, setHeatmapMode] = useState(false);
 
   // Unique namespaces from service nodes
   const uniqueNamespaces = Array.from(new Set(
@@ -433,20 +434,26 @@ export default function TopologyView({
             }
           }
           const pad = 18;
+          const maxPods = heatmapMode && nsPodCounts ? Math.max(1, ...Object.values(nsPodCounts)) : 1;
           return Object.entries(nsBounds).map(([ns, b]) => {
             const isUnhealthyNs = unhealthyNamespaces?.has(ns);
             const fillColor = isUnhealthyNs ? "#ef4444" : b.color;
             const isDimmedNs = nsFilter && ns !== nsFilter;
             if (isDimmedNs) return null;
+            const heatPct = heatmapMode && nsPodCounts ? (nsPodCounts[ns] ?? 0) / maxPods : 0;
+            // heatmap: interpolate fill from cool blue (#1e3a5f) to hot orange (#f97316) based on pod density
+            const heatFill = heatmapMode ? (heatPct > 0.7 ? "#f97316" : heatPct > 0.4 ? "#eab308" : heatPct > 0.15 ? "#3b82f6" : "#1e3a5f") : fillColor;
+            const heatFillOpacity = heatmapMode ? (0.04 + heatPct * 0.14) : 0.03;
+            const heatStrokeOpacity = heatmapMode ? (0.2 + heatPct * 0.5) : (isUnhealthyNs ? 0.4 : 0.15);
             return (
               <g key={ns} opacity={selectedNode ? 0.3 : 0.7}>
                 <rect
                   x={b.minX - pad} y={b.minY - pad}
                   width={b.maxX - b.minX + pad * 2} height={b.maxY - b.minY + pad * 2}
                   rx={14} ry={14}
-                  fill={fillColor} fillOpacity={0.03}
-                  stroke={fillColor} strokeWidth={0.8} strokeOpacity={isUnhealthyNs ? 0.4 : 0.15}
-                  strokeDasharray={isUnhealthyNs ? "4 3" : undefined}
+                  fill={heatmapMode ? heatFill : fillColor} fillOpacity={heatFillOpacity}
+                  stroke={heatmapMode ? heatFill : fillColor} strokeWidth={0.8} strokeOpacity={heatStrokeOpacity}
+                  strokeDasharray={isUnhealthyNs && !heatmapMode ? "4 3" : undefined}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => { e.stopPropagation(); setNsFilter(nsFilter === ns ? null : ns); }}
                 />
@@ -884,6 +891,10 @@ export default function TopologyView({
             <div className="text-yellow-600/60">⚡ {recentEvents.length} warning event{recentEvents.length !== 1 ? "s" : ""}</div>
           )}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
+          <button
+            onClick={() => setHeatmapMode(v => !v)}
+            className={`mt-1 px-2 py-0.5 rounded text-[10px] font-mono border transition-colors ${heatmapMode ? "bg-orange-500/15 border-orange-500/40 text-orange-400" : "border-gray-800 text-gray-700 hover:text-gray-500"}`}
+          >⬥ {heatmapMode ? "heatmap on" : "heatmap"}</button>
         </div>
       </div>
 
