@@ -802,6 +802,28 @@ export default function DetailPanel({
                 </div>
               );
             })()}
+            {/* Recently started pods in the last hour */}
+            {podMetrics && (() => {
+              const fresh = podMetrics.filter(p => p.startTime && (Date.now() - new Date(p.startTime).getTime()) < 3600000).slice(0, 5);
+              if (fresh.length === 0) return null;
+              return (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Starts</h3>
+                    <span className="text-xs font-mono text-green-500/50">{fresh.length} in last hour</span>
+                  </div>
+                  <div className="space-y-1">
+                    {fresh.map((pod, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs font-mono">
+                        <span className="text-green-400/50 shrink-0 mr-1 text-[9px]">NEW</span>
+                        <span className="text-gray-600 truncate flex-1" title={pod.namespace + "/" + pod.name}>{pod.name.replace(/-[a-z0-9]{5,}$/, "")}</span>
+                        <span className="text-gray-700 shrink-0 ml-1">{relTime(pod.startTime, now)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
               <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
@@ -977,8 +999,10 @@ export default function DetailPanel({
                 const cpuColor = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
                 const shortName = pod.name.replace(/-[a-z0-9]{5}$/, "").replace(/-[a-z0-9]{10}$/, "");
                 let uptimeStr = "";
+                let isFresh = false;
                 if (pod.startTime) {
                   const ms = Date.now() - new Date(pod.startTime).getTime();
+                  isFresh = ms < 30 * 60 * 1000; // started in last 30 min
                   const days = Math.floor(ms / 86400000);
                   const hrs = Math.floor((ms % 86400000) / 3600000);
                   const mins = Math.floor((ms % 3600000) / 60000);
@@ -987,7 +1011,10 @@ export default function DetailPanel({
                 return (
                   <div key={i}>
                     <div className="flex items-center justify-between text-xs font-mono text-gray-700 mb-0.5">
-                      <span className="truncate flex-1" title={pod.name}>{shortName}</span>
+                      <span className="truncate flex-1 flex items-center gap-1" title={pod.name}>
+                        {isFresh && <span className="text-green-400/70 text-[9px] shrink-0">NEW</span>}
+                        {shortName}
+                      </span>
                       <span className="shrink-0 ml-1 flex items-center gap-2">
                         {uptimeStr && <span className="text-gray-700/60">↑{uptimeStr}</span>}
                         <span style={{ color: cpuColor }}>{cpuLabel}</span>
