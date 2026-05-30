@@ -73,7 +73,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
-  const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; ts: number }[]>([]);
+  const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; ts: number }[]>([]);
 
   const fetchStatus = useRef(() => {});
   fetchStatus.current = () => {
@@ -83,11 +83,12 @@ export default function Home() {
       .then((r) => r.json())
       .then((data: ClusterStatus) => {
         setCluster(data);
-        if (data.nodeMetrics) {
-          const cpu = parseInt(data.nodeMetrics.cpuPct, 10) || 0;
-          const ram = parseInt(data.nodeMetrics.memPct, 10) || 0;
+        {
+          const cpu = data.nodeMetrics ? (parseInt(data.nodeMetrics.cpuPct, 10) || 0) : 0;
+          const ram = data.nodeMetrics ? (parseInt(data.nodeMetrics.memPct, 10) || 0) : 0;
           const pods = data.totalPods ?? 0;
-          metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, pods, ts: Date.now() }];
+          const unhealthy = data.unhealthyPods?.length ?? 0;
+          metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, pods, unhealthy, ts: Date.now() }];
         }
       })
       .catch(() => {})

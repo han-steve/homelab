@@ -112,7 +112,7 @@ export default function DetailPanel({
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
-  metricsHistory?: { cpu: number; ram: number; pods: number; ts: number }[];
+  metricsHistory?: { cpu: number; ram: number; pods: number; unhealthy?: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
@@ -422,6 +422,7 @@ export default function DetailPanel({
               })()}
               {metricsHistory && metricsHistory.length >= 2 && (
                 <div className="mt-2">
+                  {metricsHistory.some(m => m.cpu > 0 || m.ram > 0) && (
                   <div className="flex items-end gap-3">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-0.5">
@@ -444,6 +445,7 @@ export default function DetailPanel({
                       <Sparkline data={metricsHistory.map(m => m.ram)} color="#06b6d4" height={18} />
                     </div>
                   </div>
+                  )}
                   {metricsHistory.some(m => m.pods > 0) && (
                     <div className="mt-2">
                       <div className="flex items-center justify-between mb-0.5">
@@ -453,6 +455,17 @@ export default function DetailPanel({
                         </span>
                       </div>
                       <Sparkline data={metricsHistory.map(m => m.pods)} color="#a78bfa" height={14} />
+                    </div>
+                  )}
+                  {metricsHistory.length >= 2 && metricsHistory.some(m => (m.unhealthy ?? 0) > 0) && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-700 font-mono">Unhealthy pod history</span>
+                        <span className="text-xs font-mono text-red-700/80">
+                          max {Math.max(...metricsHistory.map(m => m.unhealthy ?? 0))}
+                        </span>
+                      </div>
+                      <Sparkline data={metricsHistory.map(m => m.unhealthy ?? 0)} color="#ef4444" height={14} />
                     </div>
                   )}
                 </div>
