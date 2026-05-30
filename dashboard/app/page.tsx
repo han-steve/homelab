@@ -111,7 +111,11 @@ export default function Home() {
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
             />
           ) : (
-            <TopologyView onSelectService={setSelectedIdx} />
+            <TopologyView
+              onSelectService={setSelectedIdx}
+              nodeMetrics={cluster?.nodeMetrics}
+              nsPodCounts={cluster?.nsPodCounts}
+            />
           )}
         </Suspense>
 

@@ -13,8 +13,12 @@ interface TooltipState {
 
 export default function TopologyView({
   onSelectService,
+  nodeMetrics,
+  nsPodCounts,
 }: {
   onSelectService: (idx: number) => void;
+  nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
+  nsPodCounts?: Record<string, number>;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({
@@ -419,6 +423,8 @@ export default function TopologyView({
       {tooltip.visible && (() => {
         const tNode = tooltip.nodeId ? topoNodes.find(n => n.id === tooltip.nodeId) : null;
         const connCount = tooltip.nodeId ? topoLinks.filter(l => l.source === tooltip.nodeId || l.target === tooltip.nodeId).length : 0;
+        const isM2 = tNode?.id === "m2";
+        const podTotal = nsPodCounts ? Object.values(nsPodCounts).reduce((a, b) => a + b, 0) : null;
         return (
           <div
             className="fixed z-50 pointer-events-none bg-gray-900/95 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-xl font-mono"
@@ -426,6 +432,24 @@ export default function TopologyView({
           >
             {tNode && <div className="font-bold text-sm mb-1" style={{ color: tNode.color }}>{tNode.icon} {tNode.label}</div>}
             <div className="text-gray-400">{tooltip.text}</div>
+            {isM2 && nodeMetrics && (
+              <div className="mt-1.5 space-y-0.5">
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">CPU</span>
+                  <span className="text-blue-400">{nodeMetrics.cpuCores} ({nodeMetrics.cpuPct})</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">RAM</span>
+                  <span className="text-cyan-400">{nodeMetrics.memoryi} ({nodeMetrics.memPct})</span>
+                </div>
+                {podTotal !== null && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">pods</span>
+                    <span className="text-gray-400">{podTotal}</span>
+                  </div>
+                )}
+              </div>
+            )}
             {connCount > 0 && <div className="text-gray-600 mt-1">{connCount} connection{connCount !== 1 ? "s" : ""}</div>}
           </div>
         );
