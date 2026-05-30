@@ -1280,6 +1280,16 @@ export default function Scene3D({
       />
       {/* Holographic scan line on GPU (coming soon) */}
       <GpuScanLine position={gpuPos} />
+      {/* Coming Soon floating tag above GPU */}
+      <Billboard position={[gpuPos[0], gpuPos[1] + 3.2, gpuPos[2]]}>
+        <mesh>
+          <planeGeometry args={[1.4, 0.36]} />
+          <meshBasicMaterial color="#d29922" transparent opacity={0.12} />
+        </mesh>
+        <Text position={[0, 0, 0.01]} fontSize={0.13} color="#d29922" anchorX="center" anchorY="middle" fontWeight={700}>
+          COMING SOON
+        </Text>
+      </Billboard>
       <CalloutPanel
         anchorPos={[gpuPos[0], gpuPos[1] + 1.5, gpuPos[2]]}
         panelOffset={[2.8, 2.0, 0]}
