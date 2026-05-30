@@ -382,14 +382,18 @@ export default function DetailPanel({
             </div>
           );
         })()}
-        {/* CPU + RAM trend sparklines from metricsHistory */}
+        {/* CPU + RAM + Pods trend sparklines from metricsHistory */}
         {metricsHistory && metricsHistory.length >= 4 && (() => {
           const recent = metricsHistory.slice(-24);
           const cpuVals = recent.map(m => m.cpu ?? 0);
           const memVals = recent.map(m => m.ram ?? 0);
+          const podVals = recent.map(m => m.pods ?? 0);
+          const unhealthyVals = recent.map(m => m.unhealthy ?? 0);
           const maxCpu = Math.max(...cpuVals, 1);
           const maxMem = Math.max(...memVals, 1);
-          const w = 116, h = 14;
+          const maxPods = Math.max(...podVals, 1);
+          const maxUnhealthy = Math.max(...unhealthyVals, 1);
+          const w = 72, h = 14;
           const sparkPath = (vals: number[], max: number) => {
             return vals.map((v, i) => {
               const x = (i / Math.max(vals.length - 1, 1)) * w;
@@ -399,13 +403,18 @@ export default function DetailPanel({
           };
           const cpuLast = cpuVals[cpuVals.length - 1];
           const memLast = memVals[memVals.length - 1];
+          const podsLast = podVals[podVals.length - 1];
+          const unhealthyLast = unhealthyVals[unhealthyVals.length - 1];
           const cpuColor = cpuLast > 80 ? "#ef4444" : cpuLast > 60 ? "#eab308" : "#58a6ff";
           const memColor = memLast > 80 ? "#ef4444" : memLast > 60 ? "#f97316" : "#06b6d4";
+          const podsColor = "#22c55e";
+          const unhealthyColor = unhealthyLast > 5 ? "#ef4444" : unhealthyLast > 0 ? "#f97316" : "#374151";
+          const hasUnhealthy = unhealthyVals.some(v => v > 0);
           return (
-            <div className="mb-3 flex gap-1.5">
+            <div className="mb-3 flex gap-1">
               <div className="flex-1 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/30">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[8px] font-mono text-gray-700">cpu 24h</span>
+                  <span className="text-[8px] font-mono text-gray-700">cpu</span>
                   <span className="text-[9px] font-mono" style={{ color: cpuColor }}>{cpuLast?.toFixed(0)}%</span>
                 </div>
                 <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
@@ -415,12 +424,24 @@ export default function DetailPanel({
               </div>
               <div className="flex-1 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/30">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[8px] font-mono text-gray-700">ram 24h</span>
+                  <span className="text-[8px] font-mono text-gray-700">ram</span>
                   <span className="text-[9px] font-mono" style={{ color: memColor }}>{memLast?.toFixed(0)}%</span>
                 </div>
                 <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
                   <path d={sparkPath(memVals, maxMem)} fill="none" stroke={memColor} strokeWidth={1} opacity={0.6} />
                   <circle cx={w} cy={h - 2 - (memLast / maxMem) * (h - 4)} r={1.5} fill={memColor} opacity={0.9} />
+                </svg>
+              </div>
+              <div className="flex-1 rounded px-2 py-1 bg-gray-900/50 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">pods</span>
+                  <span className="text-[9px] font-mono" style={{ color: podsColor }}>{podsLast}</span>
+                </div>
+                <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
+                  {hasUnhealthy && <path d={sparkPath(unhealthyVals, maxUnhealthy)} fill="none" stroke={unhealthyColor} strokeWidth={1} opacity={0.35} strokeDasharray="2 1" />}
+                  <path d={sparkPath(podVals, maxPods)} fill="none" stroke={podsColor} strokeWidth={1} opacity={0.6} />
+                  <circle cx={w} cy={h - 2 - (podsLast / maxPods) * (h - 4)} r={1.5} fill={podsColor} opacity={0.9} />
+                  {unhealthyLast > 0 && <circle cx={w} cy={h - 2 - (unhealthyLast / maxUnhealthy) * (h - 4)} r={1.5} fill={unhealthyColor} opacity={0.9} />}
                 </svg>
               </div>
             </div>
