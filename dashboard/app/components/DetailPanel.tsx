@@ -132,6 +132,27 @@ export default function DetailPanel({
 
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
+        {/* Quick access links */}
+        <div className="mb-4 grid grid-cols-4 gap-1">
+          {[
+            { icon: "🔄", label: "ArgoCD", url: "https://argocd.homelab" },
+            { icon: "📊", label: "Grafana", url: "https://grafana.homelab" },
+            { icon: "💾", label: "Longhorn", url: "https://longhorn.homelab" },
+            { icon: "🏠", label: "HA", url: "https://ha.homelab" },
+            { icon: "🎬", label: "Jellyfin", url: "https://jellyfin.homelab" },
+            { icon: "💰", label: "Budget", url: "https://budget.homelab" },
+            { icon: "☁️", label: "oCIS", url: "https://ocis.homelab" },
+            { icon: "🗄️", label: "MinIO", url: "https://minio.homelab" },
+          ].map(({ icon, label, url }) => (
+            <a key={label} href={url} target="_blank" rel="noopener noreferrer"
+              className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded bg-gray-900/60 border border-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 transition-colors text-center"
+              title={url}
+            >
+              <span className="text-sm">{icon}</span>
+              <span className="text-[9px] font-mono text-gray-600 truncate w-full text-center">{label}</span>
+            </a>
+          ))}
+        </div>
         {/* Quick status ribbon */}
         {(apps || unhealthyPods || longhornStorage || certificates) && (() => {
           const podStatus = unhealthyPods ? (unhealthyPods.length === 0 ? "ok" : "warn") : "unknown";
