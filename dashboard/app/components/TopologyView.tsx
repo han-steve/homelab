@@ -614,15 +614,27 @@ export default function TopologyView({
               transform={`translate(${pos.x}, ${pos.y})`}
               style={{ cursor: "pointer", transition: "opacity 0.2s", opacity: isDimmed ? 0.2 : 1 }}
               onClick={(e) => { e.stopPropagation(); handleNodeClick(node); }}
-              onMouseMove={(e) =>
+              onMouseMove={(e) => {
+                let tooltipText = node.tooltip;
+                if (isService && node.serviceIdx !== undefined) {
+                  const ns = services[node.serviceIdx]?.namespace;
+                  const pods = nsPodCounts?.[ns ?? ""] ?? 0;
+                  const cpuM = nsCpuRequestsM?.[ns ?? ""] ?? 0;
+                  const restarts = nsMaxRestarts?.[ns ?? ""] ?? 0;
+                  const extras: string[] = [];
+                  if (pods > 0) extras.push(`${pods}p`);
+                  if (cpuM > 0) extras.push(`${cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m`} cpu`);
+                  if (restarts > 0) extras.push(`↺${restarts}`);
+                  if (extras.length > 0) tooltipText = `${tooltipText} · ${extras.join(" ")}`;
+                }
                 setTooltip({
                   x: e.clientX + 14,
                   y: e.clientY - 10,
-                  text: node.tooltip,
+                  text: tooltipText,
                   nodeId: node.id,
                   visible: true,
-                })
-              }
+                });
+              }}
               onMouseLeave={() =>
                 setTooltip((t) => ({ ...t, visible: false }))
               }
