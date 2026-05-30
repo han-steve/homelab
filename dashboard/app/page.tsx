@@ -24,7 +24,7 @@ interface ClusterStatus {
   longRunningPods?: { namespace: string; name: string; startTime: string; ageDays: number }[];
   node: { name: string; ready: boolean; kubeletVersion?: string; cpu?: string; memory?: string; allocatableCpu?: string; allocatableMemory?: string; uptime?: string | null; pressures?: string[] } | null;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
-  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string; type?: string }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   longhornVolumes?: { name: string; state: string; robustness: string; sizeGiB: number; pvc?: string }[];
   k8sServices?: { namespace: string; name: string; type: string; clusterIP: string; externalIP?: string; ports: string }[];

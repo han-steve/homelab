@@ -198,7 +198,7 @@ export async function GET() {
     }
 
     // Parse recent warning events
-    interface K8sEvent { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string; }
+    interface K8sEvent { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string; type?: string; }
     const recentEvents: K8sEvent[] = [];
     if (eventsResult.status === "fulfilled" && eventsResult.value.stdout.trim()) {
       try {
@@ -220,6 +220,7 @@ export async function GET() {
             count: ev.count ?? 1,
             age,
             lastTimestamp: last ?? undefined,
+            type: ev.type ?? "Normal",
           });
         }
       } catch {}

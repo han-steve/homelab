@@ -132,7 +132,7 @@ export default function DetailPanel({
   onSelectService?: (idx: number) => void;
   nodeMetrics?: { cpuCores: string; memoryi: string; cpuPct: string; memPct: string } | null;
   nsPodCounts?: Record<string, number>;
-  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string }[];
+  recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string; lastTimestamp?: string; type?: string }[];
   metricsHistory?: { cpu: number; ram: number; pods: number; unhealthy?: number; appsHealthy?: number; appsTotal?: number; ts: number }[];
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number; lastRestartAt?: string }[];
@@ -1877,13 +1877,19 @@ export default function DetailPanel({
             {recentEvents && recentEvents.length > 0 && (<>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Warning Events</h3>
-              <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
+              <div className="flex items-center gap-1.5">
+                {recentEvents.filter(e => e.type === "Warning").length > 0 && (
+                  <span className="text-[9px] font-mono px-1 rounded bg-orange-900/20 text-orange-500/70 border border-orange-800/20">{recentEvents.filter(e => e.type === "Warning").length}⚠</span>
+                )}
+                <span className="text-xs font-mono text-orange-500/70">{recentEvents.length}</span>
+              </div>
             </div>
             {/* Compact timeline */}
             <div className="relative pl-4 space-y-2 border-l border-gray-800/60 ml-1">
               {recentEvents.slice(0, 5).map((ev, i) => {
                 const isBackOff = ev.reason === "BackOff" || ev.reason === "CrashLoopBackOff";
-                const dotColor = isBackOff ? "#ef4444" : ev.count > 50 ? "#f97316" : "#f59e0b";
+                const isWarning = ev.type === "Warning";
+                const dotColor = isBackOff ? "#ef4444" : ev.count > 50 ? "#f97316" : isWarning ? "#f59e0b" : "#60a5fa";
                 return (
                 <div key={i} className="relative text-xs font-mono">
                   {/* Timeline dot */}
