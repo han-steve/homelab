@@ -1851,6 +1851,15 @@ export default function DetailPanel({
             {nsCronJobs?.[svc.namespace] && nsCronJobs[svc.namespace].length > 0 && (
               <span className="text-[9px] font-mono px-1 py-0 rounded bg-cyan-900/20 text-cyan-700/60 border border-cyan-800/20">{nsCronJobs[svc.namespace].length}cj</span>
             )}
+            {(() => {
+              // Estimated uptime score based on restarts and status
+              const restarts = nsMaxRestarts[svc.namespace] ?? 0;
+              if (svc.status === "stopped") return <span className="text-[9px] font-mono px-1 py-0 rounded bg-red-900/20 text-red-600/60 border border-red-800/20">0% up</span>;
+              if (restarts === 0 && svc.status === "running") return null; // don't show 100%, only show when impaired
+              const est = restarts > 200 ? 85 : restarts > 100 ? 92 : restarts > 50 ? 96 : restarts > 20 ? 98 : restarts > 5 ? 99 : 99.5;
+              const color = est < 95 ? "#f97316" : est < 99 ? "#eab308" : "#22c55e";
+              return <span className="text-[9px] font-mono px-1 py-0 rounded border" style={{ color, borderColor: color + "30", backgroundColor: color + "10" }}>{est}% up</span>;
+            })()}
           </div>
         </div>
       </div>
