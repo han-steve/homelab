@@ -1328,13 +1328,20 @@ export default function DetailPanel({
                     {restarting.map((pod, i) => {
                       const pct = (pod.restarts / maxRestarts) * 100;
                       const color = pod.restarts > 10 ? "#ef4444" : pod.restarts > 3 ? "#f97316" : "#eab308";
+                      const isCrit = pod.status === "CrashLoopBackOff" || pod.status === "Error";
                       return (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-gray-700 w-28 shrink-0 truncate" title={pod.namespace + "/" + pod.name}>{pod.name.split("-")[0]}</span>
-                          <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                        <div key={i}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate" title={pod.namespace + "/" + pod.name}>{pod.name.split("-")[0]}</span>
+                            <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                            </div>
+                            <span className="text-xs font-mono w-8 text-right shrink-0 tabular-nums" style={{ color }}>↺{pod.restarts}</span>
                           </div>
-                          <span className="text-xs font-mono w-6 text-right shrink-0" style={{ color }}>↺{pod.restarts}</span>
+                          <div className="flex items-center gap-1.5 pl-0 mt-0.5">
+                            <span className="text-[9px] font-mono text-gray-800">{pod.namespace}</span>
+                            {isCrit && <span className="text-[9px] font-mono px-1 py-0 rounded" style={{ backgroundColor: color + "18", color }}>{pod.status}</span>}
+                          </div>
                         </div>
                       );
                     })}
