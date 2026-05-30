@@ -436,6 +436,14 @@ export default function Home() {
             <span className="hidden md:inline text-gray-600">Talos v1.13.2</span>
             <span className="hidden md:inline text-gray-800">|</span>
             <span className="hidden md:inline text-gray-600">K8s v1.36</span>
+            {cluster?.longhornStorage && (
+              <>
+                <span className="hidden md:inline text-gray-800">|</span>
+                <span className={`hidden md:inline ${cluster.longhornStorage.pct > 80 ? "text-red-500" : cluster.longhornStorage.pct > 60 ? "text-yellow-500" : "text-gray-600"}`} title={`Longhorn: ${cluster.longhornStorage.usedGiB}G used of ${cluster.longhornStorage.totalGiB}G`}>
+                  💾 {cluster.longhornStorage.pct.toFixed(0)}%
+                </span>
+              </>
+            )}
             {cluster?.node?.uptime && (
               <>
                 <span className="hidden md:inline text-gray-800">|</span>

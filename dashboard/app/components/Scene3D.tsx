@@ -1493,7 +1493,7 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
 }
 
 /* ── Orbiting pods around K8s object ─────────────────── */
-function OrbitingPods({ count, radius = 0.65 }: { count: number; radius?: number }) {
+function OrbitingPods({ count, radius = 0.65, unhealthyCount = 0 }: { count: number; radius?: number; unhealthyCount?: number }) {
   const groupRef = useRef<THREE.Group>(null!);
   const n = Math.min(count, 12);
   useFrame(({ clock }) => {
@@ -1510,25 +1510,30 @@ function OrbitingPods({ count, radius = 0.65 }: { count: number; radius?: number
       });
     }
   });
+  const unhealthyRatio = Math.min(1, unhealthyCount / Math.max(1, count));
   return (
     <group ref={groupRef}>
-      {Array.from({ length: n }, (_, i) => (
-        <mesh key={i}>
-          <sphereGeometry args={[0.028, 6, 6]} />
-          <meshBasicMaterial color={i < 2 ? "#ef4444" : "#326ce5"} transparent opacity={0.85} toneMapped={false} />
-        </mesh>
-      ))}
+      {Array.from({ length: n }, (_, i) => {
+        const isUnhealthy = i < Math.round(unhealthyRatio * n);
+        return (
+          <mesh key={i}>
+            <sphereGeometry args={[0.028, 6, 6]} />
+            <meshBasicMaterial color={isUnhealthy ? "#ef4444" : "#326ce5"} transparent opacity={0.85} toneMapped={false} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
 
 /* ── Kubernetes cluster object ───────────────────────── */
-function KubernetesObject({ position, isSelected, onClick, totalPods, warningCount }: {
+function KubernetesObject({ position, isSelected, onClick, totalPods, warningCount, unhealthyPodCount }: {
   position: [number, number, number];
   isSelected?: boolean;
   onClick?: () => void;
   totalPods?: number;
   warningCount?: number;
+  unhealthyPodCount?: number;
 }) {
   const ringA = useRef<THREE.Mesh>(null!);
   const ringB = useRef<THREE.Mesh>(null!);
@@ -1553,7 +1558,7 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
           <meshPhysicalMaterial color={k8sColor} metalness={0.3} roughness={0.2} clearcoat={0.9} emissive={k8sColor} emissiveIntensity={isSelected ? 0.9 : 0.5} />
         </mesh>
         {/* Orbiting pods */}
-        {totalPods !== undefined && totalPods > 0 && <OrbitingPods count={Math.min(totalPods, 10)} />}
+        {totalPods !== undefined && totalPods > 0 && <OrbitingPods count={Math.min(totalPods, 10)} unhealthyCount={unhealthyPodCount ?? 0} />}
         {/* Three orbit rings at different angles */}
         <mesh ref={ringA}>
           <torusGeometry args={[0.42, 0.012, 12, 64]} />
@@ -1911,7 +1916,7 @@ export default function Scene3D({
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
-      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} />
+      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} />
       {/* Subtle upward data particles: M2 → infra objects */}
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(4.5, 4.2, -1)} color="#f0883e" count={2} />
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-4.5, 3.7, -1)} color="#f0c020" count={2} />
