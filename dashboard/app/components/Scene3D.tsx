@@ -487,6 +487,38 @@ function GlowRing({
   );
 }
 
+/* ── cpu load ripple ring (expands outward on high load) ── */
+function CpuRippleRing({ position, cpuPct }: { position: [number, number, number]; cpuPct: number }) {
+  const ring1 = useRef<THREE.Mesh>(null!);
+  const ring2 = useRef<THREE.Mesh>(null!);
+  const ring3 = useRef<THREE.Mesh>(null!);
+  const speed = 0.4 + (cpuPct / 100) * 1.2; // faster at higher load
+  const color = cpuPct > 80 ? "#ef4444" : cpuPct > 50 ? "#eab308" : "#58a6ff";
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    // Three rings phased 1/3 apart
+    const phases = [0, 1/3, 2/3];
+    [ring1, ring2, ring3].forEach((ref, i) => {
+      if (!ref.current) return;
+      const phase = ((t * speed + phases[i]) % 1);
+      const scale = 1.0 + phase * 2.0; // expand from 1x to 3x
+      ref.current.scale.setScalar(scale);
+      const mat = ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = (1 - phase) * 0.35 * (cpuPct / 100);
+    });
+  });
+  return (
+    <group position={[position[0], 0.012, position[2]]} rotation-x={-Math.PI / 2}>
+      {[ring1, ring2, ring3].map((ref, i) => (
+        <mesh key={i} ref={ref}>
+          <torusGeometry args={[1.05, 0.018, 8, 64]} />
+          <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /* ── pulsing selection ring ──────────────────────────── */
 function SelectionRing({ color }: { color: string }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -2086,6 +2118,10 @@ export default function Scene3D({
       {/* Glow rings at floor level (fixed, don't hover with models) */}
       <GlowRing position={[routerPos[0], 0.01, routerPos[2]]} color="#8b949e" online isSelected={selectedNode === "router"} isHovered={hoveredNode === "router"} />
       <GlowRing position={[m2Pos[0], 0.01, m2Pos[2]]} color="#58a6ff" online isSelected={selectedNode === "m2"} isHovered={hoveredNode === "m2"} />
+      {/* CPU load ripple rings — expand outward faster at higher CPU */}
+      {nodeMetrics && parseFloat(nodeMetrics.cpuPct) > 10 && (
+        <CpuRippleRing position={m2Pos} cpuPct={parseFloat(nodeMetrics.cpuPct)} />
+      )}
       {/* Node pressure warning ring: pulsing orange torus if memory/disk/pid pressure */}
       {nodePressures && nodePressures.length > 0 && (
         <mesh position={[m2Pos[0], 0.015, m2Pos[2]]} rotation={[-Math.PI / 2, 0, 0]}>
