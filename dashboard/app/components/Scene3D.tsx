@@ -1821,7 +1821,7 @@ function OrbitingPods({ count, radius = 0.65, unhealthyCount = 0 }: { count: num
 }
 
 /* ── Kubernetes cluster object ───────────────────────── */
-function KubernetesObject({ position, isSelected, onClick, totalPods, warningCount, unhealthyPodCount, podStatusCounts, appsSynced, appsTotal }: {
+function KubernetesObject({ position, isSelected, onClick, totalPods, warningCount, unhealthyPodCount, podStatusCounts, appsSynced, appsTotal, kubeletVersion }: {
   position: [number, number, number];
   isSelected?: boolean;
   onClick?: () => void;
@@ -1831,6 +1831,7 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
   podStatusCounts?: { running: number; pending: number; failed: number; unknown: number };
   appsSynced?: number;
   appsTotal?: number;
+  kubeletVersion?: string;
 }) {
   const ringA = useRef<THREE.Mesh>(null!);
   const ringB = useRef<THREE.Mesh>(null!);
@@ -1870,6 +1871,12 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
           <meshBasicMaterial color={k8sColor} transparent opacity={isSelected ? 0.7 : 0.35} toneMapped={false} />
         </mesh>
         <Text position={[0, -0.72, 0]} fontSize={0.09} color={k8sColor} anchorX="center">Kubernetes</Text>
+        {kubeletVersion && (
+          <Text position={[0, -0.9, 0]} fontSize={0.07} color="#4b5563" anchorX="center"
+            // @ts-expect-error
+            toneMapped={false}
+          >{kubeletVersion}</Text>
+        )}
         {totalPods !== undefined && (
           <Text position={[0, 0.62, 0]} fontSize={0.12} color="#22c55e" anchorX="center" toneMapped={false}>
             {totalPods}
@@ -1892,7 +1899,7 @@ function KubernetesObject({ position, isSelected, onClick, totalPods, warningCou
               color: "#ccc",
               width: 180,
             }}>
-              <div style={{ color: k8sColor, marginBottom: 5, fontWeight: 600 }}>Kubernetes v1.36</div>
+              <div style={{ color: k8sColor, marginBottom: 5, fontWeight: 600 }}>Kubernetes {kubeletVersion ?? ""}</div>
               <div style={{ color: "#888", marginBottom: 3 }}>Talos Linux v1.13.2</div>
               {totalPods !== undefined && <div style={{ marginBottom: 2 }}>Pods: <span style={{ color: "#22c55e" }}>{podStatusCounts?.running ?? totalPods} running</span>{(podStatusCounts?.pending ?? 0) > 0 && <span style={{ color: "#eab308" }}> · {podStatusCounts?.pending}⏸</span>}{(podStatusCounts?.failed ?? 0) > 0 && <span style={{ color: "#ef4444" }}> · {podStatusCounts?.failed}✗</span>}</div>}
               {appsSynced !== undefined && appsTotal !== undefined && <div style={{ marginBottom: 2 }}>ArgoCD: <span style={{ color: appsSynced === appsTotal ? "#22c55e" : "#eab308" }}>{appsSynced}/{appsTotal} synced</span></div>}
@@ -2322,7 +2329,7 @@ export default function Scene3D({
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} apps={apps} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
       <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
-      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} podStatusCounts={undefined} appsSynced={appsSynced} appsTotal={appsTotal} />
+      <KubernetesObject position={[-2.5, 5.5, -2]} isSelected={selectedInfra === "k8s"} onClick={() => setSelectedInfra(v => v === "k8s" ? null : "k8s")} totalPods={totalPods} warningCount={(recentEvents?.length ?? 0) + (unhealthyPodCount ?? 0)} unhealthyPodCount={unhealthyPodCount} podStatusCounts={undefined} appsSynced={appsSynced} appsTotal={appsTotal} kubeletVersion={kubeletVersion} />
       {/* Subtle upward data particles: M2 → infra objects */}
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(4.5, 4.2, -1)} color="#f0883e" count={2} />
       <BeamParticles from={new THREE.Vector3(m2Pos[0], 1.2, m2Pos[2])} to={new THREE.Vector3(-4.5, 3.7, -1)} color="#f0c020" count={2} />
