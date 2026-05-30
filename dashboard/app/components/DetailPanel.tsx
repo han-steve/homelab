@@ -1490,6 +1490,36 @@ export default function DetailPanel({
         </a>
       )}
 
+      {/* Co-located services (same namespace) */}
+      {(() => {
+        const colocated = services.filter((s, i) => s.namespace === svc.namespace && i !== selectedIdx);
+        if (colocated.length === 0) return null;
+        return (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-4 mb-2" />
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono text-gray-700 uppercase tracking-wider">Co-located ({svc.namespace})</span>
+              <span className="text-xs font-mono text-gray-800">{colocated.length}</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {colocated.map((cs, i) => {
+                const csIdx = services.indexOf(cs);
+                return (
+                  <button key={i}
+                    onClick={() => onSelectService?.(csIdx)}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-900/60 border border-gray-800/40 hover:border-gray-600/50 text-gray-600 hover:text-gray-400 transition-colors"
+                    title={cs.description}
+                  >
+                    <span>{cs.icon}</span>
+                    <span>{cs.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
+
       {/* Namespace pod status */}
       {nsPodCounts && nsPodCounts[svc.namespace] !== undefined && (
         <>
