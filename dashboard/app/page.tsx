@@ -669,6 +669,20 @@ export default function Home() {
                 </span>
               </>
             )}
+            {/* ArgoCD apps mini-grid */}
+            {cluster?.apps && cluster.apps.length > 0 && (
+              <>
+                <span className="hidden lg:inline text-gray-800">|</span>
+                <div className="hidden lg:flex items-center gap-0.5" title={`ArgoCD: ${cluster.apps.filter(a => a.health === "Healthy").length}/${cluster.apps.length} healthy`}>
+                  {cluster.apps.map((app, i) => {
+                    const c = app.health === "Healthy" && app.sync === "Synced" ? "#22c55e"
+                      : app.health === "Degraded" ? "#ef4444"
+                      : app.sync === "OutOfSync" ? "#eab308" : "#6b7280";
+                    return <div key={i} title={`${app.name}: ${app.health} / ${app.sync}`} className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: c + "cc" }} />;
+                  })}
+                </div>
+              </>
+            )}
             {cluster?.node?.uptime && (
               <>
                 <span className="hidden md:inline text-gray-800">|</span>
