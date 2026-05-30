@@ -72,6 +72,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<string | null>(null);
+  const [searchHighlight, setSearchHighlight] = useState(0);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; appsHealthy: number; appsTotal: number; ts: number }[]>(
@@ -247,15 +248,18 @@ export default function Home() {
               <input
                 autoFocus
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => { setSearchQuery(e.target.value); setSearchHighlight(0); }}
                 onKeyDown={e => {
-                  if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }
+                  const matches = services.filter(s => (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) && (!searchCategory || s.category === searchCategory));
+                  if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); setSearchCategory(null); setSearchHighlight(0); }
+                  if (e.key === "ArrowDown") { e.preventDefault(); setSearchHighlight(h => Math.min(h + 1, Math.min(matches.length, 10) - 1)); }
+                  if (e.key === "ArrowUp") { e.preventDefault(); setSearchHighlight(h => Math.max(h - 1, 0)); }
                   if (e.key === "Enter") {
-                    const matches = services.filter(s => (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) && (!searchCategory || s.category === searchCategory));
-                    if (matches.length > 0) { setSelectedIdx(services.indexOf(matches[0])); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }
+                    const target = matches[searchHighlight] ?? matches[0];
+                    if (target) { setSelectedIdx(services.indexOf(target)); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); setSearchHighlight(0); }
                   }
                 }}
-                placeholder="Search services... (Enter to select)"
+                placeholder="Search services... (↑↓ navigate, ↵ select)"
                 className="flex-1 bg-transparent text-gray-200 text-sm font-mono placeholder-gray-700 focus:outline-none"
               />
               <span className="text-gray-700 text-xs font-mono">ESC</span>
@@ -264,7 +268,7 @@ export default function Home() {
             <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-800">
               {[null, "app", "infra", "monitoring", "storage"].map(cat => (
                 <button key={cat ?? "all"}
-                  onClick={() => setSearchCategory(cat)}
+                  onClick={() => { setSearchCategory(cat); setSearchHighlight(0); }}
                   className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors ${searchCategory === cat ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-gray-600 hover:text-gray-400 border border-transparent"}`}
                 >{cat ?? "all"}</button>
               ))}
@@ -279,18 +283,19 @@ export default function Home() {
               {services
                 .filter(s => (!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.namespace.toLowerCase().includes(searchQuery.toLowerCase())) && (!searchCategory || s.category === searchCategory))
                 .slice(0, 10)
-                .map((svc, _, filtered) => {
+                .map((svc, fi, filtered) => {
                   const idx = services.indexOf(svc);
                   const nsIssues = cluster?.unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
                   const hasCrit = nsIssues.some(p => p.status === "CrashLoopBackOff" || p.status === "Error");
                   const maxRestarts = Math.max(0, ...nsIssues.map(p => p.restarts ?? 0));
                   const pods = cluster?.nsPodCounts?.[svc.namespace];
                   const dotColor = hasCrit ? "#ef4444" : nsIssues.length > 0 ? "#f97316" : "#22c55e";
+                  const isHighlighted = fi === searchHighlight;
                   return (
                     <div
                       key={svc.name}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800/60 cursor-pointer transition-colors"
-                      onClick={() => { setSelectedIdx(idx); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); }}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isHighlighted ? "bg-gray-800/80 border border-gray-700/40" : "hover:bg-gray-800/60"}`}
+                      onClick={() => { setSelectedIdx(idx); setPanelCollapsed(false); setShowSearch(false); setSearchQuery(""); setSearchCategory(null); setSearchHighlight(0); }}
                     >
                       <span className="text-lg">{svc.icon}</span>
                       <div className="flex-1 min-w-0">
