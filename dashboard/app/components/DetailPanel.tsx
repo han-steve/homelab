@@ -1929,15 +1929,21 @@ export default function DetailPanel({
               <span className="text-xs font-mono text-orange-500/70">{nsEvents.length} warning{nsEvents.length !== 1 ? "s" : ""}</span>
             </div>
             <div className="space-y-1.5">
-              {nsEvents.slice(0, 4).map((ev, i) => (
-                <div key={i} className="text-xs font-mono px-2 py-1 rounded bg-orange-500/5 border border-orange-500/15">
+              {nsEvents.slice(0, 4).map((ev, i) => {
+                const isBackOff = ev.reason === "BackOff" || ev.reason === "CrashLoopBackOff";
+                const evColor = isBackOff ? "#ef4444" : ev.count > 50 ? "#f97316" : "#f59e0b";
+                return (
+                <div key={i} className="text-xs font-mono px-2 py-1 rounded border" style={{ backgroundColor: evColor + "08", borderColor: evColor + "20" }}>
                   <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className="text-orange-400 truncate">{ev.reason}</span>
-                    <span className="text-gray-700 shrink-0">{relTime(ev.lastTimestamp, now) || `×${ev.count}`}</span>
+                    <span className="truncate flex-1" style={{ color: evColor }}>{ev.reason}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ev.count > 1 && <span className="text-[9px] px-1 py-0 rounded" style={{ backgroundColor: evColor + "20", color: evColor }}>{ev.count}×</span>}
+                      <span className="text-gray-700">{relTime(ev.lastTimestamp, now) || ev.age}</span>
+                    </div>
                   </div>
                   <div className="text-gray-600 truncate">{ev.message.slice(0, 70)}{ev.message.length > 70 ? "…" : ""}</div>
                 </div>
-              ))}
+              )})}
             </div>
           </>
         );
