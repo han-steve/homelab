@@ -332,6 +332,7 @@ export default function Home() {
                 }
                 return m;
               })() : undefined}
+              nodePressures={cluster?.node?.pressures}
             />
           ) : (
             <TopologyView

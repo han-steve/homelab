@@ -1692,6 +1692,7 @@ export default function Scene3D({
   unhealthyPodCount,
   nodeUptime,
   nsMaxRestarts,
+  nodePressures,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1708,6 +1709,7 @@ export default function Scene3D({
   unhealthyPodCount?: number;
   nodeUptime?: string;
   nsMaxRestarts?: Record<string, number>;
+  nodePressures?: { memory: boolean; disk: boolean; pid: boolean };
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -2158,6 +2160,13 @@ export default function Scene3D({
           </div>
           {nodeUptime && (
             <div style={{ color: "#2a2a38", fontSize: 9 }}>↑ {nodeUptime}</div>
+          )}
+          {nodePressures && (nodePressures.memory || nodePressures.disk || nodePressures.pid) && (
+            <div style={{ display: "flex", gap: 4, marginTop: 3 }}>
+              {nodePressures.memory && <span style={{ fontSize: 8, color: "#ef444470", background: "#ef444415", padding: "0 4px", borderRadius: 3, border: "1px solid #ef444430" }}>MEM⚠</span>}
+              {nodePressures.disk && <span style={{ fontSize: 8, color: "#f9741670", background: "#f9741615", padding: "0 4px", borderRadius: 3, border: "1px solid #f9741630" }}>DISK⚠</span>}
+              {nodePressures.pid && <span style={{ fontSize: 8, color: "#eab30870", background: "#eab30815", padding: "0 4px", borderRadius: 3, border: "1px solid #eab30830" }}>PID⚠</span>}
+            </div>
           )}
         </div>
       </Html>
