@@ -73,6 +73,7 @@ export default function DetailPanel({
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showUnhealthyOnly, setShowUnhealthyOnly] = useState(false);
 
   // Map namespace → max restart count from unhealthy pods
   const nsMaxRestarts: Record<string, number> = {};
@@ -83,13 +84,15 @@ export default function DetailPanel({
       }
     }
   }
+  const unhealthyNsSet = new Set((unhealthyPods ?? []).map(p => p.namespace));
 
   if (selectedIdx === null) {
     const categories = ["all", "app", "infra", "monitoring", "storage"];
     const filteredServices = services.filter(s => {
       const matchCat = categoryFilter === "all" || s.category === categoryFilter;
       const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.category.includes(search.toLowerCase());
-      return matchCat && matchSearch;
+      const matchHealth = !showUnhealthyOnly || unhealthyNsSet.has(s.namespace) || nsMaxRestarts[s.namespace] > 0;
+      return matchCat && matchSearch && matchHealth;
     });
 
     return (
@@ -306,20 +309,31 @@ export default function DetailPanel({
         })()}
 
         {/* Search filter */}
-        <div className="relative mb-2">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="filter services..."
-            className="w-full bg-gray-900/80 border border-gray-800 rounded-md px-3 py-1.5 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-600 focus:text-gray-200 transition-colors"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-xs"
-            >✕</button>
-          )}
+        <div className="relative mb-2 flex gap-1.5">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="filter services..."
+              className="w-full bg-gray-900/80 border border-gray-800 rounded-md px-3 py-1.5 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-600 focus:text-gray-200 transition-colors"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-xs"
+              >✕</button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowUnhealthyOnly(v => !v)}
+            title="Show unhealthy/restarting only"
+            className={"px-2 py-1 rounded-md text-xs font-mono border transition-colors shrink-0 " + (
+              showUnhealthyOnly
+                ? "bg-red-500/15 border-red-700/50 text-red-400"
+                : "border-gray-800 text-gray-600 hover:text-gray-400 hover:border-gray-600"
+            )}
+          >⚠</button>
         </div>
 
         {/* Category tabs */}
