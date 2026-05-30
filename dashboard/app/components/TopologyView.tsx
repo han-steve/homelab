@@ -26,6 +26,11 @@ export default function TopologyView({
   });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [dims, setDims] = useState({ w: 800, h: 600 });
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const mouseMoved = useRef(false);
 
   useEffect(() => {
     const update = () => {
@@ -35,6 +40,42 @@ export default function TopologyView({
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // Wheel zoom
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.12 : 0.9;
+    setZoom(z => Math.max(0.4, Math.min(3.5, z * factor)));
+  }, []);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [handleWheel]);
+
+  const handleSvgMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    mouseMoved.current = false;
+    isPanning.current = true;
+    panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isPanning.current) {
+      const newX = e.clientX - panStart.current.x;
+      const newY = e.clientY - panStart.current.y;
+      const dist = Math.abs(newX - pan.x) + Math.abs(newY - pan.y);
+      if (dist > 4) mouseMoved.current = true;
+      setPan({ x: newX, y: newY });
+    }
+  };
+
+  const handleSvgMouseUp = () => { isPanning.current = false; };
+
+  const handleSvgClick = () => {
+    if (!mouseMoved.current) setSelectedNode(null);
+  };
 
   const nodePos = useCallback(
     (n: TopoNode) => ({
@@ -84,7 +125,12 @@ export default function TopologyView({
         ref={svgRef}
         viewBox={`0 0 ${dims.w} ${dims.h}`}
         className="w-full h-full"
-        onClick={() => setSelectedNode(null)}
+        style={{ cursor: isPanning.current ? "grabbing" : "grab" }}
+        onClick={handleSvgClick}
+        onMouseDown={handleSvgMouseDown}
+        onMouseMove={handleSvgMouseMove}
+        onMouseUp={handleSvgMouseUp}
+        onMouseLeave={handleSvgMouseUp}
       >
         <defs>
           <filter id="glow">
@@ -130,6 +176,9 @@ export default function TopologyView({
             </stop>
           </linearGradient>
         </defs>
+
+        {/* Zoom/pan group */}
+        <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
 
         {/* Background grid */}
         <g opacity={0.06}>
@@ -345,6 +394,9 @@ export default function TopologyView({
             </g>
           );
         })}
+
+        {/* Close zoom/pan group */}
+        </g>
       </svg>
 
       {/* Tooltip */}
@@ -362,6 +414,18 @@ export default function TopologyView({
           </div>
         );
       })()}
+
+      {/* Zoom controls */}
+      <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+        <button
+          onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+          className="px-2 py-1 bg-gray-900/90 border border-gray-700 rounded text-xs font-mono text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors"
+          title="Reset view"
+        >⊕</button>
+        <span className="text-xs font-mono text-gray-700 px-1">{Math.round(zoom * 100)}%</span>
+        <button onClick={() => setZoom(z => Math.min(3.5, z * 1.2))} className="px-2 py-1 bg-gray-900/90 border border-gray-700 rounded text-xs font-mono text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors">+</button>
+        <button onClick={() => setZoom(z => Math.max(0.4, z * 0.85))} className="px-2 py-1 bg-gray-900/90 border border-gray-700 rounded text-xs font-mono text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors">−</button>
+      </div>
 
       {/* Legend */}
       <div className="absolute bottom-5 left-5 bg-gray-900/90 border border-gray-800 rounded-xl p-3 text-xs backdrop-blur-sm">
@@ -384,7 +448,7 @@ export default function TopologyView({
         <div className="border-t border-gray-800 pt-2 font-mono text-gray-600 space-y-0.5">
           <div>{topoNodes.length} nodes · {topoLinks.length} links</div>
           <div>{topoLinks.filter(l => l.style === "solid").length} active · {topoLinks.filter(l => l.style === "dashed").length} planned</div>
-          {selectedNode && <div className="text-blue-500/70">click bg to deselect</div>}
+          {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
         </div>
       </div>
     </div>
