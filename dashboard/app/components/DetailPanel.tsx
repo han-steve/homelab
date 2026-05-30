@@ -65,7 +65,7 @@ export default function DetailPanel({
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   unhealthyPods?: { namespace: string; name: string; status: string; restarts: number }[];
   certificates?: { name: string; namespace: string; daysLeft: number; ready: boolean }[];
-  apps?: { name: string; sync: string; health: string }[];
+  apps?: { name: string; sync: string; health: string; syncedAt?: string | null }[];
   nsCpuRequestsM?: Record<string, number>;
   nsMemRequestsMi?: Record<string, number>;
   topCpuPods?: { namespace: string; name: string; cpu: string; memory: string; cpuM: number }[];
@@ -577,6 +577,17 @@ export default function DetailPanel({
             const healthy = apps.filter(a => a.health === "Healthy").length;
             const outOfSync = apps.length - synced;
             const degraded = apps.filter(a => a.health === "Degraded").length;
+            // Find most recently synced app
+            const withTimestamp = apps.filter(a => a.syncedAt).sort((x, y) => new Date(y.syncedAt!).getTime() - new Date(x.syncedAt!).getTime());
+            const lastSynced = withTimestamp[0];
+            let lastSyncAgo = "";
+            if (lastSynced?.syncedAt) {
+              const ms = Date.now() - new Date(lastSynced.syncedAt).getTime();
+              const mins = Math.floor(ms / 60000);
+              const hrs = Math.floor(ms / 3600000);
+              const days = Math.floor(ms / 86400000);
+              lastSyncAgo = days > 0 ? `${days}d ago` : hrs > 0 ? `${hrs}h ago` : `${mins}m ago`;
+            }
             return (
               <div>
                 <div className="flex items-center justify-between mb-0.5">
@@ -599,6 +610,9 @@ export default function DetailPanel({
                   <div className="text-xs mt-0.5" style={{ color: "#f87171" }}>
                     {outOfSync > 0 ? `${outOfSync} OutOfSync` : ""}{outOfSync > 0 && degraded > 0 ? " · " : ""}{degraded > 0 ? `${degraded} Degraded` : ""}
                   </div>
+                )}
+                {lastSyncAgo && (
+                  <div className="text-xs mt-0.5 text-gray-700">last sync {lastSyncAgo} · {lastSynced.name}</div>
                 )}
               </div>
             );

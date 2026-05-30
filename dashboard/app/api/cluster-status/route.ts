@@ -7,6 +7,7 @@ interface ArgoApp {
   name: string;
   sync: string;
   health: string;
+  syncedAt?: string | null;
 }
 
 interface PodStatus {
@@ -43,10 +44,12 @@ export async function GET() {
     if (argoResult.status === "fulfilled") {
       const data = JSON.parse(argoResult.value.stdout);
       for (const item of data.items ?? []) {
+        const syncedAt = item.status?.operationState?.finishedAt ?? item.status?.reconciledAt ?? null;
         apps.push({
           name: item.metadata?.name ?? "",
           sync: item.status?.sync?.status ?? "Unknown",
           health: item.status?.health?.status ?? "Unknown",
+          syncedAt,
         });
       }
     }
