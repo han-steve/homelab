@@ -91,7 +91,21 @@ export default function Home() {
     })()
   );
   // Track per-pod restart counts over time to detect rolling restarts
-  const restartHistory = useRef<{ ts: number; total: number }[]>([]);
+  const restartHistory = useRef<{ ts: number; total: number }[]>(
+    (() => {
+      try {
+        if (typeof window !== "undefined") {
+          const saved = localStorage.getItem("hl_restart_history");
+          if (saved) {
+            const arr = JSON.parse(saved);
+            const cutoff = Date.now() - 86400000;
+            return Array.isArray(arr) ? arr.filter((m: {ts?: number}) => (m.ts ?? 0) > cutoff).slice(-20) : [];
+          }
+        }
+      } catch {/* ignore */}
+      return [];
+    })()
+  );
 
   const fetchStatus = useRef(() => {});
   fetchStatus.current = () => {
@@ -110,7 +124,8 @@ export default function Home() {
           const appsTotal = data.apps?.length ?? 0;
           metricsHistory.current = [...metricsHistory.current.slice(-19), { cpu, ram, pods, unhealthy, appsHealthy, appsTotal, ts: Date.now() }];          try { localStorage.setItem("hl_metrics_history", JSON.stringify(metricsHistory.current)); } catch {/* ignore */}          // Track total restarts for rolling restart detection
           const totalRestarts = data.unhealthyPods?.reduce((s: number, p: {restarts?: number}) => s + (p.restarts ?? 0), 0) ?? 0;
-          restartHistory.current = [...restartHistory.current.slice(-9), { ts: Date.now(), total: totalRestarts }];
+          restartHistory.current = [...restartHistory.current.slice(-19), { ts: Date.now(), total: totalRestarts }];
+          try { localStorage.setItem("hl_restart_history", JSON.stringify(restartHistory.current)); } catch {/* ignore */}
         }
       })
       .catch(() => {})

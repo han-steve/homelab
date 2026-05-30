@@ -276,6 +276,27 @@ export default function DetailPanel({
                   </div>
                 </div>
               ))}
+              {restartHistory && restartHistory.length >= 3 && (() => {
+                const vals = restartHistory.map(r => r.total);
+                const maxV = Math.max(...vals, 1);
+                const minV = Math.min(...vals);
+                const w = 80, h = 12;
+                const xs = vals.map((_, i) => (i / (vals.length - 1)) * w);
+                const ys = vals.map(v => h - 2 - ((v - minV) / (maxV - minV || 1)) * (h - 4));
+                const pts = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
+                const isRising = vals[vals.length - 1] > vals[0];
+                const trendColor = isRising ? "#ef4444" : "#22c55e";
+                return (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="text-[9px] font-mono text-red-800">restarts</span>
+                    <svg width={w} height={h} style={{ overflow: "visible" }}>
+                      <polyline points={pts} fill="none" stroke={trendColor} strokeWidth={1} opacity={0.5} />
+                      <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r={1.5} fill={trendColor} opacity={0.8} />
+                    </svg>
+                    <span className="text-[9px] font-mono" style={{ color: trendColor }}>{vals[vals.length-1]}</span>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
