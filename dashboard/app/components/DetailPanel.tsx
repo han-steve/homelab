@@ -232,6 +232,9 @@ export default function DetailPanel({
             >
               <span className="text-sm">{icon}</span>
               <span className="text-[9px] font-mono text-gray-600 truncate w-full text-center">{label}</span>
+              {nsPodCounts?.[ns] !== undefined && (
+                <span className="text-[8px] font-mono text-gray-800 tabular-nums">{nsPodCounts[ns]}p</span>
+              )}
               <span className="absolute top-1 right-1 w-1 h-1 rounded-full" style={{ backgroundColor: dotColor, boxShadow: hasPods && !hasIssue ? `0 0 3px ${dotColor}` : "none" }} />
             </a>
             );
