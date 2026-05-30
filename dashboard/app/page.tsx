@@ -700,6 +700,21 @@ export default function Home() {
                 </span>
               </>
             )}
+            {/* Top CPU-requesting namespace */}
+            {cluster?.nsCpuRequestsM && (() => {
+              const entries = Object.entries(cluster.nsCpuRequestsM).sort((a, b) => b[1] - a[1]);
+              if (entries.length === 0) return null;
+              const [topNs, topM] = entries[0];
+              const topCores = (topM / 1000).toFixed(1);
+              return (
+                <>
+                  <span className="hidden lg:inline text-gray-800">|</span>
+                  <span className="hidden lg:inline font-mono text-xs text-purple-500/60" title={`Top CPU consumer: ${topNs} (${topCores} cores requested)`}>
+                    cpu:{topNs.slice(0, 8)}
+                  </span>
+                </>
+              );
+            })()}
             {/* ArgoCD apps mini-grid */}
             {cluster?.apps && cluster.apps.length > 0 && (
               <>
