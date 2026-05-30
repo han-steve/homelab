@@ -877,6 +877,12 @@ export default function TopologyView({
           <div>{topoNodes.length} nodes · {topoLinks.length} links</div>
           <div>{topoLinks.filter(l => l.style === "solid").length} active · {topoLinks.filter(l => l.style === "dashed").length} planned</div>
           <div>{uniqueNamespaces.length} namespaces shown</div>
+          {unhealthyNamespaces && unhealthyNamespaces.size > 0 && (
+            <div className="text-red-500/70">⚠ {unhealthyNamespaces.size} ns degraded</div>
+          )}
+          {recentEvents && recentEvents.length > 0 && (
+            <div className="text-yellow-600/60">⚡ {recentEvents.length} warning event{recentEvents.length !== 1 ? "s" : ""}</div>
+          )}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
         </div>
       </div>
