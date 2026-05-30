@@ -2273,6 +2273,28 @@ export default function DetailPanel({
               </div>
             );
           })()}
+          {/* Namespace oldest pod age (uptime estimate) */}
+          {recentPods && (() => {
+            const nsPods = recentPods.filter(p => p.namespace === svc.namespace);
+            if (nsPods.length === 0) return null;
+            const oldest = nsPods.reduce((a, b) => new Date(a.startTime).getTime() < new Date(b.startTime).getTime() ? a : b);
+            const ageMs = Date.now() - new Date(oldest.startTime).getTime();
+            const ageDays = Math.floor(ageMs / 86400000);
+            const ageHrs = Math.floor((ageMs % 86400000) / 3600000);
+            const ageStr = ageDays > 0 ? `${ageDays}d ${ageHrs}h` : `${ageHrs}h`;
+            const stability = ageDays >= 7 ? "stable" : ageDays >= 1 ? "recent" : "new";
+            const stabColor = ageDays >= 7 ? "#22c55e" : ageDays >= 1 ? "#06b6d4" : "#eab308";
+            return (
+              <div className="rounded px-1.5 py-1 bg-gray-900/60 border border-gray-800/30">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[8px] font-mono text-gray-700">ns age</span>
+                  <span className="text-[8px] font-mono" style={{ color: stabColor }}>{stability}</span>
+                </div>
+                <div className="text-[9px] font-mono text-gray-600">{ageStr}</div>
+                <div className="text-[7px] font-mono text-gray-800 mt-0.5 truncate" title={oldest.name}>{oldest.name.replace(/-[a-z0-9]{5,}$/, "").slice(0, 16)}</div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
