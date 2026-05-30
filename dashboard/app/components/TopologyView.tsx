@@ -72,6 +72,14 @@ export default function TopologyView({
 
   return (
     <div className="relative w-full h-full" style={{ background: "#0d1117" }}>
+      {/* Quick stats bar */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs font-mono text-gray-600 pointer-events-none z-10">
+        <span className="text-blue-500/60">{topoNodes.filter(n => n.type === "node").length} k8s nodes</span>
+        <span className="text-gray-700">·</span>
+        <span className="text-green-500/60">{services.filter(s => s.status === "running").length}/{services.length} services running</span>
+        <span className="text-gray-700">·</span>
+        <span className="text-gray-500/60">{topoLinks.filter(l => l.style === "solid").length} active links</span>
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${dims.w} ${dims.h}`}
