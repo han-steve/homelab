@@ -176,13 +176,22 @@ export default function DetailPanel({
           const status = critPodCount > 0 ? "DEGRADED" : warnPodCount > 0 ? "WARNING" : "HEALTHY";
           const color = critPodCount > 0 ? "#ef4444" : warnPodCount > 0 ? "#f97316" : "#22c55e";
           const podInfo = (unhealthyPods?.length ?? 0) > 0 ? `${unhealthyPods!.length} issue${unhealthyPods!.length > 1 ? "s" : ""}` : "all clear";
+          // Extra health indicators
+          const outOfSyncApps = (apps ?? []).filter(a => a.sync !== "Synced").length;
+          const storageWarn = longhornStorage && longhornStorage.pct > 70;
+          const certWarn = (certificates ?? []).some(c => c.daysLeft >= 0 && c.daysLeft < 30);
           return (
             <div className="mb-3 flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: color + "08", border: `1px solid ${color}25` }}>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color }}>Cluster: {status}</span>
               </div>
-              <span className="text-[10px] font-mono text-gray-600">{podInfo}</span>
+              <div className="flex items-center gap-1.5 text-[9px] font-mono">
+                <span style={{ color: podInfo === "all clear" ? "#22c55e60" : "#f9731660" }}>{podInfo}</span>
+                {outOfSyncApps > 0 && <span className="text-yellow-600/70">⎈{outOfSyncApps}</span>}
+                {storageWarn && <span className="text-violet-500/70">⬡{longhornStorage!.pct}%</span>}
+                {certWarn && <span className="text-yellow-600/70">🔒</span>}
+              </div>
             </div>
           );
         })()}
