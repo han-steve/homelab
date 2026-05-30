@@ -476,6 +476,16 @@ export default function Home() {
                 </span>
               </>
             )}
+            {cluster?.unhealthyPods && cluster.unhealthyPods.length > 0 && (() => {
+              const totalRestarts = cluster.unhealthyPods.reduce((s, p) => s + (p.restarts ?? 0), 0);
+              if (totalRestarts === 0) return null;
+              return (
+                <>
+                  <span className="hidden md:inline text-gray-800">|</span>
+                  <span className="hidden md:inline font-mono text-xs text-red-500/70" title={`Total pod restarts: ${totalRestarts}`}>↺{totalRestarts}</span>
+                </>
+              );
+            })()}
             {cluster?.longhornStorage && (
               <>
                 <span className="hidden md:inline text-gray-800">|</span>
