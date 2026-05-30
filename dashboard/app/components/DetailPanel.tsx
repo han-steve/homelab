@@ -810,6 +810,10 @@ export default function DetailPanel({
           const depAvail = allDeps.filter(d => (d as {available?: number}).available === (d as {desired?: number}).desired).length;
           const ssAvail = allSS.filter(s => (s as {available?: number}).available === (s as {desired?: number}).desired).length;
           const depScaledDown = allDeps.filter(d => (d as {desired?: number}).desired === 0).length;
+          const depDegraded = allDeps.filter(d => {
+            const typed = d as { available?: number; desired?: number; name?: string; namespace?: string };
+            return (typed.desired ?? 0) > 0 && (typed.available ?? 0) < (typed.desired ?? 0);
+          });
           if (totalDeploys + totalSS + totalCJ + totalDS === 0) return null;
           return (
             <div className="mb-3 flex gap-2">
@@ -819,6 +823,7 @@ export default function DetailPanel({
                   <div className="text-[9px] font-mono text-gray-600">Deploys</div>
                   {depAvail < totalDeploys && <div className="text-[8px] font-mono text-yellow-500/70">{depAvail}/{totalDeploys}</div>}
                   {depScaledDown > 0 && <div className="text-[8px] font-mono text-gray-600/60" title="Deployments scaled to 0 replicas">⬛{depScaledDown} idle</div>}
+                  {depDegraded.length > 0 && <div className="text-[8px] font-mono text-orange-500/70 animate-pulse" title={depDegraded.map(d => (d as {name?: string; namespace?: string}).name ?? "").join(", ")}>⚠{depDegraded.length} degraded</div>}
                 </div>
               )}
               {totalSS > 0 && (
