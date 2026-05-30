@@ -46,6 +46,15 @@ export default function TopologyView({
   const panStart = useRef({ x: 0, y: 0 });
   const mouseMoved = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [nsFilter, setNsFilter] = useState<string | null>(null);
+
+  // Unique namespaces from service nodes
+  const uniqueNamespaces = Array.from(new Set(
+    topoNodes
+      .filter(n => n.serviceIdx !== undefined)
+      .map(n => services[n.serviceIdx!]?.namespace)
+      .filter(Boolean)
+  )).sort() as string[];
 
   useEffect(() => {
     const update = () => {
@@ -162,18 +171,37 @@ export default function TopologyView({
         )}
       </div>
       {/* Search bar */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-1">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="search nodes..."
-          className="bg-gray-900/90 border border-gray-700 rounded px-2 py-1 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-500 w-36 transition-colors"
-          style={{ backdropFilter: "blur(8px)" }}
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery("")} className="text-gray-600 hover:text-gray-400 text-xs px-1">✕</button>
-        )}
+      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="search nodes..."
+            className="bg-gray-900/90 border border-gray-700 rounded px-2 py-1 text-xs font-mono text-gray-400 placeholder-gray-700 focus:outline-none focus:border-gray-500 w-36 transition-colors"
+            style={{ backdropFilter: "blur(8px)" }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="text-gray-600 hover:text-gray-400 text-xs px-1">✕</button>
+          )}
+        </div>
+        {/* Namespace filter chips */}
+        <div className="flex flex-wrap gap-1">
+          {nsFilter && (
+            <button
+              onClick={() => setNsFilter(null)}
+              className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-700/80 text-gray-300 border border-gray-600"
+            >all</button>
+          )}
+          {uniqueNamespaces.slice(0, 6).map(ns => (
+            <button
+              key={ns}
+              onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono border transition-colors ${nsFilter === ns ? "bg-blue-500/20 text-blue-300 border-blue-500/40" : "bg-gray-900/70 text-gray-600 border-gray-700/50 hover:text-gray-400"}`}
+              style={{ backdropFilter: "blur(4px)" }}
+            >{ns}</button>
+          ))}
+        </div>
       </div>
       <svg
         ref={svgRef}
@@ -341,7 +369,8 @@ export default function TopologyView({
           const isNeighbor = selectedNode && selectedNode !== node.id &&
             topoLinks.some(l => (l.source === selectedNode && l.target === node.id) || (l.target === selectedNode && l.source === node.id));
           const matchesSearch = !searchQuery || node.label.toLowerCase().includes(searchQuery.toLowerCase()) || node.id.toLowerCase().includes(searchQuery.toLowerCase());
-          const isDimmed = (selectedNode && !isSelected && !isNeighbor) || (searchQuery && !matchesSearch);
+          const matchesNs = !nsFilter || (node.serviceIdx !== undefined && services[node.serviceIdx]?.namespace === nsFilter);
+          const isDimmed = (selectedNode && !isSelected && !isNeighbor) || (searchQuery && !matchesSearch) || (nsFilter && node.serviceIdx !== undefined && !matchesNs);
 
           return (
             <g
