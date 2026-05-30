@@ -186,21 +186,41 @@ export default function TopologyView({
           )}
         </div>
         {/* Namespace filter chips */}
-        <div className="flex flex-wrap gap-1">
-          {nsFilter && (
-            <button
-              onClick={() => setNsFilter(null)}
-              className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-700/80 text-gray-300 border border-gray-600"
-            >all</button>
+        <div className="flex flex-wrap gap-1 items-center">
+          {uniqueNamespaces.length > 6 ? (
+            // Dropdown for large namespace lists
+            <select
+              value={nsFilter ?? ""}
+              onChange={e => setNsFilter(e.target.value || null)}
+              className="bg-gray-900/90 border border-gray-700 rounded px-2 py-0.5 text-[10px] font-mono text-gray-400 focus:outline-none focus:border-gray-500 transition-colors"
+              style={{ backdropFilter: "blur(8px)" }}
+            >
+              <option value="">all namespaces</option>
+              {uniqueNamespaces.map(ns => (
+                <option key={ns} value={ns}>{ns}</option>
+              ))}
+            </select>
+          ) : (
+            <>
+              {nsFilter && (
+                <button
+                  onClick={() => setNsFilter(null)}
+                  className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-700/80 text-gray-300 border border-gray-600"
+                >all</button>
+              )}
+              {uniqueNamespaces.map(ns => (
+                <button
+                  key={ns}
+                  onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono border transition-colors ${nsFilter === ns ? "bg-blue-500/20 text-blue-300 border-blue-500/40" : "bg-gray-900/70 text-gray-600 border-gray-700/50 hover:text-gray-400"}`}
+                  style={{ backdropFilter: "blur(4px)" }}
+                >{ns}</button>
+              ))}
+            </>
           )}
-          {uniqueNamespaces.slice(0, 6).map(ns => (
-            <button
-              key={ns}
-              onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono border transition-colors ${nsFilter === ns ? "bg-blue-500/20 text-blue-300 border-blue-500/40" : "bg-gray-900/70 text-gray-600 border-gray-700/50 hover:text-gray-400"}`}
-              style={{ backdropFilter: "blur(4px)" }}
-            >{ns}</button>
-          ))}
+          {nsFilter && uniqueNamespaces.length > 6 && (
+            <button onClick={() => setNsFilter(null)} className="text-gray-600 hover:text-gray-400 text-[10px] font-mono px-1">✕ clear</button>
+          )}
         </div>
       </div>
       <svg
