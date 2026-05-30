@@ -265,6 +265,18 @@ export default function DetailPanel({
             </div>
           );
         })()}
+        {/* Node pressure alert banner */}
+        {nodePressures && nodePressures.length > 0 && (
+          <div className="mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/6 px-3 py-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
+            <span className="text-xs font-mono text-yellow-400 uppercase tracking-wider shrink-0">Node Pressure</span>
+            <div className="flex gap-1 flex-wrap">
+              {nodePressures.map((p, i) => (
+                <span key={i} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-yellow-500/12 text-yellow-400/80 border border-yellow-500/20">{p}</span>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Critical pod alert */}
         {unhealthyPods && unhealthyPods.some(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50)) && (() => {
           const critPods = unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
