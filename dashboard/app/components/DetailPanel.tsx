@@ -1205,24 +1205,39 @@ export default function DetailPanel({
               </div>
               <div className="text-gray-700 mt-0.5">{longhornStorage.freeGiB}G free · {longhornStorage.pct}% used</div>
               {longhornVolumes && longhornVolumes.length > 0 && (
-                <div className="mt-1.5 grid grid-cols-3 gap-1">
-                  {[...longhornVolumes].sort((a, b) => b.sizeGiB - a.sizeGiB).slice(0, 9).map((vol, i, sorted) => {
-                    const robColor = vol.robustness === "healthy" ? "#22c55e" : vol.robustness === "degraded" ? "#eab308" : "#ef4444";
-                    const shortName = (vol.pvc ?? vol.name).replace(/^pvc-[a-f0-9-]+$/, vol.name.slice(0, 8) + "…").slice(0, 18);
-                    const sizePct = (vol.sizeGiB / sorted[0].sizeGiB) * 100;
+                <>
+                  {(() => {
+                    const attached = longhornVolumes.filter(v => v.state === "attached").length;
+                    const detached = longhornVolumes.filter(v => v.state !== "attached").length;
                     return (
-                      <div key={i} className="rounded px-1 py-0.5 bg-gray-900/60 overflow-hidden relative" title={`${vol.pvc ?? vol.name}\n${vol.robustness} · ${vol.sizeGiB}G`}>
-                        <div className="absolute inset-0 bottom-0" style={{ width: `${sizePct}%`, backgroundColor: robColor, opacity: 0.04 }} />
-                        <div className="relative flex items-center gap-1">
-                          <span className="w-1 h-1 rounded-full shrink-0 flex-none" style={{ backgroundColor: robColor }} />
-                          <span className="truncate text-gray-700 flex-1 text-[9px]">{shortName}</span>
-                          <span className="shrink-0 text-gray-800 text-[9px]">{vol.sizeGiB}G</span>
-                        </div>
+                      <div className="flex gap-2 mt-1 mb-1 text-[9px] font-mono">
+                        <span style={{ color: "#22c55e60" }}>⬢{attached} attached</span>
+                        {detached > 0 && <span style={{ color: "#6b728060" }}>⬡{detached} detached</span>}
                       </div>
                     );
-                  })}
-                  {longhornVolumes.length > 9 && <div className="text-gray-700/50 text-[9px] col-span-3 text-center">+{longhornVolumes.length - 9} more</div>}
-                </div>
+                  })()}
+                  <div className="mt-0.5 grid grid-cols-3 gap-1">
+                    {[...longhornVolumes].sort((a, b) => b.sizeGiB - a.sizeGiB).slice(0, 9).map((vol, i, sorted) => {
+                      const robColor = vol.robustness === "healthy" ? "#22c55e" : vol.robustness === "degraded" ? "#eab308" : "#ef4444";
+                      const isDetached = vol.state !== "attached";
+                      const shortName = (vol.pvc ?? vol.name).replace(/^pvc-[a-f0-9-]+$/, vol.name.slice(0, 8) + "…").slice(0, 18);
+                      const sizePct = (vol.sizeGiB / sorted[0].sizeGiB) * 100;
+                      return (
+                        <div key={i} className={`rounded px-1 py-0.5 overflow-hidden relative ${isDetached ? "opacity-50" : "bg-gray-900/60"}`}
+                          style={{ border: `1px solid ${isDetached ? "#ffffff08" : robColor + "15"}` }}
+                          title={`${vol.pvc ?? vol.name}\n${vol.state} · ${vol.robustness} · ${vol.sizeGiB}G`}>
+                          <div className="absolute inset-0 bottom-0" style={{ width: `${sizePct}%`, backgroundColor: robColor, opacity: 0.04 }} />
+                          <div className="relative flex items-center gap-1">
+                            <span className={`w-1 h-1 rounded-full shrink-0 flex-none ${isDetached ? "opacity-40" : ""}`} style={{ backgroundColor: robColor }} />
+                            <span className="truncate text-gray-700 flex-1 text-[9px]">{shortName}</span>
+                            <span className="shrink-0 text-gray-800 text-[9px]">{vol.sizeGiB}G</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {longhornVolumes.length > 9 && <div className="text-gray-700/50 text-[9px] col-span-3 text-center">+{longhornVolumes.length - 9} more</div>}
+                  </div>
+                </>
               )}
             </div>
           ) : (
