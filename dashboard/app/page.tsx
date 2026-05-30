@@ -53,6 +53,7 @@ export default function Home() {
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
@@ -105,6 +106,8 @@ export default function Home() {
       if (e.key === "t" || e.key === "T") setView("topology");
       if (e.key === "r" || e.key === "R") fetchStatus.current();
       if (e.key === "p" || e.key === "P") setPanelCollapsed(v => !v);
+      if (e.key === "?" || e.key === "/") setShowHelp(v => !v);
+      if (e.key === "Escape") setShowHelp(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -128,6 +131,33 @@ export default function Home() {
           </div>
         );
       })()}
+      {/* Keyboard shortcut help overlay */}
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowHelp(false)}>
+          <div className="bg-gray-900/95 border border-gray-700/60 rounded-xl shadow-2xl p-6 min-w-80 max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-300 font-mono uppercase tracking-wider">Keyboard Shortcuts</h2>
+              <button onClick={() => setShowHelp(false)} className="text-gray-600 hover:text-gray-400 text-xs font-mono">ESC</button>
+            </div>
+            <div className="space-y-2">
+              {[
+                ["3", "Switch to 3D rack view"],
+                ["T", "Switch to topology view"],
+                ["R", "Manual refresh"],
+                ["P", "Toggle detail panel"],
+                ["?", "Toggle this help"],
+                ["ESC", "Close overlays"],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex items-center gap-3">
+                  <kbd className="min-w-[2rem] text-center px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs font-mono text-gray-300">{key}</kbd>
+                  <span className="text-xs font-mono text-gray-500">{desc}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-3 border-t border-gray-800 text-xs font-mono text-gray-700 text-center">Click anywhere to close</div>
+          </div>
+        </div>
+      )}
       {/* Main view */}
       <div className="flex-1 relative min-w-0">
         <Suspense
@@ -342,6 +372,11 @@ export default function Home() {
               className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
               title="Manual refresh"
             >↺</button>
+            <button
+              onClick={() => setShowHelp(v => !v)}
+              className="px-1.5 py-0.5 rounded border border-gray-800 hover:border-gray-600 text-gray-600 hover:text-gray-400 transition-colors"
+              title="Keyboard shortcuts (?)"
+            >?</button>
           </div>
         )}
       </div>
