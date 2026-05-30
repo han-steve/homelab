@@ -1063,7 +1063,7 @@ function EventPulseRing() {
 
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
-  isSelected, isHovered, isUnhealthy = false, hasEvents = false, onClick, onPointerOver, onPointerOut,
+  isSelected, isHovered, isUnhealthy = false, hasEvents = false, nsPods, cpuM, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
@@ -1074,6 +1074,8 @@ function ServiceSphere({
   isHovered: boolean;
   isUnhealthy?: boolean;
   hasEvents?: boolean;
+  nsPods?: number;
+  cpuM?: number;
   onClick: () => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -1178,9 +1180,11 @@ function ServiceSphere({
               whiteSpace: "nowrap",
               boxShadow: `0 0 8px ${catColor}22`,
             }}>
-              <span style={{ color: catColor }}>{service.name}</span>
-              <span style={{ color: "#555", marginLeft: 4 }}>· {service.namespace}</span>
-              {isUnhealthy && <span style={{ color: "#ef4444", marginLeft: 4 }}>⚠</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ color: catColor }}>{service.name}</span>
+                {isUnhealthy && <span style={{ color: "#ef4444" }}>⚠</span>}
+              </div>
+              {nsPods !== undefined && <div style={{ color: "#555", marginTop: 2 }}>{nsPods} pod{nsPods !== 1 ? "s" : ""}{cpuM !== undefined ? ` · ${cpuM >= 1000 ? (cpuM/1000).toFixed(1) + "c" : cpuM + "m"} CPU` : ""}</div>}
             </div>
           </Html>
         )}
@@ -1216,7 +1220,7 @@ function BeamParticles({ from, to, color, count = 4 }: { from: THREE.Vector3; to
 
 /* ── Services radial display ─────────────────────────── */
 function ServicesDisplay({
-  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents,
+  nodePos, visible, selectedSvc, hoveredSvc, onSelectSvc, onHoverSvc, onUnhoverSvc, unhealthyNamespaces, recentEvents, nsPodCounts, nsCpuUsage,
 }: {
   nodePos: [number, number, number];
   visible: boolean;
@@ -1227,6 +1231,8 @@ function ServicesDisplay({
   onUnhoverSvc: () => void;
   unhealthyNamespaces?: Set<string>;
   recentEvents?: { namespace: string }[];
+  nsPodCounts?: Record<string, number>;
+  nsCpuUsage?: Record<string, number>;
 }) {
   const positions = useMemo<[number, number, number][]>(() => {
     const cols = 5;
@@ -1279,6 +1285,8 @@ function ServicesDisplay({
               isHovered={hoveredSvc === i}
               isUnhealthy={!!unhealthyNamespaces?.has(svc.namespace)}
               hasEvents={!!recentEvents?.some(e => e.namespace === svc.namespace)}
+              nsPods={nsPodCounts?.[svc.namespace]}
+              cpuM={nsCpuUsage?.[svc.namespace]}
               onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
               onPointerOver={() => onHoverSvc(i)}
               onPointerOut={onUnhoverSvc}
@@ -1577,6 +1585,8 @@ export default function Scene3D({
   longhornStorage,
   totalPods,
   recentEvents,
+  nsPodCounts,
+  nsCpuRequestsM,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1588,6 +1598,8 @@ export default function Scene3D({
   longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
   totalPods?: number;
   recentEvents?: { namespace: string; name: string; reason: string; message: string; count: number; age: string }[];
+  nsPodCounts?: Record<string, number>;
+  nsCpuRequestsM?: Record<string, number>;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1867,6 +1879,8 @@ export default function Scene3D({
         onUnhoverSvc={() => setHoveredSvc(null)}
         unhealthyNamespaces={unhealthyNamespaces}
         recentEvents={recentEvents}
+        nsPodCounts={nsPodCounts}
+        nsCpuUsage={nsCpuRequestsM}
       />
 
       {/* Service callout panel */}

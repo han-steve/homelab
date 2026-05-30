@@ -257,6 +257,8 @@ export default function Home() {
               longhornStorage={cluster?.longhornStorage}
               totalPods={cluster?.totalPods}
               recentEvents={cluster?.recentEvents}
+              nsPodCounts={cluster?.nsPodCounts}
+              nsCpuRequestsM={cluster?.nsCpuRequestsM}
             />
           ) : (
             <TopologyView
