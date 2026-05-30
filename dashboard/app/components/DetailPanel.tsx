@@ -2842,8 +2842,29 @@ export default function DetailPanel({
           </div>
         );
       })()}
+      {/* Namespace resource rank */}
+      {nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 1 && (() => {
+        const sortedNs = Object.entries(nsCpuRequestsM).sort((a, b) => b[1] - a[1]);
+        const rank = sortedNs.findIndex(([ns]) => ns === svc.namespace) + 1;
+        const total = sortedNs.length;
+        const maxCpu = sortedNs[0]?.[1] ?? 1;
+        const nsCpu = nsCpuRequestsM[svc.namespace] ?? 0;
+        const cpuSharePct = maxCpu > 0 ? (nsCpu / maxCpu) * 100 : 0;
+        if (nsCpu === 0 || rank === 0) return null;
+        const rankColor = rank <= 3 ? "#ef4444" : rank <= 6 ? "#eab308" : "#4b5563";
+        return (
+          <div className="mt-3 mb-2 p-2 rounded bg-gray-900/40 border border-gray-800/30">
+            <div className="flex items-center justify-between text-[9px] font-mono text-gray-700 mb-1">
+              <span>CPU rank vs all namespaces</span>
+              <span style={{ color: rankColor }}>#{rank} of {total}</span>
+            </div>
+            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${cpuSharePct}%`, backgroundColor: rankColor + "80" }} />
+            </div>
+          </div>
+        );
+      })()}
       {[
-        `kubectl -n ${svc.namespace} get pods`,
         `kubectl -n ${svc.namespace} describe pods`,
         `kubectl -n ${svc.namespace} logs -f --tail=50`,
         `kubectl top pods -n ${svc.namespace}`,
