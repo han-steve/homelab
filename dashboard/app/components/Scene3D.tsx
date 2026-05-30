@@ -1508,12 +1508,19 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
               {storageData ? (
                 <>
                   <div>{storageData.usedGiB}G / {storageData.totalGiB}G used ({storageData.pct}%)</div>
-                  <div>{storageData.freeGiB}G free</div>
+                  <div style={{ color: "#555", marginTop: 2 }}>{storageData.freeGiB}G free</div>
+                  <div style={{ marginTop: 5, height: 4, borderRadius: 2, background: "#1a2035", overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", borderRadius: 2, transition: "width 0.5s",
+                      width: `${storageData.pct}%`,
+                      background: storageData.pct > 80 ? "#ef4444" : storageData.pct > 60 ? "#eab308" : "#3b82f6",
+                    }} />
+                  </div>
                 </>
               ) : (
                 <div>Replicas: 1 (single node)</div>
               )}
-              <div style={{ marginTop: 5 }}>
+              <div style={{ marginTop: 7 }}>
                 <a href="https://longhorn.homelab" target="_blank" rel="noreferrer"
                   style={{ color: "#3b82f6", textDecoration: "none", fontSize: 10 }}
                   onClick={(e) => e.stopPropagation()}
