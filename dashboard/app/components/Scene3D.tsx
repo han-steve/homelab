@@ -1514,11 +1514,12 @@ function ServicesDisplay({
 }
 
 /* ── Namespace orbit ring visualization ─────────────── */
-function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCounts }: {
+function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCounts, nsCpuRequestsM }: {
   center: [number, number, number];
   namespaces: string[];
   unhealthyNamespaces?: Set<string>;
   nsPodCounts?: Record<string, number>;
+  nsCpuRequestsM?: Record<string, number>;
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const sphereRefs = useRef<THREE.Mesh[]>([]);
@@ -1551,8 +1552,11 @@ function NamespaceOrbitRings({ center, namespaces, unhealthyNamespaces, nsPodCou
       {namespaces.slice(0, count).map((ns, i) => {
         const isUnhealthy = unhealthyNamespaces?.has(ns);
         const pods = nsPodCounts?.[ns] ?? 0;
+        const cpuM = nsCpuRequestsM?.[ns] ?? 0;
+        const maxCpuM = nsCpuRequestsM ? Math.max(1, ...Object.values(nsCpuRequestsM)) : 1;
+        const cpuRatio = cpuM / maxCpuM;
         const color = isUnhealthy ? "#ef4444" : NS_COLORS[ns] ?? "#58a6ff";
-        const scale = 0.04 + Math.min(0.08, pods / 300);
+        const scale = 0.04 + Math.min(0.06, pods / 300) + cpuRatio * 0.04;
         return (
           <mesh key={ns} ref={el => { if (el) sphereRefs.current[i] = el; }} scale={scale}>
             <sphereGeometry args={[1, 8, 8]} />
@@ -2307,6 +2311,7 @@ export default function Scene3D({
           namespaces={Object.keys(nsPodCounts).sort((a, b) => (nsPodCounts[b] ?? 0) - (nsPodCounts[a] ?? 0))}
           unhealthyNamespaces={unhealthyNamespaces}
           nsPodCounts={nsPodCounts}
+          nsCpuRequestsM={nsCpuRequestsM}
         />
       )}
 
