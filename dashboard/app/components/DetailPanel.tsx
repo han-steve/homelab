@@ -2252,7 +2252,18 @@ export default function DetailPanel({
                               ? podLogsData.filter(line => line.toLowerCase().includes(podLogsFilter.toLowerCase()))
                               : podLogsData;
                             const displayLines = filtered.slice(-30);
+                            const errCount = podLogsData.filter(l => /error|fatal|exception|crash|panic/i.test(l)).length;
+                            const warnCount = podLogsData.filter(l => /\bwarn/i.test(l)).length;
                             return (
+                              <>
+                                {/* Error/warn summary row */}
+                                {(errCount > 0 || warnCount > 0) && (
+                                  <div className="flex items-center gap-1.5 mb-1 text-[8px] font-mono">
+                                    {errCount > 0 && <span className="px-1 rounded bg-red-900/20 text-red-400/70 border border-red-800/20">{errCount}err</span>}
+                                    {warnCount > 0 && <span className="px-1 rounded bg-yellow-900/20 text-yellow-500/60 border border-yellow-800/20">{warnCount}warn</span>}
+                                    <span className="text-gray-800">{podLogsData.length} lines total</span>
+                                  </div>
+                                )}
                               <div className="max-h-40 overflow-y-auto space-y-0 scrollbar-thin" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
                                 {displayLines.map((line, li) => {
                                   const isErr = /error|fatal|exception|crash|panic/i.test(line);
@@ -2273,6 +2284,7 @@ export default function DetailPanel({
                                 )}
                                 {podLogsFilter && <div className="text-gray-700 text-[8px] font-mono mt-0.5">{filtered.length} match{filtered.length !== 1 ? "es" : ""}</div>}
                               </div>
+                              </>
                             );
                           })() : null}
                         </div>
