@@ -173,6 +173,7 @@ export default function DetailPanel({
   const [podLogsPod, setPodLogsPod] = useState<{namespace: string; name: string} | null>(null);
   const [podLogsData, setPodLogsData] = useState<string[] | null>(null);
   const [podLogsLoading, setPodLogsLoading] = useState(false);
+  const [podLogsFilter, setPodLogsFilter] = useState("");
   const now = useNow();
 
   // Fetch pod logs when podLogsPod changes
@@ -2190,23 +2191,43 @@ export default function DetailPanel({
                               live
                             </span>
                           </div>
+                          <input
+                            type="text"
+                            placeholder="filter logs…"
+                            value={podLogsFilter}
+                            onChange={e => setPodLogsFilter(e.target.value)}
+                            className="w-full text-[8px] font-mono bg-gray-900/80 border border-gray-800/50 rounded px-1.5 py-0.5 text-gray-500 placeholder-gray-700 focus:outline-none focus:border-gray-600 mb-1"
+                          />
                           {podLogsLoading && !podLogsData ? (
                             <div className="text-gray-600 text-[9px] animate-pulse">Loading logs…</div>
-                          ) : podLogsData ? (
-                            <div className="max-h-40 overflow-y-auto space-y-0 scrollbar-thin" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
-                              {podLogsData.slice(-30).map((line, li) => {
-                                const isErr = /error|fatal|exception|crash|panic/i.test(line);
-                                const isWarn = /warn|warning/i.test(line);
-                                // Strip timestamp prefix if present (format: 2024-01-01T00:00:00.000Z text)
-                                const text = line.replace(/^\d{4}-\d{2}-\d{2}T[\d:.Z]+\s+/, "");
-                                return (
-                                  <div key={li} className={`text-[8px] font-mono leading-tight py-0.5 ${isErr ? "text-red-400/70" : isWarn ? "text-yellow-500/60" : "text-gray-700"}`} title={line}>
-                                    {text.slice(0, 120)}{text.length > 120 ? "…" : ""}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : null}
+                          ) : podLogsData ? (() => {
+                            const filtered = podLogsFilter
+                              ? podLogsData.filter(line => line.toLowerCase().includes(podLogsFilter.toLowerCase()))
+                              : podLogsData;
+                            const displayLines = filtered.slice(-30);
+                            return (
+                              <div className="max-h-40 overflow-y-auto space-y-0 scrollbar-thin" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
+                                {displayLines.map((line, li) => {
+                                  const isErr = /error|fatal|exception|crash|panic/i.test(line);
+                                  const isWarn = /warn|warning/i.test(line);
+                                  const text = line.replace(/^\d{4}-\d{2}-\d{2}T[\d:.Z]+\s+/, "");
+                                  return (
+                                    <div key={li} className={`text-[8px] font-mono leading-tight py-0.5 ${isErr ? "text-red-400/70" : isWarn ? "text-yellow-500/60" : "text-gray-700"}`} title={line}>
+                                      {podLogsFilter ? text.split(new RegExp(`(${podLogsFilter})`, "gi")).map((part, pi) =>
+                                        part.toLowerCase() === podLogsFilter.toLowerCase()
+                                          ? <mark key={pi} className="bg-yellow-500/20 text-yellow-400/80 rounded-sm">{part}</mark>
+                                          : part
+                                      ) : text.slice(0, 120)}{!podLogsFilter && text.length > 120 ? "…" : ""}
+                                    </div>
+                                  );
+                                })}
+                                {podLogsFilter && filtered.length === 0 && (
+                                  <div className="text-gray-700 text-[8px] font-mono italic">no matches</div>
+                                )}
+                                {podLogsFilter && <div className="text-gray-700 text-[8px] font-mono mt-0.5">{filtered.length} match{filtered.length !== 1 ? "es" : ""}</div>}
+                              </div>
+                            );
+                          })() : null}
                         </div>
                       )}
                     </div>
