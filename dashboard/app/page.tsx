@@ -42,16 +42,24 @@ export default function Home() {
   const [cluster, setCluster] = useState<ClusterStatus | null>(null);
   const [showApps, setShowApps] = useState(false);
   const [showPods, setShowPods] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [nextRefreshIn, setNextRefreshIn] = useState(30);
 
   useEffect(() => {
-    const fetchStatus = () =>
+    const fetchStatus = () => {
+      setIsLoading(true);
+      setNextRefreshIn(30);
       fetch("/api/cluster-status")
         .then((r) => r.json())
         .then(setCluster)
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
+    };
     fetchStatus();
     const id = setInterval(fetchStatus, 30000);
-    return () => clearInterval(id);
+    // Countdown timer
+    const countdown = setInterval(() => setNextRefreshIn(v => Math.max(0, v - 1)), 1000);
+    return () => { clearInterval(id); clearInterval(countdown); };
   }, []);
 
   useEffect(() => {
@@ -213,7 +221,11 @@ export default function Home() {
         )}
         {cluster && (
           <div className="absolute bottom-5 right-5 text-xs text-gray-700 pointer-events-none font-mono hidden sm:block">
-            last sync: {new Date(cluster.timestamp).toLocaleTimeString()}
+            {isLoading ? (
+              <span className="text-blue-500/60 animate-pulse">syncing...</span>
+            ) : (
+              <span>last sync: {new Date(cluster.timestamp).toLocaleTimeString()} · refresh in {nextRefreshIn}s</span>
+            )}
           </div>
         )}
       </div>
