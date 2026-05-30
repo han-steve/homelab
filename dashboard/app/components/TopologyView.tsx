@@ -368,6 +368,14 @@ export default function TopologyView({
             </feMerge>
           </filter>
 
+          {/* Arrowhead markers for directed links */}
+          <marker id="arrow-default" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L6,3 z" fill="#58a6ff" opacity={0.5} />
+          </marker>
+          <marker id="arrow-highlighted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L6,3 z" fill="#93c5fd" opacity={0.9} />
+          </marker>
+
           {/* Animated gradient for links */}
           <linearGradient id="linkFlow" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#58a6ff" stopOpacity={0.3}>
@@ -466,6 +474,7 @@ export default function TopologyView({
                 strokeWidth={isHighlighted ? 2.5 * podWeight : (link.style === "solid" ? 1.5 * podWeight : podWeight)}
                 strokeDasharray={link.style === "dashed" ? "6,4" : "none"}
                 opacity={nsFilteredOut ? 0.04 : (selectedNode ? (isHighlighted ? 0.9 : 0.15) : 0.45)}
+                markerEnd={isHighlighted ? "url(#arrow-highlighted)" : "url(#arrow-default)"}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
               />
               {/* Invisible wider hit area for tooltip hover */}
