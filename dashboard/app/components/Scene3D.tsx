@@ -123,15 +123,18 @@ function Particles() {
 }
 
 /* ── data packet travelling along a cable ─────────────────────── */
-function DataPacket({ curve, color, speed = 0.2 }: {
+function DataPacket({ curve, color, speed = 0.2, reverse = false, offset = 0 }: {
   curve: THREE.QuadraticBezierCurve3;
   color: string;
   speed?: number;
+  reverse?: boolean;
+  offset?: number;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame(({ clock }) => {
     if (ref.current) {
-      const t = (clock.getElapsedTime() * speed) % 1;
+      const raw = (clock.getElapsedTime() * speed + offset) % 1;
+      const t = reverse ? 1 - raw : raw;
       const pos = curve.getPoint(t);
       ref.current.position.copy(pos);
       ref.current.position.y = 0.1;
@@ -147,13 +150,14 @@ function DataPacket({ curve, color, speed = 0.2 }: {
 
 /* ── floor-level glowing ethernet cable ─────────────── */
 function FloorCable({
-  from, to, color = "#58a6ff", active = true, speed = 0.18
+  from, to, color = "#58a6ff", active = true, speed = 0.18, bidir = false
 }: {
   from: [number, number, number];
   to: [number, number, number];
   color?: string;
   active?: boolean;
   speed?: number;
+  bidir?: boolean;
 }) {
   const flowRef = useRef<THREE.Mesh>(null!);
 
@@ -207,6 +211,7 @@ function FloorCable({
       )}
       {/* Data packet: a tiny glowing sphere that travels the cable */}
       {active && <DataPacket curve={curve} color={color} speed={speed} />}
+      {active && bidir && <DataPacket curve={curve} color={color} speed={speed * 0.8} reverse offset={0.5} />}
     </group>
   );
 }
@@ -1068,7 +1073,7 @@ export default function Scene3D({
       <Particles />
 
       {/* Floor cables (at ground level) */}
-      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} />
+      <FloorCable from={routerPos} to={m2Pos} color="#58a6ff" active speed={0.18} bidir />
       <FloorCable from={routerPos} to={gpuPos} color="#d29922" active speed={0.13} />
 
       {/* Glow rings at floor level (fixed, don't hover with models) */}
