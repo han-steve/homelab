@@ -143,6 +143,7 @@ export default function DetailPanel({
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showUnhealthyOnly, setShowUnhealthyOnly] = useState(false);
   const [nsFilter, setNsFilter] = useState<string | null>(null);
+  const [expandedPvcNs, setExpandedPvcNs] = useState<string | null>(null);
   const now = useNow();
 
   // Map namespace → max restart count from unhealthy pods
@@ -711,15 +712,40 @@ export default function DetailPanel({
                 <span className="text-xs font-mono text-gray-700">{totalGiB >= 1024 ? `${(totalGiB/1024).toFixed(1)}Ti` : `${totalGiB}Gi`} total</span>
               </div>
               <div className="space-y-1">
-                {entries.map(([ns, gib]) => (
-                  <div key={ns} className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
-                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-violet-400/40" style={{ width: `${(gib / maxGiB) * 100}%` }} />
+                {entries.map(([ns, gib]) => {
+                  const isExpanded = expandedPvcNs === ns;
+                  const nsVols = (nsPvcs[ns] ?? []) as {name: string; status: string; capacity: string; storageClass: string}[];
+                  return (
+                    <div key={ns}>
+                      <button
+                        className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-800/30 rounded px-0.5 py-0.5 transition-colors group"
+                        onClick={() => setExpandedPvcNs(isExpanded ? null : ns)}
+                      >
+                        <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate group-hover:text-gray-500">{ns}</span>
+                        <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-violet-400/40" style={{ width: `${(gib / maxGiB) * 100}%` }} />
+                        </div>
+                        <span className="text-xs font-mono text-violet-400/70 w-12 text-right shrink-0">{gib >= 1000 ? `${(gib/1024).toFixed(1)}Ti` : `${gib}Gi`}</span>
+                        <span className="text-gray-700 text-[9px] shrink-0">{isExpanded ? "▲" : "▼"}</span>
+                      </button>
+                      {isExpanded && nsVols.length > 0 && (
+                        <div className="ml-3 mt-0.5 mb-1 space-y-0.5 border-l border-violet-900/40 pl-2">
+                          {nsVols.map((pvc, pi) => {
+                            const pvcGib = parseGiB(pvc.capacity);
+                            const statusColor = pvc.status === "Bound" ? "#22c55e" : "#eab308";
+                            return (
+                              <div key={pi} className="flex items-center gap-1 text-[9px] font-mono">
+                                <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: statusColor }} />
+                                <span className="text-gray-700 truncate flex-1">{pvc.name}</span>
+                                <span className="text-violet-500/50 shrink-0">{pvcGib >= 1000 ? `${(pvcGib/1024).toFixed(1)}Ti` : `${pvcGib}Gi`}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs font-mono text-violet-400/70 w-12 text-right shrink-0">{gib >= 1000 ? `${(gib/1024).toFixed(1)}Ti` : `${gib}Gi`}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
