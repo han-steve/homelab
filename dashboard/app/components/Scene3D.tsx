@@ -781,13 +781,14 @@ function HardwareNode({
 
 /* ── Service glass sphere ─────────────────────────── */
 function ServiceSphere({
-  position, service, visible, delay = 0,
+  position, service, visible, delay = 0, idx = 0,
   isSelected, isHovered, onClick, onPointerOver, onPointerOut,
 }: {
   position: [number, number, number];
   service: typeof services[0];
   visible: boolean;
   delay?: number;
+  idx?: number;
   isSelected: boolean;
   isHovered: boolean;
   onClick: () => void;
@@ -798,6 +799,8 @@ function ServiceSphere({
   const outerRef = useRef<THREE.Group>(null!);
   const catColor = CATEGORY_COLORS[service.category] || "#666";
   const isRunning = service.status === "running";
+  // Staggered float speed per sphere so each has a unique rhythm
+  const floatSpeed = 0.8 + (idx % 7) * 0.18;
 
   useFrame(() => {
     if (outerRef.current) {
@@ -816,7 +819,7 @@ function ServiceSphere({
       onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = "default"; onPointerOut(); }}
     >
       {/* Float wraps hit sphere + visual together — hover area always matches visual position */}
-      <Float speed={1.1} floatIntensity={0.08} rotationIntensity={0}>
+      <Float speed={floatSpeed} floatIntensity={0.08} rotationIntensity={0}>
         {/* Invisible hit sphere — same position as visual */}
         <mesh>
           <sphereGeometry args={[0.48, 8, 8]} />
@@ -920,6 +923,7 @@ function ServicesDisplay({
               service={svc}
               visible={visible}
               delay={i}
+              idx={i}
               isSelected={selectedSvc === i}
               isHovered={hoveredSvc === i}
               onClick={() => onSelectSvc(selectedSvc === i ? null : i)}
