@@ -1006,7 +1006,19 @@ export default function TopologyView({
       </div>
 
       {/* Mini-map (bottom right) */}
-      <div className="absolute bottom-5 right-5 bg-gray-950/90 border border-gray-800/60 rounded-lg overflow-hidden" style={{ width: 126, height: 94 }}>
+      <div
+        className="absolute bottom-5 right-5 bg-gray-950/90 border border-gray-800/60 rounded-lg overflow-hidden"
+        style={{ width: 126, height: 94, cursor: "crosshair" }}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const clickX = (e.clientX - rect.left) / 126; // normalized 0-1
+          const clickY = (e.clientY - rect.top) / 94;
+          // clickX/Y is where in world-space (normalized) we want to center
+          const worldX = 60 + clickX * (dims.w - 120);
+          const worldY = 40 + clickY * (dims.h - 80);
+          setPan({ x: dims.w / 2 - worldX * zoom, y: dims.h / 2 - worldY * zoom });
+        }}
+      >
         <svg width={126} height={94} viewBox="0 0 126 94">
           <rect width={126} height={94} fill="#05050e" />
           {/* Links */}
@@ -1025,15 +1037,17 @@ export default function TopologyView({
               />
             );
           })}
-          {/* Nodes */}
+          {/* Nodes — unhealthy ones shown in red */}
           {topoNodes.map((n, ni) => {
             const r = (n.type === "node" || n.type === "node-planned") ? 3 : n.type === "service" ? 2 : 1.8;
             const isFiltered = nsFilter && n.serviceIdx !== undefined && services[n.serviceIdx]?.namespace !== nsFilter;
+            const isUnhealthy = n.serviceIdx !== undefined && unhealthyNamespaces?.has(services[n.serviceIdx]?.namespace ?? "");
+            const dotColor = isUnhealthy ? "#ef4444" : n.color;
             return (
               <circle key={ni}
                 cx={n.x * 126} cy={n.y * 94}
                 r={r}
-                fill={n.color}
+                fill={dotColor}
                 opacity={isFiltered ? 0.12 : selectedNode === n.id ? 1 : 0.55}
               />
             );
@@ -1055,7 +1069,7 @@ export default function TopologyView({
             );
           })()}
         </svg>
-        <div className="absolute bottom-0.5 right-1.5 text-[7px] font-mono text-gray-700 pointer-events-none">minimap</div>
+        <div className="absolute bottom-0.5 right-1.5 text-[7px] font-mono text-gray-700 pointer-events-none">minimap · click to pan</div>
       </div>
     </div>
   );
