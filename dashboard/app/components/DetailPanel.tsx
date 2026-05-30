@@ -829,6 +829,39 @@ export default function DetailPanel({
                   <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-violet-500/60 rounded inline-block" />ram</span>
                 </div>
               </div>
+              {/* Cluster-total utilization summary */}
+              {(() => {
+                const totCpu = Object.values(nsCpuRequestsM).reduce((a, b) => a + b, 0);
+                const totMem = nsMemRequestsMi ? Object.values(nsMemRequestsMi).reduce((a, b) => a + b, 0) : 0;
+                const cpuPctTotal = Math.round((totCpu / allocCpuM) * 100);
+                const memPctTotal = Math.round((totMem / allocMemMi) * 100);
+                const cpuColor = cpuPctTotal > 80 ? "#ef4444" : cpuPctTotal > 60 ? "#eab308" : "#58a6ff";
+                const memColor = memPctTotal > 80 ? "#ef4444" : memPctTotal > 60 ? "#eab308" : "#a855f7";
+                return (
+                  <div className="flex gap-2 mb-2">
+                    <div className="flex-1 rounded px-2 py-1 bg-blue-500/5 border border-blue-500/10">
+                      <div className="flex items-center justify-between text-[10px] font-mono mb-0.5">
+                        <span className="text-gray-700">CPU total</span>
+                        <span style={{ color: cpuColor }}>{cpuPctTotal}%</span>
+                      </div>
+                      <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${cpuPctTotal}%`, backgroundColor: cpuColor, opacity: 0.7 }} />
+                      </div>
+                      <div className="text-[9px] font-mono text-gray-800 mt-0.5">{(totCpu/1000).toFixed(1)}c / 15.9c</div>
+                    </div>
+                    <div className="flex-1 rounded px-2 py-1 bg-violet-500/5 border border-violet-500/10">
+                      <div className="flex items-center justify-between text-[10px] font-mono mb-0.5">
+                        <span className="text-gray-700">RAM total</span>
+                        <span style={{ color: memColor }}>{memPctTotal}%</span>
+                      </div>
+                      <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${memPctTotal}%`, backgroundColor: memColor, opacity: 0.7 }} />
+                      </div>
+                      <div className="text-[9px] font-mono text-gray-800 mt-0.5">{totMem >= 1024 ? `${(totMem/1024).toFixed(1)}G` : `${Math.round(totMem)}M`} / 30.3G</div>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="space-y-1.5">
                 {allNs.map(ns => {
                   const cpuM = nsCpuRequestsM[ns] || 0;
