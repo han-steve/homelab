@@ -1391,6 +1391,11 @@ function ArgoCDObject({ position, isSelected, onClick, appsSynced, appsTotal }: 
           <meshBasicMaterial color={argoColor} transparent opacity={isSelected ? 1.0 : 0.65} toneMapped={false} />
         </mesh>
         <Text position={[0, -0.85, 0]} fontSize={0.1} color={argoColor} anchorX="center">ArgoCD</Text>
+        {appsTotal !== undefined && (
+          <Text position={[0, 0.82, 0]} fontSize={0.11} color={isOutOfSync ? "#eab308" : "#22c55e"} anchorX="center" toneMapped={false}>
+            {appsSynced}/{appsTotal}
+          </Text>
+        )}
         {isSelected && (
           <Html position={[0.9, 0.4, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
@@ -1488,6 +1493,11 @@ function LonghornObject({ position, isSelected, onClick, storageData }: {
           ))}
         </group>
         <Text position={[0, -0.75, 0]} fontSize={0.09} color="#3b82f6" anchorX="center">Longhorn</Text>
+        {storageData && (
+          <Text position={[0, 0.72, 0]} fontSize={0.11} color={storageData.pct > 80 ? "#ef4444" : storageData.pct > 60 ? "#eab308" : "#3b82f6"} anchorX="center" toneMapped={false}>
+            {storageData.pct}%
+          </Text>
+        )}
         {isSelected && (
           <Html position={[0.8, 0.3, 0]} style={{ pointerEvents: "none" }}>
             <div style={{
