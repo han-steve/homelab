@@ -98,23 +98,25 @@ export default function TopologyView({
     [dims]
   );
 
-  const nodeRadius = (type: TopoNode["type"]) => {
-    switch (type) {
-      case "node":
-        return 42;
-      case "node-planned":
-        return 38;
-      case "router":
-        return 32;
-      case "internet":
-        return 28;
-      case "infra":
-        return 28;
-      case "service":
-        return 28;
-      default:
-        return 26;
+  const nodeRadius = (type: TopoNode["type"], node?: TopoNode) => {
+    const base = (() => {
+      switch (type) {
+        case "node": return 42;
+        case "node-planned": return 38;
+        case "router": return 32;
+        case "internet": return 28;
+        case "infra": return 28;
+        case "service": return 28;
+        default: return 26;
+      }
+    })();
+    // Scale service nodes by pod count (max +6px)
+    if (type === "service" && node?.serviceIdx !== undefined && nsPodCounts) {
+      const svc = services[node.serviceIdx];
+      const pods = svc ? (nsPodCounts[svc.namespace] ?? 0) : 0;
+      return base + Math.min(6, pods * 1.5);
     }
+    return base;
   };
 
   const handleNodeClick = (node: TopoNode) => {
@@ -329,7 +331,7 @@ export default function TopologyView({
         {/* Nodes */}
         {topoNodes.map((node) => {
           const pos = nodePos(node);
-          const r = nodeRadius(node.type);
+          const r = nodeRadius(node.type, node);
           const isActive = node.type === "node";
           const isService = node.type === "service";
           const nodeColor = getNodeColor(node);
