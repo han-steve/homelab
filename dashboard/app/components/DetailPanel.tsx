@@ -168,6 +168,23 @@ export default function DetailPanel({
 
     return (
       <div className="w-80 bg-gray-950/90 backdrop-blur-xl border-l border-gray-800/50 p-6 overflow-y-auto">
+        {/* Cluster status headline */}
+        {(() => {
+          const critPodCount = (unhealthyPods ?? []).filter(p => p.status === "CrashLoopBackOff" || p.status === "Error").length;
+          const warnPodCount = (unhealthyPods ?? []).filter(p => p.restarts && p.restarts > 20 && p.status !== "CrashLoopBackOff" && p.status !== "Error").length;
+          const status = critPodCount > 0 ? "DEGRADED" : warnPodCount > 0 ? "WARNING" : "HEALTHY";
+          const color = critPodCount > 0 ? "#ef4444" : warnPodCount > 0 ? "#f97316" : "#22c55e";
+          const podInfo = (unhealthyPods?.length ?? 0) > 0 ? `${unhealthyPods!.length} issue${unhealthyPods!.length > 1 ? "s" : ""}` : "all clear";
+          return (
+            <div className="mb-3 flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: color + "08", border: `1px solid ${color}25` }}>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color }}>Cluster: {status}</span>
+              </div>
+              <span className="text-[10px] font-mono text-gray-600">{podInfo}</span>
+            </div>
+          );
+        })()}
         {/* Critical pod alert */}
         {unhealthyPods && unhealthyPods.some(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50)) && (() => {
           const critPods = unhealthyPods.filter(p => p.status === "CrashLoopBackOff" || p.status === "Error" || (p.restarts && p.restarts > 50));
