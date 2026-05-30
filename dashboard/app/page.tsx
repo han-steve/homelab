@@ -48,6 +48,7 @@ export default function Home() {
   const [showApps, setShowApps] = useState(false);
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const metricsHistory = useRef<{ cpu: number; ram: number; ts: number }[]>([]);
@@ -320,22 +321,33 @@ export default function Home() {
         )}
       </div>
 
-      {/* Detail Panel — hidden on mobile, slide-in on tablet+ */}
-      <div className="hidden sm:block">
-        <DetailPanel
-          selectedIdx={selectedIdx}
-          onClose={() => setSelectedIdx(null)}
-          onSelectService={setSelectedIdx}
-          nodeMetrics={cluster?.nodeMetrics}
-          nsPodCounts={cluster?.nsPodCounts}
-          recentEvents={cluster?.recentEvents}
-          metricsHistory={metricsHistory.current}
-          longhornStorage={cluster?.longhornStorage}
-          unhealthyPods={cluster?.unhealthyPods}
-          certificates={cluster?.certificates}
-          apps={cluster?.apps}
-        />
+      {/* Detail Panel — hidden on mobile, collapsible on tablet+ */}
+      <div className={`hidden sm:block transition-all duration-300 ${panelCollapsed ? "w-0 overflow-hidden" : ""}`}>
+        {!panelCollapsed && (
+          <DetailPanel
+            selectedIdx={selectedIdx}
+            onClose={() => setSelectedIdx(null)}
+            onSelectService={setSelectedIdx}
+            nodeMetrics={cluster?.nodeMetrics}
+            nsPodCounts={cluster?.nsPodCounts}
+            recentEvents={cluster?.recentEvents}
+            metricsHistory={metricsHistory.current}
+            longhornStorage={cluster?.longhornStorage}
+            unhealthyPods={cluster?.unhealthyPods}
+            certificates={cluster?.certificates}
+            apps={cluster?.apps}
+          />
+        )}
       </div>
+      {/* Panel collapse toggle button */}
+      <button
+        onClick={() => setPanelCollapsed(v => !v)}
+        className="hidden sm:flex absolute right-0 bottom-1/2 translate-y-1/2 z-20 items-center justify-center w-5 h-12 bg-gray-900/80 border border-gray-700/50 rounded-l text-gray-600 hover:text-gray-300 hover:bg-gray-800/80 transition-all"
+        style={{ right: panelCollapsed ? 0 : 320 }}
+        title={panelCollapsed ? "Show panel" : "Hide panel"}
+      >
+        <span className="text-xs">{panelCollapsed ? "◂" : "▸"}</span>
+      </button>
     </div>
   );
 }
