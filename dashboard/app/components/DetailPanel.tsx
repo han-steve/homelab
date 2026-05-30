@@ -254,18 +254,23 @@ export default function DetailPanel({
           );
         })()}
 
-        {/* Top Pods by CPU */}
-        {topCpuPods && topCpuPods.length > 0 && (() => {
-          const maxM = topCpuPods[0].cpuM || 1;
+        {/* Top Pods by CPU + Memory */}
+        {(topCpuPods && topCpuPods.length > 0) && (() => {
+          const topMem = podMetrics ? [...podMetrics].sort((a, b) => b.memMi - a.memMi).slice(0, 5) : [];
+          const maxCpuM = topCpuPods[0].cpuM || 1;
+          const maxMemMi = topMem[0]?.memMi || 1;
           return (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Top CPU Pods</h3>
-                <span className="text-xs font-mono text-gray-700">live usage</span>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Top Pods (live)</h3>
+                <div className="flex items-center gap-3 text-xs font-mono text-gray-700">
+                  <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-green-500/60 rounded inline-block" />CPU</span>
+                  {topMem.length > 0 && <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-cyan-500/60 rounded inline-block" />RAM</span>}
+                </div>
               </div>
               <div className="space-y-1">
                 {topCpuPods.slice(0, 5).map((pod, i) => {
-                  const pct = (pod.cpuM / maxM) * 100;
+                  const pct = (pod.cpuM / maxCpuM) * 100;
                   const label = pod.cpuM >= 1000 ? `${(pod.cpuM/1000).toFixed(1)}c` : `${pod.cpuM}m`;
                   const color = pod.cpuM > 500 ? "#ef4444" : pod.cpuM > 200 ? "#eab308" : "#22c55e";
                   return (
@@ -279,6 +284,23 @@ export default function DetailPanel({
                   );
                 })}
               </div>
+              {topMem.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {topMem.map((pod, i) => {
+                    const pct = (pod.memMi / maxMemMi) * 100;
+                    const label = pod.memMi >= 1024 ? `${(pod.memMi/1024).toFixed(1)}G` : `${Math.round(pod.memMi)}M`;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate" title={pod.namespace + "/" + pod.name}>{pod.name.split("-").slice(0, 2).join("-")}</span>
+                        <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-cyan-500/60 transition-all duration-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs font-mono text-cyan-400 w-10 text-right shrink-0">{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })()}
