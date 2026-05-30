@@ -126,6 +126,7 @@ export default function Home() {
               appsTotal={cluster?.apps.length}
               unhealthyNamespaces={cluster ? new Set(cluster.unhealthyPods.map(p => p.namespace)) : undefined}
               refreshProgress={(30 - nextRefreshIn) / 30}
+              longhornStorage={cluster?.longhornStorage}
             />
           ) : (
             <TopologyView

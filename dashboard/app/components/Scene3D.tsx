@@ -1130,7 +1130,12 @@ function CiliumObject({ position, isSelected, onClick }: { position: [number, nu
 }
 
 /* ── Longhorn storage object ─────────────────────────── */
-function LonghornObject({ position, isSelected, onClick }: { position: [number, number, number]; isSelected?: boolean; onClick?: () => void }) {
+function LonghornObject({ position, isSelected, onClick, storageData }: {
+  position: [number, number, number];
+  isSelected?: boolean;
+  onClick?: () => void;
+  storageData?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
+}) {
   const ref = useRef<THREE.Group>(null!);
   useFrame(({ clock }) => {
     if (ref.current) ref.current.rotation.y = clock.getElapsedTime() * 0.35;
@@ -1165,7 +1170,14 @@ function LonghornObject({ position, isSelected, onClick }: { position: [number, 
             }}>
               <div style={{ color: "#3b82f6", marginBottom: 5, fontWeight: 600 }}>Longhorn v1.11.2</div>
               <div style={{ color: "#888", marginBottom: 3 }}>Distributed block storage</div>
-              <div>Replicas: 1 (single node)</div>
+              {storageData ? (
+                <>
+                  <div>{storageData.usedGiB}G / {storageData.totalGiB}G used ({storageData.pct}%)</div>
+                  <div>{storageData.freeGiB}G free</div>
+                </>
+              ) : (
+                <div>Replicas: 1 (single node)</div>
+              )}
               <div style={{ marginTop: 5 }}>
                 <a href="https://longhorn.homelab" target="_blank" rel="noreferrer"
                   style={{ color: "#3b82f6", textDecoration: "none", fontSize: 10 }}
@@ -1189,6 +1201,7 @@ export default function Scene3D({
   appsTotal,
   unhealthyNamespaces,
   refreshProgress,
+  longhornStorage,
 }: {
   onSelect: (i: number | null) => void;
   selectedIdx: number | null;
@@ -1197,6 +1210,7 @@ export default function Scene3D({
   appsTotal?: number;
   unhealthyNamespaces?: Set<string>;
   refreshProgress?: number; // 0 = just refreshed, 1 = about to refresh
+  longhornStorage?: { totalGiB: number; usedGiB: number; freeGiB: number; pct: number } | null;
 }) {
   const [selectedNode, setSelectedNode] = useState<"router" | "m2" | "gpu" | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -1415,7 +1429,7 @@ export default function Scene3D({
       {/* Floating infra objects */}
       <ArgoCDObject position={[4.5, 4.5, -1]} isSelected={selectedInfra === "argocd"} onClick={() => setSelectedInfra(v => v === "argocd" ? null : "argocd")} appsSynced={appsSynced} appsTotal={appsTotal} />
       <CiliumObject position={[-4.5, 4, -1]} isSelected={selectedInfra === "cilium"} onClick={() => setSelectedInfra(v => v === "cilium" ? null : "cilium")} />
-      <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} />
+      <LonghornObject position={[0, 5.5, -2]} isSelected={selectedInfra === "longhorn"} onClick={() => setSelectedInfra(v => v === "longhorn" ? null : "longhorn")} storageData={longhornStorage} />
 
       {/* Subtle infra→M2 connection beams */}
       <Line points={[new THREE.Vector3(...m2Pos as [number,number,number]).setY(1.2), new THREE.Vector3(4.5, 4.0, -1)]} color="#f0883e" lineWidth={0.6} transparent opacity={selectedInfra === "argocd" ? 0.4 : 0.06} />
