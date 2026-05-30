@@ -1513,6 +1513,16 @@ export default function DetailPanel({
                       {nsMaxRestarts[ns] > 0 && (
                         <span className="text-[9px] font-mono" style={{ color: nsMaxRestarts[ns] > 100 ? "#ef4444" : nsMaxRestarts[ns] > 20 ? "#f97316" : "#eab30880" }} title={`Max restarts in namespace: ${nsMaxRestarts[ns]}`}>↺{nsMaxRestarts[ns]}</span>
                       )}
+                      {recentPods && (() => {
+                        const nsPods = recentPods.filter(p => p.namespace === ns && p.startTime);
+                        if (nsPods.length === 0) return null;
+                        const newest = nsPods.reduce((a, b) => new Date(a.startTime).getTime() > new Date(b.startTime).getTime() ? a : b);
+                        const ageMs = Date.now() - new Date(newest.startTime).getTime();
+                        if (ageMs > 86400000) return null; // only show if within 24h
+                        const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs/60000)}m↑` : `${Math.floor(ageMs/3600000)}h↑`;
+                        const isNew = ageMs < 1800000;
+                        return <span className="text-[9px] font-mono" style={{ color: isNew ? "#22c55e60" : "#374151" }} title={`Last pod start: ${newest.name}`}>{ageStr}</span>;
+                      })()}
                     </span>
                   </div>
                   {grouped[ns].map(svc => {
