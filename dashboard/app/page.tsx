@@ -102,6 +102,7 @@ export default function Home() {
       if (e.key === "3") setView("rack");
       if (e.key === "t" || e.key === "T") setView("topology");
       if (e.key === "r" || e.key === "R") fetchStatus.current();
+      if (e.key === "p" || e.key === "P") setPanelCollapsed(v => !v);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -306,12 +307,12 @@ export default function Home() {
         {/* Footer hints */}
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
-            click node/service · drag to rotate · scroll to zoom · [S] services · [←/→] navigate · [Esc] deselect · [T] topology · [R] refresh
+            click node/service · drag to rotate · scroll to zoom · [S] services · [←/→] navigate · [Esc] deselect · [T] topology · [R] refresh · [P] panel
           </div>
         )}
         {view === "topology" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono hidden md:block">
-            scroll to zoom · drag to pan · click to select · [3] 3D rack · [R] refresh
+            scroll to zoom · drag to pan · click to select · [3] 3D rack · [R] refresh · [P] panel
           </div>
         )}
         {cluster && (

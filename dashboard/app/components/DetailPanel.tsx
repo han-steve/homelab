@@ -198,6 +198,37 @@ export default function DetailPanel({
           </div>
         </div>
 
+        {/* Namespace CPU allocation mini-chart */}
+        {nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0 && (() => {
+          const entries = Object.entries(nsCpuRequestsM)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+          const maxVal = entries[0]?.[1] || 1;
+          return (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Top CPU Requests</h3>
+                <span className="text-xs font-mono text-gray-700">by namespace</span>
+              </div>
+              <div className="space-y-1">
+                {entries.map(([ns, milli]) => {
+                  const pct = (milli / maxVal) * 100;
+                  const label = milli >= 1000 ? `${(milli/1000).toFixed(1)}c` : `${milli}m`;
+                  return (
+                    <div key={ns} className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
+                      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs font-mono text-gray-700 w-10 text-right shrink-0">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Search filter */}
         <div className="relative mb-2">
           <input
