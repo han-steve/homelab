@@ -797,6 +797,26 @@ function UnhealthyDot() {
   );
 }
 
+/* ── Expanding heartbeat ring for running services ────── */
+function HeartbeatRing({ color, phaseOffset = 0 }: { color: string; phaseOffset?: number }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = (clock.getElapsedTime() * 0.6 + phaseOffset) % 1;
+    // Expand ring from r=0.4 to r=0.9, fade out
+    const r = 0.4 + t * 0.5;
+    ref.current.scale.setScalar(r / 0.4);
+    const mat = ref.current.material as THREE.MeshBasicMaterial;
+    mat.opacity = Math.max(0, 0.3 * (1 - t * 2));
+  });
+  return (
+    <mesh ref={ref} rotation={[Math.PI / 2, 0, 0]} raycast={() => {}}>
+      <torusGeometry args={[0.4, 0.007, 6, 48]} />
+      <meshBasicMaterial color={color} transparent opacity={0.3} toneMapped={false} />
+    </mesh>
+  );
+}
+
 function ServiceSphere({
   position, service, visible, delay = 0, idx = 0,
   isSelected, isHovered, isUnhealthy = false, onClick, onPointerOver, onPointerOut,
@@ -878,6 +898,8 @@ function ServiceSphere({
           <torusGeometry args={[0.42, 0.008, 6, 48]} />
           <meshBasicMaterial color={catColor} transparent opacity={isRunning ? 0.35 : 0.08} toneMapped={false} />
         </mesh>
+        {/* Heartbeat pulse ring for running services */}
+        {isRunning && <HeartbeatRing color={catColor} phaseOffset={(idx * 0.618) % 1} />}
         {/* Name */}
         <Text position={[0, -0.54, 0]} fontSize={0.07} color={isRunning ? "#c4c4c8" : "#444"} anchorX="center" anchorY="top" maxWidth={1.1}>
           {service.name}
