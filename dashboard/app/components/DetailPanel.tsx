@@ -1454,6 +1454,12 @@ export default function DetailPanel({
             filteredServices.map((svc) => {
               const i = services.indexOf(svc);
               const restarts = nsMaxRestarts[svc.namespace] || 0;
+              const nsDeps = nsDeployments?.[svc.namespace] ?? [];
+              const depDeg = nsDeps.filter(d => {
+                const typed = d as { available?: number; desired?: number };
+                return (typed.desired ?? 0) > 0 && (typed.available ?? 0) < (typed.desired ?? 0);
+              }).length;
+              const recentPodCount = recentPods?.filter(p => p.namespace === svc.namespace && (Date.now() - new Date(p.startTime).getTime()) < 3600000).length ?? 0;
               return (
               <div
                 key={svc.name}
@@ -1465,6 +1471,12 @@ export default function DetailPanel({
                   <span className="text-xs">{svc.name}</span>
                 </span>
                 <div className="flex items-center gap-1.5">
+                  {depDeg > 0 && (
+                    <span className="text-[9px] font-mono text-orange-500/70 animate-pulse" title={`${depDeg} degraded deployment(s)`}>⚠</span>
+                  )}
+                  {recentPodCount > 0 && (
+                    <span className="text-[9px] font-mono text-cyan-600/60" title={`${recentPodCount} pod(s) started in last hour`}>↑{recentPodCount}</span>
+                  )}
                   {restarts > 0 && (
                     <span className="text-xs font-mono text-yellow-600" title={`${restarts} restarts`}>↺{restarts}</span>
                   )}
