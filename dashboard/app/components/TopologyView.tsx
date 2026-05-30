@@ -1091,8 +1091,27 @@ export default function TopologyView({
           {recentEvents && recentEvents.length > 0 && (
             <div className="text-yellow-600/60">⚡ {recentEvents.length} warning event{recentEvents.length !== 1 ? "s" : ""}</div>
           )}
+          {/* CPU distribution mini-chart */}
+          {nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0 && (() => {
+            const top5 = Object.entries(nsCpuRequestsM).sort((a, b) => b[1] - a[1]).slice(0, 4);
+            const maxM = top5[0]?.[1] ?? 1;
+            return (
+              <div className="mt-1.5 border-t border-gray-800/50 pt-1">
+                <div className="text-[9px] text-gray-700 mb-1">top cpu ns</div>
+                {top5.map(([ns, m]) => (
+                  <div key={ns} className="flex items-center gap-1 mb-0.5">
+                    <div className="w-12 truncate text-[8px] text-gray-700" title={ns}>{ns.slice(0, 7)}</div>
+                    <div className="flex-1 h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-purple-500/50 rounded-full" style={{ width: `${(m / maxM) * 100}%` }} />
+                    </div>
+                    <div className="text-[8px] text-purple-700/70 w-8 text-right">{m >= 1000 ? `${(m/1000).toFixed(1)}c` : `${m}m`}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           {selectedNode ? <div className="text-blue-500/70">click bg to deselect</div> : <div>scroll to zoom · drag to pan</div>}
-          <div className="text-gray-700/60">H=heatmap · N=next ns · 0=reset</div>
+          <div className="text-gray-700/60">H=heatmap · N=next ns · dbl-click=reset</div>
           <button
             onClick={() => setHeatmapMode(v => !v)}
             className={`mt-1 px-2 py-0.5 rounded text-[10px] font-mono border transition-colors ${heatmapMode ? "bg-orange-500/15 border-orange-500/40 text-orange-400" : "border-gray-800 text-gray-700 hover:text-gray-500"}`}
