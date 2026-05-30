@@ -91,6 +91,17 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showApps, showPods]);
 
+  // Global keyboard shortcuts: 3 = 3D rack, T = topology, R = manual refresh
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "3") setView("rack");
+      if (e.key === "t" || e.key === "T") setView("topology");
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-950 text-white">
       {/* Main view */}
@@ -258,7 +269,12 @@ export default function Home() {
         {/* Footer hints */}
         {view === "rack" && (
           <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono">
-            click node/service · drag to rotate · scroll to zoom · [S] services · [←/→] navigate · [Esc] deselect
+            click node/service · drag to rotate · scroll to zoom · [S] services · [←/→] navigate · [Esc] deselect · [T] topology
+          </div>
+        )}
+        {view === "topology" && (
+          <div className="absolute bottom-5 left-5 text-xs text-gray-700 pointer-events-none font-mono hidden md:block">
+            scroll to zoom · drag to pan · click to select · [3] 3D rack
           </div>
         )}
         {cluster && (
