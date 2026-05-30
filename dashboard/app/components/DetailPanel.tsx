@@ -572,6 +572,46 @@ export default function DetailPanel({
           );
         })()}
 
+        {/* PVC Storage allocation per namespace */}
+        {nsPvcs && Object.keys(nsPvcs).length > 0 && (() => {
+          const parseGiB = (cap: string): number => {
+            const m = cap.match(/^(\d+(?:\.\d+)?)(Gi|Mi|Ti|G|M|T)i?$/);
+            if (!m) return 0;
+            const v = parseFloat(m[1]);
+            const u = m[2];
+            if (u.startsWith("T")) return v * 1024;
+            if (u.startsWith("G")) return v;
+            if (u.startsWith("M")) return v / 1024;
+            return v;
+          };
+          const nsTotals: Record<string, number> = {};
+          for (const [ns, pvcs] of Object.entries(nsPvcs)) {
+            nsTotals[ns] = pvcs.reduce((sum, pvc) => sum + parseGiB((pvc as {capacity?: string}).capacity ?? "0"), 0);
+          }
+          const entries = Object.entries(nsTotals).sort((a, b) => b[1] - a[1]);
+          const totalGiB = entries.reduce((a, b) => a + b[1], 0);
+          const maxGiB = entries[0]?.[1] ?? 1;
+          return (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Storage Alloc</h3>
+                <span className="text-xs font-mono text-gray-700">{totalGiB >= 1024 ? `${(totalGiB/1024).toFixed(1)}Ti` : `${totalGiB}Gi`} total</span>
+              </div>
+              <div className="space-y-1">
+                {entries.map(([ns, gib]) => (
+                  <div key={ns} className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
+                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-violet-400/40" style={{ width: `${(gib / maxGiB) * 100}%` }} />
+                    </div>
+                    <span className="text-xs font-mono text-violet-400/70 w-12 text-right shrink-0">{gib >= 1000 ? `${(gib/1024).toFixed(1)}Ti` : `${gib}Gi`}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Namespace resource allocation mini-charts (CPU + Memory) */}
         {(nsCpuRequestsM && Object.keys(nsCpuRequestsM).length > 0) && (() => {
           const allocCpuM = 15950;
@@ -708,7 +748,9 @@ export default function DetailPanel({
                   const barColor = hasCrit ? "#ef4444" : issues.length > 0 ? "#f97316" : "#22c55e";
                   return (
                     <div key={ns} className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate">{ns}</span>
+                      <span className="text-xs font-mono text-gray-700 w-24 shrink-0 truncate" title={ns}>
+                        {ns.startsWith("vc-") ? <span className="text-purple-700/70">⊕ </span> : null}{ns}
+                      </span>
                       <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor, opacity: 0.6 }} />
                       </div>
@@ -1222,7 +1264,11 @@ export default function DetailPanel({
           <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent mt-5 mb-3" />
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-mono text-gray-600 uppercase tracking-wider">Namespace Pods</span>
-            <span className="text-xs font-mono text-gray-500">{nsPodCounts[svc.namespace]} running</span>
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="text-gray-500">{nsPodCounts[svc.namespace]} running</span>
+              {nsCpuRequestsM?.[svc.namespace] !== undefined && <span className="text-blue-500/60">{nsCpuRequestsM[svc.namespace] >= 1000 ? `${(nsCpuRequestsM[svc.namespace]/1000).toFixed(1)}c` : `${nsCpuRequestsM[svc.namespace]}m`}</span>}
+              {nsMemRequestsMi?.[svc.namespace] !== undefined && <span className="text-violet-500/60">{nsMemRequestsMi[svc.namespace] >= 1024 ? `${(nsMemRequestsMi[svc.namespace]/1024).toFixed(1)}G` : `${Math.round(nsMemRequestsMi[svc.namespace])}M`}</span>}
+            </div>
           </div>
           {(() => {
             const nsIssues = unhealthyPods?.filter(p => p.namespace === svc.namespace) ?? [];
