@@ -1811,6 +1811,22 @@ export default function Scene3D({
           </Billboard>
         </Float>
       )}
+      {/* Service count badge — shown above service ring when services are visible */}
+      {showServices && (() => {
+        const healthySvcs = services.filter(s => !unhealthyNamespaces || !unhealthyNamespaces.has(s.namespace)).length;
+        const allOk = healthySvcs === services.length;
+        const badgeColor = allOk ? "#22c55e" : "#f97316";
+        return (
+          <Float speed={0.8} rotationIntensity={0} floatIntensity={0.1}>
+            <Billboard position={[m2Pos[0], m2Pos[1] + 7.4, m2Pos[2]]}>
+              <Text fontSize={0.14} color={badgeColor} anchorX="center" anchorY="middle"
+                // @ts-expect-error
+                toneMapped={false}
+              >{`${healthySvcs}/${services.length} services`}</Text>
+            </Billboard>
+          </Float>
+        );
+      })()}
 
       <HoloGrid />
       <Particles />
