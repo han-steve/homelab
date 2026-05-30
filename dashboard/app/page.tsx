@@ -181,13 +181,15 @@ export default function Home() {
                 ["3", "Switch to 3D rack view"],
                 ["T", "Switch to topology view"],
                 ["F / ⌘K", "Quick service search"],
+                ["S", "Toggle service spheres (3D)"],
+                ["←/→", "Navigate services"],
                 ["R", "Manual refresh"],
                 ["P", "Toggle detail panel"],
                 ["?", "Toggle this help"],
-                ["ESC", "Close overlays"],
+                ["ESC", "Close overlays / deselect"],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3">
-                  <kbd className="min-w-[2rem] text-center px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs font-mono text-gray-300">{key}</kbd>
+                  <kbd className="min-w-[2.5rem] text-center px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs font-mono text-gray-300">{key}</kbd>
                   <span className="text-xs font-mono text-gray-500">{desc}</span>
                 </div>
               ))}
