@@ -1974,6 +1974,11 @@ export default function DetailPanel({
             {nsDeployments?.[svc.namespace] && nsDeployments[svc.namespace].length > 0 && (
               <span className="text-[9px] font-mono px-1 py-0 rounded bg-blue-900/20 text-blue-700/60 border border-blue-800/20">{nsDeployments[svc.namespace].length}dep</span>
             )}
+            {nsDeployments?.[svc.namespace] && nsDeployments[svc.namespace].some(d => d.available < d.desired) && (
+              <span className="text-[9px] font-mono px-1 py-0 rounded bg-orange-900/25 text-orange-500/70 border border-orange-800/25 animate-pulse" title={`${nsDeployments[svc.namespace].filter(d => d.available < d.desired).map(d => `${d.name}: ${d.available}/${d.desired}`).join(", ")}`}>
+                {nsDeployments[svc.namespace].filter(d => d.available < d.desired).length}↓
+              </span>
+            )}
             {nsStatefulSets?.[svc.namespace] && nsStatefulSets[svc.namespace].length > 0 && (
               <span className="text-[9px] font-mono px-1 py-0 rounded bg-violet-900/20 text-violet-700/60 border border-violet-800/20">{nsStatefulSets[svc.namespace].length}sts</span>
             )}
