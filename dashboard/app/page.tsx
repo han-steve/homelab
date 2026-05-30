@@ -281,6 +281,10 @@ export default function Home() {
                 ["←/→", "Navigate services (when selected)"],
                 ["R", "Manual refresh"],
                 ["P", "Toggle detail panel"],
+                ["H", "Toggle heatmap (topology)"],
+                ["N", "Cycle namespace filter (topology)"],
+                ["1-9", "Jump to Nth namespace (topology)"],
+                ["0", "Reset namespace filter (topology)"],
                 ["?", "Toggle this help"],
                 ["ESC", "Close overlays / deselect"],
               ].map(([key, desc]) => (
