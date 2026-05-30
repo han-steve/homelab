@@ -1823,17 +1823,33 @@ export default function DetailPanel({
             if (nsIssues.length === 0) {
               return <div className="text-xs font-mono text-green-500/70">● All pods healthy</div>;
             }
+            const maxRestarts = Math.max(...nsIssues.map(p => p.restarts), 1);
             return (
-              <div className="space-y-1">
-                {nsIssues.map((pod, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-orange-400 truncate flex-1" title={pod.name}>{pod.name}</span>
-                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                      <span className="text-red-400">{pod.status}</span>
-                      {pod.restarts > 0 && <span className="text-yellow-500">↺{pod.restarts}</span>}
+              <div className="space-y-1.5">
+                {nsIssues.map((pod, i) => {
+                  const isCrash = pod.status === "CrashLoopBackOff";
+                  const isOOM = pod.status === "OOMKilled";
+                  const restartPct = Math.min(100, (pod.restarts / maxRestarts) * 100);
+                  const restartColor = pod.restarts > 100 ? "#ef4444" : pod.restarts > 20 ? "#f97316" : "#eab308";
+                  const bgColor = isCrash ? "#ef444408" : isOOM ? "#a855f708" : "#f9731608";
+                  const borderColor = isCrash ? "#ef444425" : isOOM ? "#a855f725" : "#f9731625";
+                  return (
+                    <div key={i} className="rounded px-2 py-1.5 border text-xs font-mono" style={{ backgroundColor: bgColor, borderColor }}>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className={`truncate flex-1 ${isCrash ? "text-red-400/80" : isOOM ? "text-purple-400/80" : "text-orange-400/70"}`} title={pod.name}>{pod.name.replace(/-[a-z0-9]{5,10}$/, "")}</span>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                          <span className="text-[9px] px-1 py-0 rounded font-mono" style={{ backgroundColor: (isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316") + "20", color: isCrash ? "#ef4444" : isOOM ? "#a855f7" : "#f97316" }}>{pod.status}</span>
+                          {pod.restarts > 0 && <span style={{ color: restartColor }}>↺{pod.restarts}</span>}
+                        </div>
+                      </div>
+                      {pod.restarts > 0 && (
+                        <div className="h-0.5 bg-gray-900 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${restartPct}%`, backgroundColor: restartColor + "80" }} />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
