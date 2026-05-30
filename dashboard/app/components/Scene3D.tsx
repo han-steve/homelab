@@ -2050,9 +2050,11 @@ export default function Scene3D({
         const urlDisplay = svc.url ? svc.url.replace("https://", "") : (svc.ip !== "internal" ? svc.ip + ":" + svc.port : "cluster-internal");
         const pods = nsPodCounts?.[svc.namespace];
         const cpuM = nsCpuRequestsM?.[svc.namespace];
+        const restarts = nsMaxRestarts?.[svc.namespace];
         const extraLines: { label: string; value: string }[] = [];
         if (pods !== undefined) extraLines.push({ label: "Pods", value: String(pods) });
         if (cpuM !== undefined) extraLines.push({ label: "CPU req", value: cpuM >= 1000 ? `${(cpuM/1000).toFixed(1)}c` : `${cpuM}m` });
+        if (restarts !== undefined && restarts > 0) extraLines.push({ label: "Restarts", value: `↺${restarts}` });
         return (
           <CalloutPanel
             anchorPos={svcPos}
