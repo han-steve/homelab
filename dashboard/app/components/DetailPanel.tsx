@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { services, node, type Service } from "../data";
 
 function useNow() {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number>(0);
   useEffect(() => {
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
   }, []);
@@ -24,17 +25,18 @@ function relTime(iso: string | undefined, now: number): string {
 }
 
 /** Compute next cron run relative to lastSchedule (or now) for simple schedules */
-function nextCronRun(schedule: string, lastScheduleISO?: string): string {
+function nextCronRun(schedule: string, lastScheduleISO?: string, nowMs?: number): string {
   const parts = schedule.trim().split(/\s+/);
   if (parts.length !== 5) return "";
   const [min, hr, dom, , dow] = parts;
-  const base = lastScheduleISO ? new Date(lastScheduleISO) : new Date();
+  const nowDate = nowMs ? new Date(nowMs) : new Date(0);
+  const base = lastScheduleISO ? new Date(lastScheduleISO) : nowDate;
   const next = new Date(base);
   // Simple daily: "0 N * * *"
   if (dom === "*" && dow === "*" && /^\d+$/.test(hr) && /^\d+$/.test(min)) {
     next.setUTCHours(parseInt(hr), parseInt(min), 0, 0);
     if (next <= base) next.setUTCDate(next.getUTCDate() + 1);
-    const msFromNow = next.getTime() - Date.now();
+    const msFromNow = next.getTime() - (nowMs ?? 0);
     if (msFromNow <= 0) return "soon";
     const h = Math.floor(msFromNow / 3600000);
     const m = Math.floor((msFromNow % 3600000) / 60000);
@@ -48,7 +50,7 @@ function nextCronRun(schedule: string, lastScheduleISO?: string): string {
     let daysAhead = (targetDow - curDow + 7) % 7;
     if (daysAhead === 0 && next <= base) daysAhead = 7;
     next.setUTCDate(next.getUTCDate() + daysAhead);
-    const daysFromNow = Math.round((next.getTime() - Date.now()) / 86400000);
+    const daysFromNow = Math.round((next.getTime() - (nowMs ?? 0)) / 86400000);
     return daysFromNow <= 0 ? "soon" : daysFromNow === 1 ? "tomorrow" : `in ${daysFromNow}d`;
   }
   return "";
@@ -304,7 +306,7 @@ export default function DetailPanel({
               </div>
               {critPods.slice(0, 2).map((p, i) => {
                 const lastCrashAgo = p.lastRestartAt ? (() => {
-                  const ms = Date.now() - new Date(p.lastRestartAt!).getTime();
+                  const ms = now - new Date(p.lastRestartAt!).getTime();
                   const m = Math.floor(ms / 60000);
                   if (m < 60) return `${m}m ago`;
                   const h = Math.floor(m / 60);
@@ -363,7 +365,6 @@ export default function DetailPanel({
           const cpuPct = totalCpuRequestsM ? Math.round((totalCpuRequestsM / 15950) * 100) : 0;
           const memPct = totalMemRequestsMi ? Math.round((totalMemRequestsMi / (31753032/1024)) * 100) : 0;
           const syncedApps = (apps ?? []).filter(a => a.sync === "Synced").length;
-          const now = Date.now();
           const churnPods = recentPods?.filter(p => now - new Date(p.startTime).getTime() < 3600000).length ?? 0;
           const churnPrev = recentPods?.filter(p => { const age = now - new Date(p.startTime).getTime(); return age >= 3600000 && age < 7200000; }).length ?? 0;
           const churnTrend = churnPods > churnPrev ? "↑" : churnPods < churnPrev ? "↓" : "→";
@@ -979,7 +980,7 @@ export default function DetailPanel({
                     // Find the next scheduled job
                     let nextName = "", nextEta = "";
                     for (const cj of allCJ) {
-                      const eta = nextCronRun(cj.schedule, cj.lastSchedule);
+                      const eta = nextCronRun(cj.schedule, cj.lastSchedule, now);
                       if (eta && (!nextEta || eta < nextEta)) { nextEta = eta; nextName = cj.name; }
                     }
                     if (!nextEta) return null;
@@ -1084,7 +1085,7 @@ export default function DetailPanel({
                   const hasLatestImg = nsImages?.[ns]?.some(img => typeof img === "string" && (img.endsWith(":latest") || img.includes(":latest@")));
                   const ssDegraded = nsStatefulSets?.[ns]?.some(ss => ss.ready < ss.desired);
                   const helmNotDeployed = nsHelmReleases?.[ns]?.some(r => r.status !== "deployed");
-                  const hasRecentPod = recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 1800000);
+                  const hasRecentPod = recentPods?.some(p => p.namespace === ns && (now - new Date(p.startTime).getTime()) < 1800000);
                   return (
                     <button key={ns}
                       onClick={() => setNsFilter(nsFilter === ns ? null : ns)}
@@ -1144,7 +1145,7 @@ export default function DetailPanel({
         {/* PVC Storage allocation per namespace */}
         {/* Pod churn — namespaces with highest recent pod starts */}
         {recentPods && recentPods.length > 0 && (() => {
-          const now24 = Date.now() - 24 * 3600000;
+          const now24 = now - 24 * 3600000;
           const churn: Record<string, number> = {};
           for (const p of recentPods) {
             if (new Date(p.startTime).getTime() > now24) {
@@ -1531,7 +1532,7 @@ export default function DetailPanel({
                   <div className="text-xs font-mono text-gray-700 px-2 pt-2 pb-0.5 uppercase tracking-wider border-b border-gray-800/50 mb-1 flex items-center justify-between">
                     <div className="flex items-center gap-1.5 flex-1">
                       {(() => {
-                        const hasRecent = recentPods?.some(p => p.namespace === ns && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
+                        const hasRecent = recentPods?.some(p => p.namespace === ns && (now - new Date(p.startTime).getTime()) < 3600000);
                         return hasRecent ? <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 animate-pulse shrink-0" title="pod started in last hour" /> : null;
                       })()}
                       <span>{ns}</span>
@@ -1589,7 +1590,7 @@ export default function DetailPanel({
                         const nsPods = recentPods.filter(p => p.namespace === ns && p.startTime);
                         if (nsPods.length === 0) return null;
                         const newest = nsPods.reduce((a, b) => new Date(a.startTime).getTime() > new Date(b.startTime).getTime() ? a : b);
-                        const ageMs = Date.now() - new Date(newest.startTime).getTime();
+                        const ageMs = now - new Date(newest.startTime).getTime();
                         if (ageMs > 86400000) return null; // only show if within 24h
                         const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs/60000)}m↑` : `${Math.floor(ageMs/3600000)}h↑`;
                         const isNew = ageMs < 1800000;
@@ -1610,7 +1611,7 @@ export default function DetailPanel({
                           <span>{svc.icon}</span>
                           <span className="text-xs">{svc.name}</span>
                           {(() => {
-                            const freshPod = recentPods?.find(p => p.namespace === svc.namespace && (Date.now() - new Date(p.startTime).getTime()) < 3600000);
+                            const freshPod = recentPods?.find(p => p.namespace === svc.namespace && (now - new Date(p.startTime).getTime()) < 3600000);
                             return freshPod ? <span className="w-1.5 h-1.5 rounded-full bg-green-400/70 animate-pulse shrink-0" title="pod started in last hour" /> : null;
                           })()}
                         </span>
@@ -1641,10 +1642,10 @@ export default function DetailPanel({
                 const typed = d as { available?: number; desired?: number };
                 return (typed.desired ?? 0) > 0 && (typed.available ?? 0) < (typed.desired ?? 0);
               }).length;
-              const recentPodCount = recentPods?.filter(p => p.namespace === svc.namespace && (Date.now() - new Date(p.startTime).getTime()) < 3600000).length ?? 0;
+              const recentPodCount = recentPods?.filter(p => p.namespace === svc.namespace && (now - new Date(p.startTime).getTime()) < 3600000).length ?? 0;
               const helmReleases = nsHelmReleases?.[svc.namespace];
               const latestHelm = helmReleases ? [...helmReleases].sort((a, b) => (b.updated ? new Date(b.updated).getTime() : 0) - (a.updated ? new Date(a.updated).getTime() : 0))[0] : undefined;
-              const helmUpdatedMs = latestHelm?.updated ? Date.now() - new Date(latestHelm.updated).getTime() : null;
+              const helmUpdatedMs = latestHelm?.updated ? now - new Date(latestHelm.updated).getTime() : null;
               const helmUpdatedRecent = helmUpdatedMs !== null && helmUpdatedMs < 86400000;
               const cpuM = nsCpuRequestsM?.[svc.namespace] ?? 0;
               const maxCpuM = nsCpuRequestsM ? Math.max(1, ...Object.values(nsCpuRequestsM)) : 1;
@@ -1805,7 +1806,7 @@ export default function DetailPanel({
             const lastSynced = withTimestamp[0];
             let lastSyncAgo = "";
             if (lastSynced?.syncedAt) {
-              const ms = Date.now() - new Date(lastSynced.syncedAt).getTime();
+              const ms = now - new Date(lastSynced.syncedAt).getTime();
               const mins = Math.floor(ms / 60000);
               const hrs = Math.floor(ms / 3600000);
               const days = Math.floor(ms / 86400000);
@@ -1840,7 +1841,7 @@ export default function DetailPanel({
                 {(() => {
                   const staleApps = apps.filter(a => {
                     if (!a.syncedAt) return false;
-                    try { return (Date.now() - new Date(a.syncedAt).getTime()) >= 7 * 86400000; } catch { return false; }
+                    try { return (now - new Date(a.syncedAt).getTime()) >= 7 * 86400000; } catch { return false; }
                   });
                   if (staleApps.length === 0) return null;
                   return <div className="text-[9px] font-mono text-orange-700/60 mt-0.5">⏰ {staleApps.length} app{staleApps.length !== 1 ? "s" : ""} stale (&gt;7d)</div>;
@@ -1859,7 +1860,7 @@ export default function DetailPanel({
                       let isStale = false;
                       if (a.syncedAt) {
                         try {
-                          const ms = Date.now() - new Date(a.syncedAt).getTime();
+                          const ms = now - new Date(a.syncedAt).getTime();
                           const days = Math.floor(ms / 86400000);
                           const hrs = Math.floor(ms / 3600000);
                           syncedAgo = days > 0 ? `${days}d` : `${hrs}h`;
@@ -1902,8 +1903,8 @@ export default function DetailPanel({
             const tb = b.updated ? new Date(b.updated).getTime() : 0;
             return tb - ta;
           });
-          const newestMs = sortedReleases[0]?.updated ? Date.now() - new Date(sortedReleases[0].updated).getTime() : 0;
-          const oldestMs = sortedReleases[sortedReleases.length - 1]?.updated ? Date.now() - new Date(sortedReleases[sortedReleases.length - 1].updated).getTime() : 0;
+          const newestMs = sortedReleases[0]?.updated ? now - new Date(sortedReleases[0].updated).getTime() : 0;
+          const oldestMs = sortedReleases[sortedReleases.length - 1]?.updated ? now - new Date(sortedReleases[sortedReleases.length - 1].updated).getTime() : 0;
           const ageRange = Math.max(1, oldestMs - newestMs);
           return (
             <>
@@ -1929,7 +1930,7 @@ export default function DetailPanel({
                   let agePct = 100;
                   if (rel.updated) {
                     try {
-                      const ms = Date.now() - new Date(rel.updated).getTime();
+                      const ms = now - new Date(rel.updated).getTime();
                       const days = Math.floor(ms / 86400000);
                       isRecent = ms < 86400000; // updated in last 24h
                       updatedAgo = days > 0 ? `${days}d` : `${Math.floor(ms/3600000)}h`;
@@ -2006,7 +2007,7 @@ export default function DetailPanel({
                 const bgColor = isExpired ? "#1c0505" : isUrgent ? "#1c0505" : isExpiring ? "#1c1400" : "#052e16";
                 const label = isExpired ? "expired" : cert.daysLeft < 9999 ? `${cert.daysLeft}d` : "—";
                 const expiryDate = cert.daysLeft < 9999 ? (() => {
-                  const d = new Date(Date.now() + cert.daysLeft * 86400000);
+                  const d = new Date(now + cert.daysLeft * 86400000);
                   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                 })() : "";
                 const maxDays = 90;
@@ -2072,9 +2073,9 @@ export default function DetailPanel({
               );
             })()}
             {recentPods && recentPods.length > 0 && (() => {
-              const fresh = recentPods.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 7 * 24 * 3600000);
+              const fresh = recentPods.filter(p => (now - new Date(p.startTime).getTime()) < 7 * 24 * 3600000);
               if (fresh.length === 0) return null;
-              const recentFresh = fresh.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 3600000).length;
+              const recentFresh = fresh.filter(p => (now - new Date(p.startTime).getTime()) < 3600000).length;
               // 7-day histogram
               const days = Array.from({ length: 7 }, (_, i) => {
                 const dayStart = new Date(now);
@@ -2092,7 +2093,7 @@ export default function DetailPanel({
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider font-mono">Recent Starts</h3>
                     <div className="flex items-center gap-2">
                       {(() => {
-                        const last24h = fresh.filter(p => (Date.now() - new Date(p.startTime).getTime()) < 86400000);
+                        const last24h = fresh.filter(p => (now - new Date(p.startTime).getTime()) < 86400000);
                         if (last24h.length === 0) return null;
                         const nsCounts: Record<string, number> = {};
                         for (const p of last24h) nsCounts[p.namespace] = (nsCounts[p.namespace] || 0) + 1;
@@ -2131,7 +2132,7 @@ export default function DetailPanel({
             })()}
 
             {/* Unified Recent Activity Feed */}
-            {(recentPods && recentPods.length > 0) || (nsHelmReleases && Object.values(nsHelmReleases).flat().some(r => r.updated && (Date.now() - new Date(r.updated).getTime()) < 7 * 86400000)) ? (() => {
+            {(recentPods && recentPods.length > 0) || (nsHelmReleases && Object.values(nsHelmReleases).flat().some(r => r.updated && (now - new Date(r.updated).getTime()) < 7 * 86400000)) ? (() => {
               type ActivityItem =
                 | { kind: "pod"; ts: number; name: string; namespace: string; restarts?: number }
                 | { kind: "helm"; ts: number; name: string; namespace: string; chart?: string; status?: string };
@@ -2140,7 +2141,7 @@ export default function DetailPanel({
               if (recentPods) {
                 for (const pod of recentPods) {
                   const ts = pod.startTime ? new Date(pod.startTime).getTime() : 0;
-                  if (ts > 0 && Date.now() - ts < 48 * 3600000) {
+                  if (ts > 0 && now - ts < 48 * 3600000) {
                     // find restart count from unhealthyPods
                     const uPod = unhealthyPods?.find(u => u.name === pod.name && u.namespace === pod.namespace);
                     items.push({ kind: "pod", ts, name: pod.name, namespace: pod.namespace, restarts: uPod?.restarts });
@@ -2154,7 +2155,7 @@ export default function DetailPanel({
                     if (rel.updated) {
                       try {
                         const ts = new Date(rel.updated).getTime();
-                        if (Date.now() - ts < 7 * 86400000) {
+                        if (now - ts < 7 * 86400000) {
                           items.push({ kind: "helm", ts, name: rel.name, namespace: ns, chart: rel.chart, status: rel.status });
                         }
                       } catch {/* ignore */}
@@ -2190,7 +2191,7 @@ export default function DetailPanel({
                       const helmChart = isHelm ? (item as { chart?: string }).chart : undefined;
                       const hasIssue = (podRestarts ?? 0) > 0 || (helmStatus && helmStatus !== "deployed");
                       const dotColor = isPod ? (hasIssue ? "#f97316" : "#22c55e") : (helmStatus && helmStatus !== "deployed" ? "#eab308" : "#06b6d4");
-                      const ageMs = Date.now() - item.ts;
+                      const ageMs = now - item.ts;
                       const ageStr = ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h` : `${Math.floor(ageMs / 86400000)}d`;
                       return (
                         <div key={i} className="relative text-xs font-mono flex items-center gap-1.5">
@@ -2442,7 +2443,7 @@ export default function DetailPanel({
             const nsPods = recentPods.filter(p => p.namespace === svc.namespace);
             if (nsPods.length === 0) return null;
             const oldest = nsPods.reduce((a, b) => new Date(a.startTime).getTime() < new Date(b.startTime).getTime() ? a : b);
-            const ageMs = Date.now() - new Date(oldest.startTime).getTime();
+            const ageMs = now - new Date(oldest.startTime).getTime();
             const ageDays = Math.floor(ageMs / 86400000);
             const ageHrs = Math.floor((ageMs % 86400000) / 3600000);
             const ageStr = ageDays > 0 ? `${ageDays}d ${ageHrs}h` : `${ageHrs}h`;
@@ -2697,7 +2698,7 @@ export default function DetailPanel({
                 let uptimeStr = "";
                 let isFresh = false;
                 if (pod.startTime) {
-                  const ms = Date.now() - new Date(pod.startTime).getTime();
+                  const ms = now - new Date(pod.startTime).getTime();
                   isFresh = ms < 30 * 60 * 1000; // started in last 30 min
                   const days = Math.floor(ms / 86400000);
                   const hrs = Math.floor((ms % 86400000) / 3600000);
@@ -2884,8 +2885,8 @@ export default function DetailPanel({
           </div>
           <div className="space-y-1">
             {nsCronJobs[svc.namespace].map((cj, i) => {
-              const ranRecently = cj.lastSchedule && (Date.now() - new Date(cj.lastSchedule).getTime()) < 3600000;
-              const nextRun = nextCronRun(cj.schedule, cj.lastSchedule);
+              const ranRecently = cj.lastSchedule && (now - new Date(cj.lastSchedule).getTime()) < 3600000;
+              const nextRun = nextCronRun(cj.schedule, cj.lastSchedule, now);
               return (
               <div key={i} className={`text-xs font-mono rounded px-2 py-1 border ${ranRecently ? "bg-cyan-900/10 border-cyan-800/30" : "bg-gray-900/50 border-gray-800/50"}`}>
                 <div className="flex items-center justify-between gap-2">
@@ -2941,7 +2942,7 @@ export default function DetailPanel({
             {nsHelmReleases[svc.namespace].map((rel, i) => {
               let isRecent = false;
               if (rel.updated) {
-                try { isRecent = (Date.now() - new Date(rel.updated).getTime()) < 86400000; } catch {/* ignore */}
+                try { isRecent = (now - new Date(rel.updated).getTime()) < 86400000; } catch {/* ignore */}
               }
               return (
               <div key={i} className={`text-xs font-mono rounded px-1.5 py-1 border ${isRecent ? "bg-cyan-900/10 border-cyan-900/20" : "bg-gray-900/40 border-gray-800/30"}`}>
