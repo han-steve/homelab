@@ -66,23 +66,12 @@ type ViewMode = "rack" | "topology";
 
 export default function Home() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [view, setView] = useState<ViewMode>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("hl_view");
-      if (saved === "rack" || saved === "topology") return saved;
-    }
-    return "rack";
-  });
+  const [view, setView] = useState<ViewMode>("rack");
   const [cluster, setCluster] = useState<ClusterStatus | null>(null);
   const [showApps, setShowApps] = useState(false);
   const [showPods, setShowPods] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [panelCollapsed, setPanelCollapsed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("hl_panel_collapsed") === "1";
-    }
-    return false;
-  });
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,7 +79,7 @@ export default function Home() {
   const [searchHighlight, setSearchHighlight] = useState(0);
   const [alertDismissed, setAlertDismissed] = useState<string | null>(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(30);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const metricsHistory = useRef<{ cpu: number; ram: number; pods: number; unhealthy: number; appsHealthy: number; appsTotal: number; ts: number }[]>(
     (() => {
       try {
@@ -149,6 +138,14 @@ export default function Home() {
       .catch(() => {})
       .finally(() => setIsLoading(false));
   };
+
+  // Restore persisted state on client only (avoids SSR hydration mismatch)
+  useEffect(() => {
+    const savedView = localStorage.getItem("hl_view");
+    if (savedView === "rack" || savedView === "topology") setView(savedView);
+    if (localStorage.getItem("hl_panel_collapsed") === "1") setPanelCollapsed(true);
+    setCurrentTime(new Date());
+  }, []);
 
   useEffect(() => {
     fetchStatus.current();
@@ -743,7 +740,7 @@ export default function Home() {
               </>
             )}
             {/* Stale data indicator */}
-            {cluster && (() => {
+            {cluster && currentTime && (() => {
               const ageMs = currentTime.getTime() - new Date(cluster.timestamp).getTime();
               if (ageMs < 65000) return null;
               const ageSec = Math.round(ageMs / 1000);
@@ -753,7 +750,7 @@ export default function Home() {
               );
             })()}
             <span className="hidden md:inline text-gray-800">|</span>
-            <span className="hidden md:inline text-gray-500 tabular-nums" title="Local time">{currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+            {currentTime && <span className="hidden md:inline text-gray-500 tabular-nums" title="Local time">{currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
           </div>
         </div>
 
